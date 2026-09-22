@@ -66,6 +66,12 @@ Pour la HRV, la ceinture thoracique est également préférable car elle permet 
 
 ## 2.2. Les montres et systèmes GNSS/GPS
 
+<div class="course-image-block">
+  <img src="/images/illustration-capteurs-gps.jpg" alt="Tracking GPS et télémétrie sportive" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 2 : Mesure de la charge externe : tracking GNSS haute fréquence (10–20 Hz) et accélérométrie triaxiale.</span>
+</div>
+
+
 
 Fonctionnement
 
@@ -251,6 +257,12 @@ La littérature montre que les cellules présentent une bonne concordance avec l
 
 
 ## 2.6. Les plateformes de force
+
+<div class="course-image-block">
+  <img src="/images/illustration-force-plate.jpg" alt="Plateforme de force et profil Force-Vitesse" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 3 : Évaluation neuromusculaire sur plateforme de force biaxiale (CMJ, RSI-modifié et asymétries).</span>
+</div>
+
 
 
 La plateforme de force mesure les forces exercées sur le sol.

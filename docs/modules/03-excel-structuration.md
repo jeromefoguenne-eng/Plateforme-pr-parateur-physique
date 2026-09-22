@@ -179,6 +179,12 @@ La distinction est importante car le type de donnée détermine la manière dont
 
 ## 5.4. Structurer correctement un tableau de données
 
+<div class="course-image-block">
+  <img src="/images/illustration-excel-sports.jpg" alt="Feuille de calcul Excel et tableau croisé dynamique en sport" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 5 : Modélisation tabulaire rigoureuse et Tableaux Croisés Dynamiques (TCD) sous Microsoft Excel.</span>
+</div>
+
+
 
 Un tableur devient réellement puissant lorsque les données sont organisées selon une structure régulière.
 

@@ -79,6 +79,12 @@ Cette compétence transforme le préparateur physique en professionnel capable d
 
 ## 7.1. Faire une veille scientifique avec l'IA
 
+<div class="course-image-block">
+  <img src="/images/illustration-science-sport.jpg" alt="Recherche scientifique et biomécanique en sport de haut niveau" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 7 : Passerelle entre la recherche scientifique en sciences du sport (PubMed, Consensus) et la pratique de terrain.</span>
+</div>
+
+
 
 L'intelligence artificielle peut aujourd'hui être utilisée comme assistant de recherche et d'exploration de la littérature scientifique.
 

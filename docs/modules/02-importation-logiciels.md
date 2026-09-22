@@ -293,6 +293,12 @@ Application spécialisée : « Je veux utiliser un environnement qui analyse dé
 
 ## 6. Les principales applications dédiées
 
+<div class="course-image-block">
+  <img src="/images/illustration-dashboard-power.jpg" alt="Logiciels d'analyse et dashboards de performance" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 4 : Écosystème logiciel de la performance : de la plateforme cloud spécialisée au dashboard décisionnel.</span>
+</div>
+
+
 
 6.1. Strava
 

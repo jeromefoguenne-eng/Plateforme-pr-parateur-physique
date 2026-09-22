@@ -33,9 +33,7 @@ features:
     Retrouvez l'ensemble des chapitres du cours, les notions théoriques, les quiz d'auto-évaluation et les travaux pratiques de terrain.
   </p>
 
-  <ClientOnly>
-    <CourseTiles />
-  </ClientOnly>
+  <CourseTiles />
 </div>
 
 ---
@@ -48,10 +46,10 @@ features:
     Cette plateforme regroupe l'intégralité du syllabus officiel du cours d'<strong>Exploitation des outils informatiques spécifiques</strong> dispensé dans le cadre de la Spécialisation en Préparation Physique à la Haute École Charlemagne. Chaque module se termine par un quiz d'auto-évaluation et une fiche de travail pratique avec zone de dépôt intégrée.
   </p>
   <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.2rem;">
-    <a href="/guide/" style="padding: 8px 16px; border-radius: 8px; background: var(--vp-c-brand-1); color: #fff; font-weight: 600; text-decoration: none;">
+    <a href="/Plateforme-pr-parateur-physique/guide/" style="padding: 8px 16px; border-radius: 8px; background: var(--vp-c-brand-1); color: #fff; font-weight: 600; text-decoration: none;">
       Consulter les modalités d'évaluation →
     </a>
-    <a href="/ressources/documents" style="padding: 8px 16px; border-radius: 8px; background: var(--vp-c-default-soft); border: 1px solid var(--vp-c-divider); font-weight: 600; text-decoration: none;">
+    <a href="/Plateforme-pr-parateur-physique/ressources/documents" style="padding: 8px 16px; border-radius: 8px; background: var(--vp-c-default-soft); border: 1px solid var(--vp-c-divider); font-weight: 600; text-decoration: none;">
       Accéder aux fichiers modèles & données →
     </a>
   </div>

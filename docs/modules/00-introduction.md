@@ -10,6 +10,12 @@ description: "Passer du ressenti à la mesure : comment la data transforme la pr
 
 ## Les données sont en train de révolutionner le monde du sport
 
+<div class="course-image-block">
+  <img src="/images/illustration-intro.jpg" alt="Révolution des données dans le sport moderne" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 1 : Du ressenti subjectif au monitoring objectif et longitudinal de l'athlète.</span>
+</div>
+
+
 
 Pendant longtemps, la préparation physique reposait principalement sur l’observation, l’expérience du préparateur, les tests physiques et le ressenti de l’athlète. Ces éléments restent fondamentaux, mais ils sont désormais complétés par une nouvelle source d’information : la donnée.
 

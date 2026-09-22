@@ -13,6 +13,12 @@ Cet exercice final propose une situation professionnelle intégrative mobilisant
 
 ## 🎯 Situation professionnelle
 
+<div class="course-image-block">
+  <img src="/images/illustration-testing-mission.jpg" alt="Évaluation et testing physique en situation professionnelle" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 9 : Mise en situation professionnelle : de l'audit des données brutes à la restitution stratégique au staff.</span>
+</div>
+
+
 Vous êtes préparateur physique dans un club de sport collectif. L’entraîneur principal vous demande de mettre en place un **système numérique complet** permettant de suivre l’évolution des sportifs au cours d’une période de 6 semaines.
 
 Vous disposez de plusieurs sources de données brutes :

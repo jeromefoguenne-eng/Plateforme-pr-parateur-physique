@@ -19,6 +19,12 @@ L'objectif est donc de passer de la logique « utiliser un outil » à la logiqu
 
 ## Outil 1 — Indice de Hooper
 
+<div class="course-image-block">
+  <img src="/images/illustration-monitoring-wellness.jpg" alt="Questionnaire Wellness et monitoring de la fatigue" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 6 : Monitoring subjectif quotidien (Questionnaire Wellness / Hooper) et suivi de la charge perçue.</span>
+</div>
+
+
 
 L'indice de Hooper permet de suivre quotidiennement l'état de récupération perçu par le sportif. L'outil numérique peut prendre la forme d'un formulaire connecté à un tableur.
 

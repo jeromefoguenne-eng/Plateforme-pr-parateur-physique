@@ -16,6 +16,12 @@ Cette possibilité s’inscrit directement dans les objectifs de l’activité E
 
 ## 8.1. Applications IA et agents IA : de quoi parle-t-on ?
 
+<div class="course-image-block">
+  <img src="/images/illustration-ai-coach.jpg" alt="Intelligence artificielle et agent autonome en préparation physique" class="course-img" loading="lazy" />
+  <span class="img-caption">Figure 8 : L'agent IA comme copilote opérationnel du préparateur physique pour la synthèse de charges et l'aide à la décision.</span>
+</div>
+
+
 
 Une application IA
 
