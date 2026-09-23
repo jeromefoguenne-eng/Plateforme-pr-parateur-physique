@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { userStore, OFFICIAL_EVALUATION_ITEMS, formatDeadlineDisplay } from '../stores/userStore'
+import { userStore, OFFICIAL_EVALUATION_ITEMS, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline } from '../stores/userStore'
 
 const currentUser = computed(() => userStore.currentUser)
 const loginEmail = ref('')
@@ -8,22 +8,48 @@ const regFirst = ref('')
 const regLast = ref('')
 const regEmail = ref('')
 const loginMsg = ref('')
+const isAuthenticating = ref(false)
+const authFeedbackMessage = ref('')
 
 const selectedAiModalFile = ref(null)
 
 onMounted(() => {
   userStore.syncFromStorage()
+  userStore.syncWithCloud().catch(() => {})
 })
 
-function handleLogin() {
+async function handleLogin() {
   loginMsg.value = ''
-  const res = userStore.login(loginEmail.value)
+  const clean = loginEmail.value.trim().toLowerCase()
+  if (!clean) {
+    loginMsg.value = 'Veuillez saisir votre adresse email.'
+    return
+  }
+
+  isAuthenticating.value = true
+  authFeedbackMessage.value = 'Vérification du compte...'
+
+  let u = userStore.users.find(x => x.email.toLowerCase() === clean)
+  if (!u) {
+    authFeedbackMessage.value = 'Recherche en ligne de votre profil (synchronisation multi-appareils)...'
+    u = await userStore.findOrFetchStudent(clean)
+  }
+
+  isAuthenticating.value = false
+  authFeedbackMessage.value = ''
+
+  if (!u) {
+    loginMsg.value = 'Aucun compte trouvé avec cette adresse email. Vérifiez votre saisie ou inscrivez-vous.'
+    return
+  }
+
+  const res = userStore.login(clean)
   if (!res.success) {
     loginMsg.value = res.message || 'Erreur de connexion.'
   }
 }
 
-function handleRegister() {
+async function handleRegister() {
   loginMsg.value = ''
   const res = userStore.register(regFirst.value, regLast.value, regEmail.value)
   if (!res.success) {
@@ -68,6 +94,29 @@ function getFeedbackForExercise(exId) {
   return userStore.getExerciseFeedback(exId)
 }
 
+function getExerciseDeadlineInfo(exId) {
+  return userStore.getExerciseDeadline(exId)
+}
+
+function getExerciseLateAlert(exId) {
+  if (getFileForExercise(exId)) return null
+  const d = userStore.getExerciseDeadline(exId)
+  if (!d || !d.isDefined || !d.deadline) return null
+
+  const deadlineDate = parseDeadline(d.deadline)
+  if (!deadlineDate) return null
+  const now = new Date()
+  if (now <= deadlineDate) return null
+
+  const daysLate = Math.max(1, Math.floor((now.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24)))
+  if (daysLate < 7) return null // Alerte uniquement à partir d'1 semaine de retard (Orange, Bordeaux, Rouge)
+  const alarmInfo = getAlarmLevelInfo(daysLate)
+  return {
+    daysLate,
+    alarmInfo
+  }
+}
+
 function openAiModal(file) {
   selectedAiModalFile.value = file
 }
@@ -78,14 +127,14 @@ function closeAiModal() {
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 1.5rem 0;">
+  <div style="max-width: 920px; margin: 0 auto; padding: 1.5rem 0;">
     <!-- Écran de connexion si non connecté -->
     <div v-if="!currentUser" style="padding: 2.5rem; background: var(--vp-c-bg-soft); border-radius: 16px; border: 1px solid var(--vp-c-divider); box-shadow: var(--tile-shadow);">
       <h2 style="margin-top: 0; text-align: center; color: var(--vp-c-brand-1);">
         👤 Espace Membre Étudiant
       </h2>
       <p style="text-align: center; color: var(--vp-c-text-2); margin-bottom: 2rem;">
-        Identifiez-vous pour accéder à votre suivi personnalisé, retrouver vos travaux déposés et consulter vos évaluations formatives.
+        Identifiez-vous pour retrouver vos travaux, suivre vos échéances et consulter vos évaluations formatives (synchronisé sur tous vos appareils).
       </p>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
@@ -97,10 +146,16 @@ function closeAiModal() {
             v-model="loginEmail" 
             type="email" 
             placeholder="lucas.mercier@student.hech.be" 
+            @keyup.enter="handleLogin"
             style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg-soft); color: inherit; box-sizing: border-box; margin-bottom: 1rem;" 
           />
-          <button @click="handleLogin" style="width: 100%; padding: 10px; background: var(--vp-c-brand-1); color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
-            Se connecter
+
+          <div v-if="authFeedbackMessage" class="auth-sync-status">
+            🔄 {{ authFeedbackMessage }}
+          </div>
+
+          <button @click="handleLogin" :disabled="isAuthenticating" style="width: 100%; padding: 10px; background: var(--vp-c-brand-1); color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: opacity 0.2s;">
+            {{ isAuthenticating ? 'Vérification...' : 'Accéder à mon espace →' }}
           </button>
         </div>
 
@@ -130,7 +185,7 @@ function closeAiModal() {
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.5rem 2rem; background: var(--vp-c-bg-soft); border-radius: 16px; border: 1px solid var(--vp-c-divider); margin-bottom: 2rem;">
         <div>
           <span style="font-size: 0.82rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.5px;">
-            🎓 Étudiant(e) inscrit(e)
+            🎓 Étudiant(e) connecté(e) • Multi-Appareils
           </span>
           <h2 style="margin: 0.2rem 0; font-size: 1.6rem;">
             {{ currentUser.firstName }} {{ currentUser.lastName }}
@@ -159,35 +214,67 @@ function closeAiModal() {
 
       <!-- Liste des travaux et évaluations -->
       <h3 style="margin: 2rem 0 1rem 0; font-size: 1.3rem;">📋 Mes Devoirs & Évaluations Critériées</h3>
-      <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <div style="display: flex; flex-direction: column; gap: 1.2rem;">
         <div 
           v-for="ex in exercisesList" 
           :key="ex.id" 
-          style="padding: 1.2rem 1.5rem; background: var(--vp-c-bg-soft); border-radius: 12px; border: 1px solid var(--vp-c-divider);"
+          style="padding: 1.2rem 1.5rem; background: var(--vp-c-bg-soft); border-radius: 14px; border: 1px solid var(--vp-c-divider);"
         >
           <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.8rem;">
             <div>
               <span style="font-size: 0.8rem; font-weight: 700; color: #0284c7; text-transform: uppercase;">
                 {{ ex.category === 'final' ? '🏆 Mission Finale' : '🏋️‍♂️ Exercice de cours' }}
               </span>
-              <h4 style="margin: 0.2rem 0 0.4rem 0; font-size: 1.1rem;">
+              <h4 style="margin: 0.2rem 0 0.4rem 0; font-size: 1.15rem;">
                 {{ ex.title }}
               </h4>
             </div>
 
             <!-- Badge statut -->
             <div>
-              <span v-if="getFileForExercise(ex.id)" style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: #ecfdf5; color: #047857;">
+              <span v-if="getFileForExercise(ex.id)" style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; background: #ecfdf5; color: #047857;">
                 ✓ Document remis
               </span>
-              <span v-else style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: #fefce8; color: #b45309;">
-                ⏳ En attente
+              <span v-else-if="getExerciseLateAlert(ex.id)" style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: #fff;" :style="{ backgroundColor: getExerciseLateAlert(ex.id).alarmInfo.color }">
+                {{ getExerciseLateAlert(ex.id).alarmInfo.icon }} {{ getExerciseLateAlert(ex.id).alarmInfo.label }} (+{{ getExerciseLateAlert(ex.id).daysLate }}j)
+              </span>
+              <span v-else-if="getExerciseDeadlineInfo(ex.id).isDefined" style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: #fefce8; color: #b45309;">
+                ⏳ À rendre
+              </span>
+              <span v-else style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; background: var(--vp-c-bg); color: var(--vp-c-text-2); border: 1px dashed var(--vp-c-divider);">
+                ⚪ Dépôt libre
+              </span>
+            </div>
+          </div>
+
+          <!-- BANDEAU ÉCHÉANCE PROÉMINENT POUR CHAQUE EXERCICE -->
+          <div class="ex-deadline-bar" :class="{ 'has-deadline': getExerciseDeadlineInfo(ex.id).isDefined, 'is-late': !!getExerciseLateAlert(ex.id), 'no-deadline': !getExerciseDeadlineInfo(ex.id).isDefined }">
+            <div class="edb-left">
+              <span class="edb-icon">📅</span>
+              <span class="edb-label">Date limite de remise :</span>
+              <strong v-if="getExerciseDeadlineInfo(ex.id).isDefined" class="edb-val">
+                {{ getExerciseDeadlineInfo(ex.id).display }}
+              </strong>
+              <span v-else class="edb-val-empty">
+                ⚪ Non fixée par l'enseignant (dépôt libre sans date limite)
+              </span>
+            </div>
+            <div class="edb-right" v-if="getExerciseDeadlineInfo(ex.id).isDefined">
+              <span v-if="getFileForExercise(ex.id)" class="edb-status-ok">✓ Document déposé</span>
+              <span v-else-if="getExerciseLateAlert(ex.id)" class="edb-status-late">
+                🚨 Retard de {{ getExerciseLateAlert(ex.id).daysLate }} jour(s)
+              </span>
+              <span v-else-if="!getExerciseDeadlineInfo(ex.id).isPast" class="edb-status-future">
+                ⏳ Reste {{ getExerciseDeadlineInfo(ex.id).daysDiff }} jour(s)
+              </span>
+              <span v-else class="edb-status-passed">
+                ⏳ Rendu en attente
               </span>
             </div>
           </div>
 
           <!-- Détails du fichier déposé -->
-          <div v-if="getFileForExercise(ex.id)" style="margin-top: 1rem; padding: 0.8rem 1rem; background: var(--vp-c-bg); border-radius: 8px; font-size: 0.9rem;">
+          <div v-if="getFileForExercise(ex.id)" style="margin-top: 0.8rem; padding: 0.8rem 1rem; background: var(--vp-c-bg); border-radius: 8px; font-size: 0.9rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
               <span>
                 📄 <strong>Fichier :</strong> {{ getFileForExercise(ex.id).formattedFileName }}
@@ -335,3 +422,126 @@ function closeAiModal() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.auth-sync-status {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* BANDEAU PROÉMINENT D'ÉCHÉANCE PAR EXERCICE */
+.ex-deadline-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  margin: 0.6rem 0 0.8rem 0;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  transition: all 0.2s ease;
+}
+
+.ex-deadline-bar.has-deadline {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.ex-deadline-bar.has-deadline.is-late {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+}
+
+.ex-deadline-bar.no-deadline {
+  background: var(--vp-c-bg);
+  border: 1px dashed var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+}
+
+.edb-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.edb-icon {
+  font-size: 1.05rem;
+}
+
+.edb-label {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.edb-val {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+html.dark .edb-val {
+  color: #f8fafc;
+}
+
+.edb-val-empty {
+  font-style: italic;
+  color: var(--vp-c-text-2);
+  font-weight: 500;
+}
+
+.edb-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.edb-status-ok {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.edb-status-late {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #c2410c;
+  background: #ffedd5;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.edb-status-future {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.edb-status-passed {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+</style>

@@ -43,8 +43,39 @@ const teacherFeedback = computed(() => {
 
 const deadlineInfo = computed(() => {
   const d = userStore.getExerciseDeadline(props.exerciseId)
-  if (!d || !d.isDefined || !d.deadline) return { isDefined: false, display: 'Non fixée' }
-  return { isDefined: true, display: formatDeadlineDisplay(d.deadline), label: d.label }
+  if (!d || !d.isDefined || !d.deadline) {
+    return {
+      isDefined: false,
+      deadline: '',
+      display: 'Non fixée',
+      label: ''
+    }
+  }
+  return {
+    isDefined: true,
+    deadline: d.deadline,
+    display: formatDeadlineDisplay(d.deadline),
+    label: d.label || ''
+  }
+})
+
+const lateAlert = computed(() => {
+  if (attachedFile.value) return null
+  const d = userStore.getExerciseDeadline(props.exerciseId)
+  if (!d || !d.isDefined || !d.deadline) return null
+
+  const deadlineDate = parseDeadline(d.deadline)
+  if (!deadlineDate) return null
+  const now = new Date()
+  if (now <= deadlineDate) return null
+
+  const daysLate = Math.max(1, Math.floor((now.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24)))
+  if (daysLate < 7) return null // Alerte uniquement à partir d'1 semaine de retard (Orange, Bordeaux, Rouge)
+  const alarmInfo = getAlarmLevelInfo(daysLate)
+  return {
+    daysLate,
+    alarmInfo
+  }
 })
 
 const isDone = computed(() => {
@@ -122,17 +153,21 @@ async function handleFileUpload() {
       {{ description }}
     </p>
 
-    <!-- Statut et échéance -->
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.2rem; font-size: 0.9rem;">
-      <span style="padding: 4px 10px; border-radius: 6px; background: var(--vp-c-bg); border: 1px solid var(--vp-c-divider);">
-        📅 Échéance : <strong>{{ deadlineInfo.display }}</strong>
-      </span>
-      <span v-if="isDone" style="padding: 4px 10px; border-radius: 6px; background: #ecfdf5; color: #047857; font-weight: 600;">
-        ✓ Devoir remis
-      </span>
-      <span v-else style="padding: 4px 10px; border-radius: 6px; background: #fefce8; color: #b45309; font-weight: 600;">
-        ⏳ En attente de dépôt
-      </span>
+    <!-- BANDEAU ÉCHÉANCE & STATUT TOUJOURS VISIBLE -->
+    <div class="box-deadline-strip" :class="{ 'is-overdue': !!lateAlert, 'no-deadline': !deadlineInfo.isDefined }">
+      <div class="bds-left">
+        <span class="bds-icon">📅</span>
+        <span class="bds-label">Date limite de remise :</span>
+        <strong v-if="deadlineInfo.isDefined" class="bds-date">{{ deadlineInfo.display }}</strong>
+        <span v-else class="bds-date-empty">⚪ Non fixée par l'enseignant (dépôt libre)</span>
+      </div>
+      <div class="bds-right">
+        <span v-if="attachedFile" class="bds-badge-ok">✓ Document remis</span>
+        <span v-else-if="lateAlert" class="bds-badge-late" :style="{ backgroundColor: lateAlert.alarmInfo.color }">
+          {{ lateAlert.alarmInfo.icon }} {{ lateAlert.alarmInfo.label }} (+{{ lateAlert.daysLate }}j)
+        </span>
+        <span v-else-if="deadlineInfo.isDefined" class="bds-badge-pending">⏳ À rendre</span>
+      </div>
     </div>
 
     <!-- Identification si non connecté -->
@@ -149,7 +184,7 @@ async function handleFileUpload() {
     <div style="background: var(--vp-c-bg); padding: 1.2rem; border-radius: 10px; margin-bottom: 1.2rem;">
       <h4 style="margin: 0 0 0.6rem 0; font-size: 1.05rem;">📎 Déposer votre fichier (.xlsx, .docx, .pdf)</h4>
       <p style="font-size: 0.88rem; color: var(--vp-c-text-2); margin-bottom: 0.8rem;">
-        Le fichier sera automatiquement renommé selon la nomenclature officielle (ex: <code>NOM_Prenom_{{ exerciseId }}.ext</code>) et pré-évalué par l'IA.
+        Le fichier sera automatiquement renommé selon la nomenclature officielle (ex: <code>NOM_Prenom_{{ exerciseId }}.ext</code>), sauvegardé et pré-évalué par l'IA.
       </p>
 
       <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
@@ -168,6 +203,7 @@ async function handleFileUpload() {
         <p style="margin: 0; font-size: 0.92rem;">
           📄 <strong>Fichier actuellement enregistré :</strong> {{ attachedFile.formattedFileName }}
           <span style="color: var(--vp-c-text-2); font-size: 0.8rem;">({{ (attachedFile.fileSize / 1024).toFixed(1) }} Ko, remis le {{ attachedFile.submittedAt }})</span>
+          <span v-if="attachedFile.driveSynced" style="margin-left: 8px; color: #10b981; font-weight: 600;">☁️ Google Drive</span>
         </p>
       </div>
     </div>
@@ -198,3 +234,93 @@ async function handleFileUpload() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.box-deadline-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1.2rem;
+  border-radius: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: 0.86rem;
+  color: #166534;
+}
+
+.box-deadline-strip.is-overdue {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.box-deadline-strip.no-deadline {
+  background: var(--vp-c-bg);
+  border: 1px dashed var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+}
+
+.bds-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.bds-icon {
+  font-size: 1rem;
+}
+
+.bds-label {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.bds-date {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+html.dark .bds-date {
+  color: #f8fafc;
+}
+
+.bds-date-empty {
+  font-style: italic;
+  color: var(--vp-c-text-2);
+}
+
+.bds-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bds-badge-ok {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.bds-badge-late {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.bds-badge-pending {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+</style>

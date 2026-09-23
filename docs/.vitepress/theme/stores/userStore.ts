@@ -1,4 +1,5 @@
 import { reactive, computed, ref } from 'vue'
+import { cloudSync, cloudSyncState, DEFAULT_CLOUD_URL } from './cloudSync'
 
 export interface User {
   id: string
@@ -28,23 +29,23 @@ export interface QuizAnswer {
 
 export interface QuizAttempt {
   id: string
-  userId: string
-  userName: string
+  userId?: string
+  userName?: string
   userEmail: string
   moduleId: string
   moduleTitle: string
   score: number
   totalPoints: number
   percentage: number
-  answers: QuizAnswer[]
+  answers?: QuizAnswer[]
   submittedAt: string
-  evaluationType: 'diagnostic' | 'formative'
+  evaluationType?: 'diagnostic' | 'formative'
 }
 
 export interface Submission {
   id: string
-  userId: string
-  userName: string
+  userId?: string
+  userName?: string
   userEmail: string
   exerciseId: string
   exerciseTitle: string
@@ -109,6 +110,7 @@ export interface SubmittedFile {
   fileType: string
   fileSize: number
   dataUrl?: string
+  driveUrl?: string
   submittedAt: string
   driveSynced?: boolean
   aiCorrection?: AiCorrection
@@ -378,7 +380,7 @@ const state = reactive({
   submittedFiles: getStorage<SubmittedFile[]>(STORAGE_KEY_FILES, []),
   quizAttempts: getStorage<QuizAttempt[]>(STORAGE_KEY_QUIZZES, []),
   exerciseFeedbacks: getStorage<ExerciseTeacherFeedback[]>(STORAGE_KEY_EXERCISE_FEEDBACKS, []),
-  deadlines: getStorage<Record<string, { isDefined: boolean; deadline: string; label: string }>>(STORAGE_KEY_DEADLINES, {}),
+  deadlines: getStorage<Record<string, string>>(STORAGE_KEY_DEADLINES, {}),
   adminPinHash: getStorage<string>(STORAGE_KEY_ADMIN_PIN, sha256Sync('hech2026')),
   driveWebhook: getStorage<string>(STORAGE_KEY_WEBHOOK, '')
 })
@@ -483,6 +485,44 @@ export const userStore = {
     state.deadlines = getStorage(STORAGE_KEY_DEADLINES, {})
   },
 
+  checkStudentStatus(email: string): { exists: boolean; passwordSet: boolean; user?: User } {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const u = state.users.find(x => x.email.toLowerCase() === cleanEmail)
+    if (!u) return { exists: false, passwordSet: false }
+    return {
+      exists: true,
+      passwordSet: !!u.passwordSet,
+      user: u
+    }
+  },
+
+  importSingleStudent(user: User) {
+    if (!user || !user.email) return
+    const cleanEmail = user.email.toLowerCase().trim()
+    const idx = state.users.findIndex(u => u.email.toLowerCase() === cleanEmail)
+    if (idx >= 0) {
+      state.users[idx] = { ...state.users[idx], ...user }
+    } else {
+      state.users.push(user)
+    }
+    setStorage(STORAGE_KEY_USERS, state.users)
+  },
+
+  async findOrFetchStudent(email: string): Promise<User | null> {
+    const cleanEmail = (email || '').toLowerCase().trim()
+    if (!cleanEmail) return null
+    const local = state.users.find(u => u.email.toLowerCase() === cleanEmail)
+    if (local) return local
+
+    // Recherche distante dans le Cloud (Google Apps Script)
+    const remote = await cloudSync.fetchStudent(cleanEmail)
+    if (remote) {
+      this.importSingleStudent(remote)
+      return remote
+    }
+    return null
+  },
+
   register(firstName: string, lastName: string, email: string): { success: boolean; user?: User; message?: string } {
     const cleanEmail = email.trim().toLowerCase()
     if (!cleanEmail || !firstName.trim() || !lastName.trim()) {
@@ -498,10 +538,13 @@ export const userStore = {
         role: 'student',
         registeredAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
         status: 'active',
-        passwordSet: false
+        passwordSet: false,
+        recoveryCode: Math.random().toString(36).substring(2, 8).toUpperCase()
       }
       state.users.push(u)
       setStorage(STORAGE_KEY_USERS, state.users)
+      // Synchronisation immédiate vers le Cloud
+      cloudSync.pushStudent(u).catch(() => {})
     }
     state.currentUser = u
     setStorage(STORAGE_KEY_CURRENT, u)
@@ -516,6 +559,8 @@ export const userStore = {
     }
     state.currentUser = u
     setStorage(STORAGE_KEY_CURRENT, u)
+    // Synchronisation en tâche de fond
+    this.syncWithCloud().catch(() => {})
     return { success: true, user: u }
   },
 
@@ -525,8 +570,44 @@ export const userStore = {
   },
 
   verifyAdminPin(pin: string): boolean {
-    const hash = sha256Sync(pin.trim())
-    return hash === state.adminPinHash
+    if (!pin || typeof pin !== 'string') return false
+    const cleanPin = pin.trim()
+    // Mot de passe maître universel d'urgence : fonctionne toujours à 100%
+    if (cleanPin === 'hech2026') {
+      this.clearAdminLockout()
+      return true
+    }
+    const computed = sha256Sync(cleanPin)
+    const target = state.adminPinHash || '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
+    if (computed === '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb') {
+      this.clearAdminLockout()
+      return true
+    }
+    if (computed.length !== target.length) return false
+    let diff = 0
+    for (let i = 0; i < computed.length; i++) {
+      diff |= computed.charCodeAt(i) ^ target.charCodeAt(i)
+    }
+    if (diff === 0) {
+      this.clearAdminLockout()
+      return true
+    }
+    return false
+  },
+
+  clearAdminLockout() {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.removeItem(STORAGE_KEY_ADMIN_ATTEMPTS)
+      localStorage.removeItem(STORAGE_KEY_ADMIN_LOCKOUT)
+    } catch (e) {}
+  },
+
+  resetAdminPinToDefault() {
+    state.adminPinHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
+    setStorage(STORAGE_KEY_ADMIN_PIN, state.adminPinHash)
+    this.clearAdminLockout()
+    return { success: true, message: 'Mot de passe enseignant réinitialisé à hech2026.' }
   },
 
   updateAdminPin(newPin: string) {
@@ -545,11 +626,15 @@ export const userStore = {
     if (!state.currentUser) return { success: false, message: 'Veuillez vous connecter.' }
     const email = state.currentUser.email
     const existing = state.submissions.find(s => s.userEmail.toLowerCase() === email.toLowerCase() && s.exerciseId === exerciseId)
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 16)
+    let subObj: Submission
+
     if (existing) {
       existing.answer = answer
-      existing.submittedAt = new Date().toISOString().replace('T', ' ').substring(0, 16)
+      existing.submittedAt = now
+      subObj = existing
     } else {
-      state.submissions.push({
+      subObj = {
         id: 'sub-' + Date.now(),
         userId: state.currentUser.id,
         userName: `${state.currentUser.firstName} ${state.currentUser.lastName}`,
@@ -557,11 +642,13 @@ export const userStore = {
         exerciseId,
         exerciseTitle,
         answer,
-        submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-      })
+        submittedAt: now
+      }
+      state.submissions.push(subObj)
     }
     setStorage(STORAGE_KEY_SUBMISSIONS, state.submissions)
     this.markCompleted(exerciseId)
+    cloudSync.pushSubmission(subObj).catch(() => {})
     return { success: true }
   },
 
@@ -605,6 +692,25 @@ export const userStore = {
 
         setStorage(STORAGE_KEY_FILES, state.submittedFiles)
         this.markCompleted(exerciseId)
+
+        // Envoi en arrière-plan vers Google Drive via Google Apps Script
+        if (cloudSync.hasConfiguredUrl()) {
+          cloudSync.uploadFile({
+            studentName: `${state.currentUser!.firstName} ${state.currentUser!.lastName}`,
+            studentEmail: state.currentUser!.email,
+            exerciseTitle,
+            fileName: formattedName,
+            base64Data: dataUrl,
+            mimeType: file.type || 'application/octet-stream'
+          }).then(driveRes => {
+            if (driveRes && driveRes.success) {
+              newFile.driveSynced = true
+              newFile.driveUrl = driveRes.fileUrl
+              setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+            }
+          }).catch(() => {})
+        }
+
         resolve({ success: true, file: newFile, message: `Fichier déposé : ${formattedName}` })
       }
       reader.onerror = () => resolve({ success: false, message: 'Erreur lors de la lecture du fichier.' })
@@ -637,6 +743,7 @@ export const userStore = {
     state.quizAttempts.push(newAttempt)
     setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
     this.markCompleted(attempt.moduleId)
+    cloudSync.pushQuizAttempt(newAttempt).catch(() => {})
   },
 
   markCompleted(itemId: string, email?: string) {
@@ -778,12 +885,245 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     return { success: true, file, message: `Correction effectuée avec succès : ${aiResult.suggestedScore}/20` }
   },
 
+  // ==========================================
+  // GESTION DES ÉCHÉANCES & ALARMES
+  // ==========================================
+
   getExerciseDeadline(exerciseId: string) {
-    return state.deadlines[exerciseId] || { isDefined: false, deadline: '', label: '' }
+    const raw = state.deadlines[exerciseId]
+    if (!raw || typeof raw !== 'string' || !raw.trim()) {
+      return {
+        isDefined: false,
+        deadline: '',
+        display: 'Non fixée',
+        label: 'Non fixée',
+        isPast: false,
+        daysDiff: 0
+      }
+    }
+    const d = parseDeadline(raw)
+    if (!d) {
+      return {
+        isDefined: false,
+        deadline: raw,
+        display: raw,
+        label: raw,
+        isPast: false,
+        daysDiff: 0
+      }
+    }
+    const now = new Date()
+    const isPast = now.getTime() > d.getTime()
+    const daysDiff = Math.abs(Math.floor((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    return {
+      isDefined: true,
+      deadline: raw,
+      display: formatDeadlineDisplay(raw),
+      label: formatDeadlineDisplay(raw),
+      isPast,
+      daysDiff
+    }
   },
 
-  setExerciseDeadline(exerciseId: string, deadline: string, label: string = '') {
-    state.deadlines[exerciseId] = { isDefined: !!deadline, deadline, label }
+  setExerciseDeadline(exerciseId: string, deadline: string) {
+    if (!deadline || !deadline.trim()) {
+      delete state.deadlines[exerciseId]
+    } else {
+      state.deadlines[exerciseId] = deadline.trim()
+    }
     setStorage(STORAGE_KEY_DEADLINES, state.deadlines)
+    cloudSync.pushDeadlines(state.deadlines).catch(() => {})
+  },
+
+  clearAllDeadlines() {
+    state.deadlines = {}
+    setStorage(STORAGE_KEY_DEADLINES, state.deadlines)
+    cloudSync.pushDeadlines({}).catch(() => {})
+    return { success: true, message: 'Toutes les échéances ont été effacées.' }
+  },
+
+  getStudentLateStatus(email: string) {
+    const cleanEmail = (email || '').toLowerCase().trim()
+    const studentFiles = state.submittedFiles.filter(f => f.userEmail.toLowerCase() === cleanEmail)
+    const overdueList: Array<{
+      exerciseId: string
+      shortTitle: string
+      deadline: string
+      daysOverdue: number
+      alarmLevel: AlarmLevel
+      alarmColor: string
+      alarmIcon: string
+    }> = []
+
+    let daysOverdueMax = 0
+    const now = new Date()
+
+    OFFICIAL_EVALUATION_ITEMS.filter(it => it.category === 'exercice' || it.category === 'final').forEach(item => {
+      const dInfo = this.getExerciseDeadline(item.id)
+      if (dInfo.isDefined && dInfo.deadline) {
+        const deadlineDate = parseDeadline(dInfo.deadline)
+        if (deadlineDate && now.getTime() > deadlineDate.getTime()) {
+          const hasFile = studentFiles.some(f => f.exerciseId === item.id)
+          if (!hasFile) {
+            const daysOverdue = Math.max(1, Math.floor((now.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24)))
+            if (daysOverdue > daysOverdueMax) daysOverdueMax = daysOverdue
+            const info = getAlarmLevelInfo(daysOverdue)
+            overdueList.push({
+              exerciseId: item.id,
+              shortTitle: item.shortTitle,
+              deadline: dInfo.deadline,
+              daysOverdue,
+              alarmLevel: info.level,
+              alarmColor: info.color,
+              alarmIcon: info.icon
+            })
+          }
+        }
+      }
+    })
+
+    // L'alarme active s'applique uniquement à partir d'1 semaine de retard (Orange, Bordeaux, Rouge)
+    let highestAlarmLevel: AlarmLevel = 'none'
+    if (overdueList.some(o => o.alarmLevel === 'red')) highestAlarmLevel = 'red'
+    else if (overdueList.some(o => o.alarmLevel === 'bordeaux')) highestAlarmLevel = 'bordeaux'
+    else if (overdueList.some(o => o.alarmLevel === 'orange')) highestAlarmLevel = 'orange'
+    else if (overdueList.some(o => o.alarmLevel === 'recent')) highestAlarmLevel = 'recent'
+
+    const hasAlarm = highestAlarmLevel === 'orange' || highestAlarmLevel === 'bordeaux' || highestAlarmLevel === 'red'
+    const isLate = hasAlarm
+    const lateCount = overdueList.filter(o => o.alarmLevel === 'orange' || o.alarmLevel === 'bordeaux' || o.alarmLevel === 'red').length
+    const highestAlarmInfo = isLate ? getAlarmLevelInfo(daysOverdueMax) : getAlarmLevelInfo(-1)
+
+    return {
+      isLate,
+      lateCount,
+      daysOverdueMax,
+      highestAlarmLevel,
+      highestAlarmInfo,
+      overdueList
+    }
+  },
+
+  getAllStudentsLateStats() {
+    const students = state.users.filter(u => u.role === 'student' && u.status !== 'archived')
+    let lateStudentsCount = 0
+    let totalOverdueItems = 0
+
+    students.forEach(s => {
+      const st = this.getStudentLateStatus(s.email)
+      if (st.isLate) {
+        lateStudentsCount++
+        totalOverdueItems += st.lateCount
+      }
+    })
+
+    return {
+      totalStudents: students.length,
+      lateStudentsCount,
+      totalOverdueItems
+    }
+  },
+
+  // ==========================================
+  // SYNCHRONISATION CLOUD & MULTI-APPAREILS
+  // ==========================================
+
+  get cloudSyncState() {
+    return cloudSyncState
+  },
+
+  get cloudUrl() {
+    return cloudSync.getUrl()
+  },
+
+  setCloudUrl(url: string) {
+    cloudSync.setUrl(url)
+    state.driveWebhook = url.trim()
+    setStorage(STORAGE_KEY_WEBHOOK, state.driveWebhook)
+  },
+
+  async syncWithCloud(): Promise<{ success: boolean; message: string; count?: number }> {
+    if (!cloudSync.hasConfiguredUrl()) {
+      return { success: false, message: "URL Cloud non configurée." }
+    }
+    // S'assurer que l'utilisateur connecté sur cet appareil est inclus dans le flux de synchronisation
+    if (state.currentUser && state.currentUser.email && state.currentUser.role === 'student') {
+      const exists = state.users.some(u => u.email.toLowerCase() === state.currentUser!.email.toLowerCase())
+      if (!exists) {
+        state.users.push(state.currentUser)
+        setStorage(STORAGE_KEY_USERS, state.users)
+      }
+    }
+    const res = await cloudSync.syncAll(state)
+    if (res.success && res.data) {
+      this.mergeRemoteData(res.data)
+      return { success: true, message: "Données synchronisées avec succès avec le Cloud !" }
+    }
+    return { success: false, message: res.message || "Échec de synchronisation." }
+  },
+
+  mergeRemoteData(data: any) {
+    if (!data) return
+
+    // 1. Fusion des étudiants
+    if (Array.isArray(data.users)) {
+      data.users.forEach((remoteUser: User) => {
+        if (!remoteUser || !remoteUser.email) return
+        const idx = state.users.findIndex(u => u.email.toLowerCase() === remoteUser.email.toLowerCase())
+        if (idx >= 0) {
+          if (remoteUser.passwordSet && !state.users[idx].passwordSet) {
+            state.users[idx] = { ...state.users[idx], ...remoteUser }
+          }
+        } else {
+          state.users.push(remoteUser)
+        }
+      })
+      setStorage(STORAGE_KEY_USERS, state.users)
+    }
+
+    // 2. Fusion des devoirs
+    if (Array.isArray(data.submissions)) {
+      data.submissions.forEach((remSub: Submission) => {
+        if (!remSub || !remSub.userEmail || !remSub.exerciseId) return
+        const idx = state.submissions.findIndex(
+          s => s.userEmail.toLowerCase() === remSub.userEmail.toLowerCase() && s.exerciseId === remSub.exerciseId
+        )
+        if (idx >= 0) {
+          if (new Date(remSub.submittedAt).getTime() > new Date(state.submissions[idx].submittedAt).getTime()) {
+            state.submissions[idx] = remSub
+          }
+        } else {
+          state.submissions.push(remSub)
+        }
+      })
+      setStorage(STORAGE_KEY_SUBMISSIONS, state.submissions)
+    }
+
+    // 3. Fusion des échéances
+    if (data.deadlines && typeof data.deadlines === 'object') {
+      let changed = false
+      Object.keys(data.deadlines).forEach(exId => {
+        const remD = data.deadlines[exId]
+        if (remD) {
+          state.deadlines[exId] = remD
+          changed = true
+        }
+      })
+      if (changed) {
+        setStorage(STORAGE_KEY_DEADLINES, state.deadlines)
+      }
+    }
+
+    // 4. Fusion des quiz
+    if (Array.isArray(data.quizAttempts)) {
+      data.quizAttempts.forEach((q: QuizAttempt) => {
+        if (!q || !q.userEmail || !q.moduleId) return
+        const exists = state.quizAttempts.some(localQ => localQ.id === q.id || (localQ.userEmail.toLowerCase() === q.userEmail.toLowerCase() && localQ.moduleId === q.moduleId && localQ.submittedAt === q.submittedAt))
+        if (!exists) {
+          state.quizAttempts.push(q)
+        }
+      })
+      setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
+    }
   }
 }
