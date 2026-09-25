@@ -16,7 +16,7 @@
  * 4. Cliquez sur "Déployer" (bouton bleu en haut à droite) > "Nouveau déploiement"
  * 5. Type : Cliquez sur l'engrenage > sélectionnez "Application Web"
  * 6. Configuration :
- *    - Description : "Version 1.0 Production"
+ *    - Description : "Version 2.0 Production"
  *    - Exécuter en tant que : "Moi" (votre compte Google)
  *    - Qui a accès : "Tout le monde" (Anyone)
  * 7. Cliquez sur "Déployer", autorisez l'accès Google, puis copiez l'URL générée
@@ -89,31 +89,38 @@ function doPost(e) {
       return createJsonResponse({ status: "success", user: updatedUser });
     }
 
-    // 5. Sauvegarde d'un devoir / texte d'exercice
+    // 5. Suppression d'un étudiant
+    if (action === 'deleteStudent') {
+      var delEmail = (body.email || '').trim().toLowerCase();
+      deleteStudentFromSheet(delEmail);
+      return createJsonResponse({ status: "success", message: "Étudiant supprimé." });
+    }
+
+    // 6. Sauvegarde d'un devoir / texte d'exercice
     if (action === 'saveSubmission') {
       saveSubmissionToSheet(body.submission);
       return createJsonResponse({ status: "success", message: "Devoir enregistré." });
     }
 
-    // 6. Sauvegarde d'un résultat de Quiz
+    // 7. Sauvegarde d'un résultat de Quiz
     if (action === 'saveQuizAttempt') {
       saveQuizToSheet(body.quizAttempt);
       return createJsonResponse({ status: "success", message: "Quiz enregistré." });
     }
 
-    // 7. Sauvegarde des échéances
+    // 8. Sauvegarde des échéances
     if (action === 'saveDeadlines') {
       saveDeadlinesToSheet(body.deadlines);
       return createJsonResponse({ status: "success", message: "Échéances synchronisées." });
     }
 
-    // 8. Sauvegarde d'une évaluation / note de l'enseignant
+    // 9. Sauvegarde d'une évaluation / note de l'enseignant
     if (action === 'saveEvaluation') {
       saveEvaluationToSheet(body.email, body.evaluation);
       return createJsonResponse({ status: "success", message: "Évaluation synchronisée." });
     }
 
-    // 9. Dépôt de fichier binaire (Word, Excel, PDF) vers Google Drive
+    // 10. Dépôt de fichier binaire (Word, Excel, PDF) vers Google Drive
     if (action === 'uploadFile') {
       var fileResult = saveFileToDrive(body);
       return createJsonResponse(fileResult);
@@ -169,7 +176,7 @@ function initSheetTabs(ss) {
 function setupSheetHeader(sheet, sheetName) {
   var headers = [];
   if (sheetName === "Étudiants") {
-    headers = ["ID", "Prénom", "Nom", "Email", "Rôle", "Date Inscription", "Mot de passe hash/flag", "Code Récupération"];
+    headers = ["ID", "Prénom", "Nom", "Email", "Rôle", "Date Inscription", "Mot de passe hash/flag", "Code Récupération", "Mot de passe clair"];
   } else if (sheetName === "Soumissions") {
     headers = ["ID", "Email Étudiant", "Nom Étudiant", "Exercice ID", "Titre Exercice", "Réponse / Document", "Date de remise"];
   } else if (sheetName === "Quiz") {
@@ -217,7 +224,8 @@ function getStudentByEmail(email) {
         role: row[4] || 'student',
         registeredAt: row[5],
         passwordSet: row[6] === true || row[6] === 'true' || row[6] === 'YES',
-        recoveryCode: row[7] || ''
+        recoveryCode: row[7] || '',
+        password: row[8] || ''
       };
     }
   }
@@ -244,20 +252,23 @@ function saveOrUpdateStudent(user) {
     }
   }
 
-  var pwdFlag = (user.passwordSet === true || user.passwordSet === 'true') ? 'YES' : 'NO';
+  var pwdFlag = (user.passwordSet === true || user.passwordSet === 'true' || !!user.password) ? 'YES' : 'NO';
 
   if (rowIndex > 0) {
     sheet.getRange(rowIndex, 2).setValue(user.firstName || '');
     sheet.getRange(rowIndex, 3).setValue(user.lastName || '');
-    if (user.passwordSet !== undefined) {
+    if (user.passwordSet !== undefined || user.password) {
       sheet.getRange(rowIndex, 7).setValue(pwdFlag);
     }
     if (user.recoveryCode) {
       sheet.getRange(rowIndex, 8).setValue(user.recoveryCode);
     }
+    if (user.password) {
+      sheet.getRange(rowIndex, 9).setValue(user.password);
+    }
     return user;
   } else {
-    var newId = user.id || ('u_' + Date.now());
+    var newId = user.id || ('usr_' + Date.now());
     sheet.appendRow([
       newId,
       user.firstName || '',
@@ -266,9 +277,60 @@ function saveOrUpdateStudent(user) {
       user.role || 'student',
       user.registeredAt || new Date().toISOString(),
       pwdFlag,
-      user.recoveryCode || ''
+      user.recoveryCode || '',
+      user.password || ''
     ]);
     return user;
+  }
+}
+
+function deleteStudentFromSheet(email) {
+  if (!email) return;
+  var ss = getOrCreateSpreadsheet();
+  var cleanEmail = email.trim().toLowerCase();
+
+  // Supprimer de la feuille Étudiants
+  var userSheet = ss.getSheetByName("Étudiants");
+  if (userSheet) {
+    var data = userSheet.getDataRange().getValues();
+    for (var i = data.length - 1; i >= 1; i--) {
+      if ((data[i][3] || '').toString().trim().toLowerCase() === cleanEmail) {
+        userSheet.deleteRow(i + 1);
+      }
+    }
+  }
+
+  // Supprimer des soumissions
+  var subSheet = ss.getSheetByName("Soumissions");
+  if (subSheet) {
+    var sData = subSheet.getDataRange().getValues();
+    for (var j = sData.length - 1; j >= 1; j--) {
+      if ((sData[j][1] || '').toString().trim().toLowerCase() === cleanEmail) {
+        subSheet.deleteRow(j + 1);
+      }
+    }
+  }
+
+  // Supprimer des quiz
+  var qSheet = ss.getSheetByName("Quiz");
+  if (qSheet) {
+    var qData = qSheet.getDataRange().getValues();
+    for (var k = qData.length - 1; k >= 1; k--) {
+      if ((qData[k][1] || '').toString().trim().toLowerCase() === cleanEmail) {
+        qSheet.deleteRow(k + 1);
+      }
+    }
+  }
+
+  // Supprimer des évaluations
+  var evSheet = ss.getSheetByName("Évaluations");
+  if (evSheet) {
+    var evData = evSheet.getDataRange().getValues();
+    for (var l = evData.length - 1; l >= 1; l--) {
+      if ((evData[l][0] || '').toString().trim().toLowerCase() === cleanEmail) {
+        evSheet.deleteRow(l + 1);
+      }
+    }
   }
 }
 
@@ -297,7 +359,7 @@ function saveSubmissionToSheet(sub) {
     }
   }
 
-  var answerStr = typeof sub.answer === 'string' ? sub.answer : JSON.stringify(sub.answer || '');
+  var answerStr = typeof sub.answer === 'string' ? sub.answer : (sub.content || JSON.stringify(sub.answer || ''));
 
   if (rowIndex > 0) {
     sheet.getRange(rowIndex, 6).setValue(answerStr);
@@ -360,9 +422,13 @@ function saveDeadlinesToSheet(deadlines) {
   var rows = [];
   var now = new Date().toISOString();
   Object.keys(deadlines).forEach(function(exId) {
-    var val = deadlines[exId];
-    if (val) {
-      rows.push([exId, val, '', now]);
+    var item = deadlines[exId];
+    if (item) {
+      var dVal = typeof item === 'string' ? item : (item.deadline || item.dueDate || '');
+      var lVal = typeof item === 'string' ? '' : (item.deadlineLabel || item.label || '');
+      if (dVal && dVal.trim()) {
+        rows.push([exId, dVal.trim(), lVal.trim(), now]);
+      }
     }
   });
 
@@ -407,17 +473,28 @@ function saveEvaluationToSheet(email, evalData) {
 }
 
 // -------------------------------------------------------------------------
-// TÉLÉVERSEMENT GOOGLE DRIVE
+// TÉLÉVERSEMENT GOOGLE DRIVE (AVEC SOUS-DOSSIERS PAR ÉTUDIANT)
 // -------------------------------------------------------------------------
 
 function saveFileToDrive(filePayload) {
   try {
     var folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
-    var targetFolder;
+    var rootFolder;
     if (folders.hasNext()) {
-      targetFolder = folders.next();
+      rootFolder = folders.next();
     } else {
-      targetFolder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
+      rootFolder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
+    }
+
+    // Sous-dossier par étudiant (ex: MERCIER_Lucas)
+    var studentName = filePayload.studentName || (filePayload.studentEmail ? filePayload.studentEmail.split('@')[0] : 'Etudiant');
+    var safeStudentFolder = studentName.replace(/[<>:"/\\|?*]/g, '_').trim();
+    var subFolders = rootFolder.getFoldersByName(safeStudentFolder);
+    var targetFolder;
+    if (subFolders.hasNext()) {
+      targetFolder = subFolders.next();
+    } else {
+      targetFolder = rootFolder.createFolder(safeStudentFolder);
     }
 
     var base64 = filePayload.base64Data;
@@ -438,7 +515,7 @@ function saveFileToDrive(filePayload) {
 
     sheet.appendRow([
       new Date().toISOString(),
-      filePayload.studentName || '',
+      studentName,
       filePayload.studentEmail || '',
       filePayload.exerciseTitle || '',
       file.getName(),
@@ -487,7 +564,8 @@ function getFullDataFromSheet() {
           role: r[4] || 'student',
           registeredAt: r[5],
           passwordSet: r[6] === true || r[6] === 'true' || r[6] === 'YES',
-          recoveryCode: r[7] || ''
+          recoveryCode: r[7] || '',
+          password: r[8] || ''
         });
       }
     }
@@ -542,7 +620,10 @@ function getFullDataFromSheet() {
     for (var l = 1; l < deadData.length; l++) {
       var d = deadData[l];
       if (d[0] && d[1]) {
-        result.deadlines[d[0]] = d[1];
+        result.deadlines[d[0]] = {
+          deadline: d[1],
+          deadlineLabel: d[2] || ''
+        };
       }
     }
   }

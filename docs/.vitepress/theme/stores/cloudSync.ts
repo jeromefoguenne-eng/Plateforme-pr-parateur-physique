@@ -211,6 +211,19 @@ export class CloudSync {
   }
 
   /**
+   * Supprime un étudiant distant (Google Sheet)
+   */
+  async deleteStudent(email: string): Promise<boolean> {
+    if (!this.hasConfiguredUrl() || !email) return false
+    try {
+      await this.postJson({ action: 'deleteStudent', email: email.trim().toLowerCase() })
+      return true
+    } catch (e) {
+      return false
+    }
+  }
+
+  /**
    * Envoie une soumission d'exercice rédigée
    */
   async pushSubmission(submission: any): Promise<boolean> {

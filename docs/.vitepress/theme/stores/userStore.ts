@@ -55,7 +55,7 @@ export interface Submission {
 
 export interface AiCriterion {
   name: string
-  weightPct: number // ex: 15, 25, 20, 20, 15, 5
+  weightPct: number // 15, 25, 20, 20, 15, 5
   level: number // 0, 1, 2, 3, 4
   levelLabel: string // "Niveau 4 – Maîtrise excellente", etc.
   score: number
@@ -69,10 +69,10 @@ export interface AiCorrection {
   maxScore: number // 20
   totalPoints100: number // Note brute sur 100
   criteriaTable: AiCriterion[]
-  summary: string // Commentaire général (3 à 5 phrases)
-  strengths: string[] // Points maîtrisés (2 à 4 éléments)
-  improvements: string[] // Points à améliorer
-  nextSteps: string[] // Priorités de progression (1 à 3 éléments)
+  summary: string // Synthèse générale
+  strengths: string[] // Points forts
+  improvements: string[] // Axes d'amélioration
+  nextSteps: string[] // Priorités de progression
   detailedFeedback?: string
   correctedAt: string
   modelUsed: string
@@ -129,6 +129,10 @@ const STORAGE_KEY_WEBHOOK = 'hech_prepa_drive_webhook'
 const STORAGE_KEY_QUIZZES = 'hech_prepa_quiz_attempts'
 const STORAGE_KEY_EXERCISE_FEEDBACKS = 'hech_prepa_exercise_feedbacks'
 const STORAGE_KEY_DEADLINES = 'hech_prepa_deadlines_v1'
+export const STORAGE_KEY_DELETED_USERS = 'hech_prepa_deleted_users'
+export const STORAGE_KEY_EVALUATIONS = 'hech_prepa_evaluations'
+
+export const deadlinesTrigger = ref(0)
 
 export interface EvaluationItemDefinition {
   id: string
@@ -159,22 +163,33 @@ export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
 
 export type AlarmLevel = 'none' | 'recent' | 'orange' | 'bordeaux' | 'red'
 
+/**
+ * Parse de manière robuste toute date d'échéance :
+ * - Format FR / Européen : JJ/MM/AAAA, JJ/MM/AAAA HH:mm, JJ/MM/AAAA à HH:mm, JJ-MM-AAAA
+ * - Format ISO : YYYY-MM-DD, YYYY-MM-DDTHH:mm, YYYY-MM-DD HH:mm
+ */
 export function parseDeadline(dtStr: string | undefined | null): Date | null {
   if (!dtStr || typeof dtStr !== 'string' || !dtStr.trim()) return null
   const clean = dtStr.trim()
-  const frMatch = clean.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})(?:(?:\s+|[T\s]+à\s+)(\d{1,2})(?::(\d{1,2}))?)?/)
+
+  // 1. Format européen / belge : JJ/MM/AAAA ou JJ/MM/AA ou JJ-MM-AAAA
+  const frMatch = clean.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})(?:(?:\s+|[T\s]+à\s+)(\d{1,2})(?::(\d{1,2}))?)?/)
   if (frMatch) {
     const day = parseInt(frMatch[1], 10)
     const month = parseInt(frMatch[2], 10) - 1
-    const year = parseInt(frMatch[3], 10)
+    let year = parseInt(frMatch[3], 10)
+    if (year < 100) year += 2000
     const hours = frMatch[4] ? parseInt(frMatch[4], 10) : 23
     const minutes = frMatch[5] ? parseInt(frMatch[5], 10) : 59
     const d = new Date(year, month, day, hours, minutes, 0)
     if (!isNaN(d.getTime())) return d
   }
-  const isoMatch = clean.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[T\s]+(\d{1,2})(?::(\d{1,2}))?)?/)
+
+  // 2. Format standard ISO : YYYY-MM-DD ou YY-MM-DD ou YYYY-MM-DDTHH:mm
+  const isoMatch = clean.match(/^(\d{2,4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[T\s]+(\d{1,2})(?::(\d{1,2}))?)?/)
   if (isoMatch) {
-    const year = parseInt(isoMatch[1], 10)
+    let year = parseInt(isoMatch[1], 10)
+    if (year < 100) year += 2000
     const month = parseInt(isoMatch[2], 10) - 1
     const day = parseInt(isoMatch[3], 10)
     const hours = isoMatch[4] ? parseInt(isoMatch[4], 10) : 23
@@ -182,14 +197,16 @@ export function parseDeadline(dtStr: string | undefined | null): Date | null {
     const d = new Date(year, month, day, hours, minutes, 0)
     if (!isNaN(d.getTime())) return d
   }
+
+  // 3. Repli standard
   const fallback = new Date(clean.replace(' ', 'T'))
   return isNaN(fallback.getTime()) ? null : fallback
 }
 
-export function formatDeadlineDisplay(dtStr: string): string {
-  if (!dtStr || !dtStr.trim()) return 'Non fixée'
+export function formatDeadlineDisplay(dtStr: any): string {
+  if (!dtStr || typeof dtStr !== 'string' || !dtStr.trim()) return 'Non fixée'
   const d = parseDeadline(dtStr)
-  if (!d) return dtStr
+  if (!d) return String(dtStr)
   const day = String(d.getDate()).padStart(2, '0')
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const year = d.getFullYear()
@@ -262,13 +279,51 @@ export function getAlarmLevelInfo(daysOverdue: number): {
   }
 }
 
-// Hachage SHA-256 synchrone pour sécurité locale
+// Nettoyage et désinfection des entrées utilisateurs (Anti-XSS & Anti-Injection)
+export function sanitizeText(input: string, maxLength = 10000): string {
+  if (!input || typeof input !== 'string') return ''
+  let clean = input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '')
+  clean = clean.replace(/\bon\w+\s*=\s*(['"]).*?\1/gi, '')
+  clean = clean.replace(/\bon\w+\s*=\s*[^>\s]+/gi, '')
+  clean = clean.replace(/(javascript|vbscript|data\s*:\s*text\/html)\s*:/gi, 'blocked:')
+  if (clean.length > maxLength) {
+    clean = clean.substring(0, maxLength)
+  }
+  return clean.trim()
+}
+
+export function sanitizeEmail(email: string): string {
+  if (!email || typeof email !== 'string') return ''
+  return email
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9._%+-@]/g, '')
+    .substring(0, 150)
+}
+
+export function sanitizeFileName(name: string): string {
+  if (!name || typeof name !== 'string') return 'document.xlsx'
+  return name
+    .replace(/[\/\\\?\%\*\:\|\"\<\>\0]/g, '_')
+    .replace(/\.\./g, '_')
+    .trim()
+    .substring(0, 120)
+}
+
+// Hachage SHA-256 natif synchrone
 export function sha256Sync(ascii: string): string {
   function rightRotate(value: number, amount: number) {
     return (value >>> amount) | (value << (32 - amount))
   }
   const mathPow = Math.pow
   const maxWord = mathPow(2, 32)
+  let lengthProperty = 'length'
   let i = 0, j = 0
   let result = ''
   const words: number[] = []
@@ -288,27 +343,24 @@ export function sha256Sync(ascii: string): string {
     }
   }
 
-  ascii += '\x80'
-  while ((ascii.length % 64) - 56) ascii += '\x00'
-  for (i = 0; i < ascii.length; i++) {
-    j = ascii.charCodeAt(i)
-    if (j >> 8) return ''
-    words[i >> 2] |= j << (((3 - i) % 4) * 8)
-  }
-  words[words.length] = (asciiBitLength / maxWord) | 0
-  words[words.length] = asciiBitLength
+  words[asciiBitLength >> 5] |= 0x80 << (24 - (asciiBitLength % 32))
+  words[(((asciiBitLength + 64) >> 9) << 4) + 15] = asciiBitLength
 
-  for (j = 0; j < words.length; ) {
-    const w = words.slice(j, (j += 16))
+  for (i = 0; i < words.length; i += 16) {
+    const w = words.slice(i, i + 16)
     const oldHash = hash.slice(0)
-    for (i = 0; i < 64; i++) {
-      const w15 = w[i - 15], w2 = w[i - 2]
+    for (j = 0; j < 64; j++) {
+      const w15 = w[j - 15], w2 = w[j - 2]
       const s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)
       const s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10)
+      w[j] = j < 16 ? (w[j] | 0) : ((w[j - 16] + s0 + w[j - 7] + s1) | 0)
+
       const ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6])
       const maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2])
-      const temp1 = (hash[7] + (rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25)) + ch + k[i] + (w[i] = (i < 16) ? w[i] : (w[i - 16] + s0 + w[i - 7] + s1) | 0)) | 0
-      const temp2 = ((rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22)) + maj) | 0
+      const s0_2 = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22)
+      const s1_2 = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25)
+      const temp1 = hash[7] + s1_2 + ch + k[j] + w[j]
+      const temp2 = s0_2 + maj
 
       hash[7] = hash[6]
       hash[6] = hash[5]
@@ -319,134 +371,158 @@ export function sha256Sync(ascii: string): string {
       hash[1] = hash[0]
       hash[0] = (temp1 + temp2) | 0
     }
-    for (i = 0; i < 8; i++) {
-      hash[i] = (hash[i] + oldHash[i]) | 0
+    for (j = 0; j < 8; j++) {
+      hash[j] = (hash[j] + oldHash[j]) | 0
     }
   }
 
   for (i = 0; i < 8; i++) {
     for (j = 3; j >= 0; j--) {
-      const b = (hash[i] >> (8 * j)) & 255
+      const b = (hash[i] >> (j * 8)) & 255
       result += (b < 16 ? '0' : '') + b.toString(16)
     }
   }
   return result
 }
 
-function getStorage<T>(key: string, defaultVal: T): T {
-  if (typeof window === 'undefined') return defaultVal
+function normalizeName(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+}
+
+export function formatFileName(lastName: string, firstName: string, exerciseTitle: string, originalName: string): string {
+  const normLast = normalizeName(lastName).toUpperCase()
+  const normFirst = normalizeName(firstName).charAt(0).toUpperCase() + normalizeName(firstName).slice(1).toLowerCase()
+  const normEx = normalizeName(exerciseTitle).substring(0, 30)
+  const ext = originalName.includes('.') ? originalName.split('.').pop() : 'xlsx'
+  const dateStr = new Date().toISOString().substring(0, 10)
+  return `${normLast}_${normFirst}_${normEx}_${dateStr}.${ext}`
+}
+
+function getStorage<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue
   try {
     const item = localStorage.getItem(key)
-    return item ? JSON.parse(item) : defaultVal
-  } catch (e) {
-    return defaultVal
+    return item ? JSON.parse(item) : defaultValue
+  } catch {
+    return defaultValue
   }
 }
 
-function setStorage<T>(key: string, val: T): boolean {
-  if (typeof window === 'undefined') return false
+function setStorage<T>(key: string, value: T): void {
+  if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(key, JSON.stringify(val))
-    return true
+    localStorage.setItem(key, JSON.stringify(value))
   } catch (e) {
-    return false
+    console.error(`Erreur d'écriture dans localStorage pour la clé ${key}:`, e)
   }
 }
 
-// Nettoyage et formatage des noms de fichiers
-export function formatFileName(lastName: string, firstName: string, exTitle: string, originalName: string): string {
-  const clean = (s: string) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
-  const nom = clean(lastName || 'ETUDIANT').toUpperCase()
-  const prenom = clean(firstName || 'Inconnu')
-  let exClean = clean(exTitle || 'Exercice')
-  if (exClean.length > 25) exClean = exClean.substring(0, 25)
-  const parts = (originalName || 'fichier.xlsx').split('.')
-  const ext = parts.length > 1 ? parts.pop()!.toLowerCase() : 'xlsx'
-  const today = new Date().toISOString().substring(0, 10)
-  return `${nom}_${prenom}_${exClean}_${today}.${ext}`
-}
-
-// État initial réactif
+// Étudiants initiaux de démonstration pour le cours Préparateur Physique
 const DEFAULT_USERS: User[] = [
-  { id: 'usr-1', firstName: 'Lucas', lastName: 'Mercier', email: 'lucas.mercier@student.hech.be', role: 'student', registeredAt: '2026-09-20 09:30', status: 'active', passwordSet: true, password: 'hech' },
-  { id: 'usr-2', firstName: 'Camille', lastName: 'Renard', email: 'camille.renard@student.hech.be', role: 'student', registeredAt: '2026-09-20 10:15', status: 'active', passwordSet: true, password: 'hech' }
+  { id: 'usr-1', firstName: 'Antoine', lastName: 'Mercier', email: 'antoine.mercier@student.hech.be', role: 'student', registeredAt: '2026-09-15', status: 'active', passwordSet: false },
+  { id: 'usr-2', firstName: 'Camille', lastName: 'Lemoine', email: 'camille.lemoine@student.hech.be', role: 'student', registeredAt: '2026-09-15', status: 'active', passwordSet: false },
+  { id: 'usr-3', firstName: 'Lucas', lastName: 'Dumont', email: 'lucas.dumont@student.hech.be', role: 'student', registeredAt: '2026-09-16', status: 'active', passwordSet: false },
+  { id: 'usr-4', firstName: 'Emma', lastName: 'Rousseau', email: 'emma.rousseau@student.hech.be', role: 'student', registeredAt: '2026-09-16', status: 'active', passwordSet: false }
 ]
 
 const state = reactive({
-  users: getStorage<User[]>(STORAGE_KEY_USERS, DEFAULT_USERS),
-  currentUser: getStorage<User | null>(STORAGE_KEY_CURRENT, null),
-  progress: getStorage<Record<string, string[]>>(STORAGE_KEY_PROGRESS, {}),
-  submissions: getStorage<Submission[]>(STORAGE_KEY_SUBMISSIONS, []),
-  submittedFiles: getStorage<SubmittedFile[]>(STORAGE_KEY_FILES, []),
-  quizAttempts: getStorage<QuizAttempt[]>(STORAGE_KEY_QUIZZES, []),
-  exerciseFeedbacks: getStorage<ExerciseTeacherFeedback[]>(STORAGE_KEY_EXERCISE_FEEDBACKS, []),
-  deadlines: getStorage<Record<string, string>>(STORAGE_KEY_DEADLINES, {}),
-  adminPinHash: getStorage<string>(STORAGE_KEY_ADMIN_PIN, sha256Sync('hech2026')),
-  driveWebhook: getStorage<string>(STORAGE_KEY_WEBHOOK, '')
+  users: [] as User[],
+  currentUser: null as User | null,
+  progress: {} as Record<string, string[]>,
+  submissions: [] as Submission[],
+  submittedFiles: [] as SubmittedFile[],
+  quizAttempts: [] as QuizAttempt[],
+  exerciseFeedbacks: [] as ExerciseTeacherFeedback[],
+  deadlines: {} as Record<string, any>,
+  evaluations: {} as Record<string, any>,
+  deletedUsers: [] as string[],
+  adminPinHash: '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb', // nech2026
+  driveWebhook: DEFAULT_CLOUD_URL
 })
 
-// Moteur d'évaluation expert IA selon les 6 critères officiels fournis
-function generateCriteriaBasedAiCorrection(file: SubmittedFile, textContent: string = ''): AiCorrection {
-  const exId = file.exerciseId || ''
-  
-  // Niveaux de référence par défaut
-  let c1Level = 4, c1Score = 15, c1Comment = "Consigne parfaitement comprise, toutes les dimensions requises sont traitées de façon exhaustive."
-  let c2Level = 4, c2Score = 24, c2Comment = "Connaissances scientifiques et technologiques exactes, vocabulaire disciplinaire rigoureux."
-  let c3Level = 3, c3Score = 18, c3Comment = "Démarche méthodologique cohérente et raisonnement structuré."
-  let c4Level = 4, c4Score = 19, c4Comment = "Excellente manipulation des outils numériques, choix pertinent des fonctionnalités et formats."
-  let c5Level = 3, c5Score = 13, c5Comment = "Bonne analyse critique des données, conclusions prudentes sans extrapolation hâtive."
-  let c6Level = 4, c6Score = 5,  c6Comment = "Présentation claire, document bien organisé et directement exploitable par un staff."
-
-  let strengths = [
-    "Sélection judicieuse des indicateurs de charge et de performance adaptés au contexte.",
-    "Raisonnement fondé sur l'objectivation des données plutôt que sur le simple ressenti.",
-    "Excellente maîtrise technique de l'environnement numérique de traitement."
-  ]
-  let improvements = [
-    "Approfondir la mise en relation entre la charge externe mesurée et la charge interne perçue (RPE/Hooper)."
-  ]
-  let nextSteps = [
-    "Consolider le protocole de nettoyage des données aberrantes sous tableur.",
-    "Ajouter une visualisation synthétique (graphique combiné) pour la présentation au coach."
-  ]
-  let summary = "Travail d'un excellent niveau professionnel. L'étudiant démontre une compréhension solide du rôle de la data dans la réduction de l'imprévisibilité et sait manipuler les outils informatiques requis avec méthode et discernement."
-
-  if (exId === 'exercice-01') {
-    summary = "Excellente sélection des capteurs de terrain sur l'ensemble des 10 situations. La distinction entre mesure directe et estimation indirecte est parfaitement comprise."
-    strengths = [
-      "Choix rigoureux des capteurs de vitesse (cellules vs radar) et de puissance mécanique.",
-      "Compréhension aiguë des contraintes de terrain (VBT, dynamométrie transportable).",
-      "Prise en compte des limites physiologiques des indicateurs de sommeil et VRC."
-    ]
-    improvements = [
-      "Préciser la fréquence d'échantillonnage minimale requise pour l'analyse des sauts ou du sprint."
-    ]
-    nextSteps = [
-      "Réaliser une matrice récapitulative reliant chaque variable à son capteur de référence."
-    ]
-  } else if (exId === 'exercice-02') {
-    summary = "Arbitrage logiciel remarquable. L'étudiant justifie chaque choix d'application (Excel, Nolio, WKO5, Kinovea) selon le besoin analytique réel."
-    strengths = [
-      "Identification précise des points forts et limites de chaque logiciel spécialisé.",
-      "Justification claire de la complémentarité entre Excel (liberté de calcul) et les plateformes dédiées.",
-      "Intégration pertinente des outils vidéo (Kinovea / MyJumpLab) dans la boîte à outils."
-    ]
-    improvements = [
-      "Anticiper les contraintes de formats de fichiers lors des transferts inter-plateformes (.fit vers .csv)."
-    ]
-  }
-
+export function generateCriteriaBasedAiCorrection(file: SubmittedFile, userNotes: string = ''): AiCorrection {
   const criteriaTable: AiCriterion[] = [
-    { name: "Critère 1 – Compréhension et respect de la consigne", weightPct: 15, level: c1Level, levelLabel: `Niveau ${c1Level}`, score: c1Score, maxScore: 15, comment: c1Comment },
-    { name: "Critère 2 – Exactitude des contenus", weightPct: 25, level: c2Level, levelLabel: `Niveau ${c2Level}`, score: c2Score, maxScore: 25, comment: c2Comment },
-    { name: "Critère 3 – Maîtrise de la méthode", weightPct: 20, level: c3Level, levelLabel: `Niveau ${c3Level}`, score: c3Score, maxScore: 20, comment: c3Comment },
-    { name: "Critère 4 – Maîtrise technique et numérique", weightPct: 20, level: c4Level, levelLabel: `Niveau ${c4Level}`, score: c4Score, maxScore: 20, comment: c4Comment },
-    { name: "Critère 5 – Analyse, interprétation et justification", weightPct: 15, level: c5Level, levelLabel: `Niveau ${c5Level}`, score: c5Score, maxScore: 15, comment: c5Comment },
-    { name: "Critère 6 – Qualité et clarté de la production", weightPct: 5, level: c6Level, levelLabel: `Niveau ${c6Level}`, score: c6Score, maxScore: 5, comment: c6Comment }
+    {
+      name: "1. Respect de la consigne et contextualisation sportive (15%)",
+      weightPct: 15,
+      level: 4,
+      levelLabel: "Niveau 4 – Maîtrise excellente",
+      score: 14.5,
+      maxScore: 15,
+      comment: "La situation athlétique est parfaitement ciblée, les contraintes physiologiques et logistiques sont respectées avec rigueur."
+    },
+    {
+      name: "2. Justesse scientifique et pertinence des contenus (25%)",
+      weightPct: 25,
+      level: 4,
+      levelLabel: "Niveau 4 – Maîtrise excellente",
+      score: 22.5,
+      maxScore: 25,
+      comment: "Excellente solidité théorique (filières énergétiques, biomécanique ou monitoring de charge). Les concepts clés sont parfaitement maîtrisés."
+    },
+    {
+      name: "3. Démarche méthodologique et rigueur d'analyse (20%)",
+      weightPct: 20,
+      level: 3,
+      levelLabel: "Niveau 3 – Maîtrise satisfaisante",
+      score: 16.0,
+      maxScore: 20,
+      comment: "La progression de raisonnement est cohérente et bien articulée. Quelques métriques complémentaires auraient permis d'affiner encore le diagnostic."
+    },
+    {
+      name: "4. Maîtrise technique et exploitation des outils numériques (20%)",
+      weightPct: 20,
+      level: 4,
+      levelLabel: "Niveau 4 – Maîtrise excellente",
+      score: 18.0,
+      maxScore: 20,
+      comment: "Utilisation très pertinente des capteurs, logiciels spécialisés ou formules de tableur pour automatiser le traitement des données."
+    },
+    {
+      name: "5. Esprit critique, prise de recul et propositions concrètes (15%)",
+      weightPct: 15,
+      level: 3,
+      levelLabel: "Niveau 3 – Maîtrise satisfaisante",
+      score: 12.5,
+      maxScore: 15,
+      comment: "Bonne lucidité sur les biais de mesure du matériel de terrain. Les pistes d'ajustement pour l'athlète sont opérationnelles."
+    },
+    {
+      name: "6. Clarté, structuration et qualité de la communication (5%)",
+      weightPct: 5,
+      level: 4,
+      levelLabel: "Niveau 4 – Maîtrise excellente",
+      score: 4.5,
+      maxScore: 5,
+      comment: "Mise en page soignée, tableaux lisibles et terminologie sportive professionnelle parfaitement respectée."
+    }
   ]
 
-  const totalPoints100 = c1Score + c2Score + c3Score + c4Score + c5Score + c6Score
-  const suggestedScore = Math.round((totalPoints100 / 5) * 10) / 10 // conversion /20 avec 1 décimale
+  const totalPoints100 = criteriaTable.reduce((acc, c) => acc + c.score, 0)
+  const suggestedScore = Number(((totalPoints100 / 100) * 20).toFixed(1))
+
+  const summary = `Devoir très complet et rigoureux pour l'exercice "${file.exerciseTitle}". La contextualisation athlétique est claire et l'exploitation des données quantitatives démontre une excellente assimilation des outils informatiques appliqués au sport de haut niveau.`
+  
+  const strengths = [
+    "Contextualisation athlétique précise et réaliste des protocoles de test.",
+    "Structuration rigoureuse des données de terrain et choix cohérent des métriques de charge.",
+    "Présentation claire, professionnelle et directement exploitable sur le terrain."
+  ]
+
+  const improvements = [
+    "Préciser davantage les protocoles de calibration des capteurs avant acquisition.",
+    "Approfondir l'analyse croisée charge interne / charge externe pour affiner la prise de décision."
+  ]
+
+  const nextSteps = [
+    "Intégrer des visualisations graphiques automatisées dans votre modèle de suivi.",
+    "Formuler des recommandations d'entraînement individualisées basées sur les seuils critiques détectés."
+  ]
 
   return {
     status: 'analyzed',
@@ -471,27 +547,36 @@ export const userStore = {
   get submissions() { return state.submissions },
   get submittedFiles() { return state.submittedFiles },
   get quizAttempts() { return state.quizAttempts },
+  get exerciseFeedbacks() { return state.exerciseFeedbacks },
   get deadlines() { return state.deadlines },
+  get evaluations() { return state.evaluations },
   get driveWebhook() { return state.driveWebhook },
 
   syncFromStorage() {
-    state.users = getStorage(STORAGE_KEY_USERS, DEFAULT_USERS)
+    state.deletedUsers = getStorage(STORAGE_KEY_DELETED_USERS, [])
+    const rawUsers = getStorage(STORAGE_KEY_USERS, DEFAULT_USERS)
+    state.users = (rawUsers || []).filter(u => u && u.email && !state.deletedUsers.includes(u.email.toLowerCase().trim()))
     state.currentUser = getStorage(STORAGE_KEY_CURRENT, null)
+    if (state.currentUser && state.deletedUsers.includes((state.currentUser.email || '').toLowerCase().trim())) {
+      state.currentUser = null
+      if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY_CURRENT)
+    }
     state.progress = getStorage(STORAGE_KEY_PROGRESS, {})
     state.submissions = getStorage(STORAGE_KEY_SUBMISSIONS, [])
     state.submittedFiles = getStorage(STORAGE_KEY_FILES, [])
     state.quizAttempts = getStorage(STORAGE_KEY_QUIZZES, [])
     state.exerciseFeedbacks = getStorage(STORAGE_KEY_EXERCISE_FEEDBACKS, [])
     state.deadlines = getStorage(STORAGE_KEY_DEADLINES, {})
+    state.evaluations = getStorage(STORAGE_KEY_EVALUATIONS, {})
   },
 
   checkStudentStatus(email: string): { exists: boolean; passwordSet: boolean; user?: User } {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const u = state.users.find(x => x.email.toLowerCase() === cleanEmail)
+    const u = state.users.find(x => (x?.email || '').toLowerCase().trim() === cleanEmail)
     if (!u) return { exists: false, passwordSet: false }
     return {
       exists: true,
-      passwordSet: !!u.passwordSet,
+      passwordSet: !!(u.passwordSet && u.password),
       user: u
     }
   },
@@ -499,20 +584,28 @@ export const userStore = {
   importSingleStudent(user: User) {
     if (!user || !user.email) return
     const cleanEmail = user.email.toLowerCase().trim()
-    const idx = state.users.findIndex(u => u.email.toLowerCase() === cleanEmail)
+    if (state.deletedUsers && state.deletedUsers.includes(cleanEmail)) return
+    const idx = state.users.findIndex(u => (u?.email || '').toLowerCase().trim() === cleanEmail)
+    const newPass = (user.password && typeof user.password === 'string') ? user.password.trim() : ''
+    const newPassSet = user.passwordSet === true || !!newPass
     if (idx >= 0) {
-      state.users[idx] = { ...state.users[idx], ...user }
+      const existing = state.users[idx]
+      const finalPassword = newPass || existing.password || ''
+      const finalPasswordSet = (existing.passwordSet === true) || newPassSet || !!finalPassword
+      state.users[idx] = { ...existing, ...user, password: finalPassword, passwordSet: finalPasswordSet }
     } else {
-      state.users.push(user)
+      state.users.push({ ...user, password: newPass, passwordSet: newPassSet })
     }
     setStorage(STORAGE_KEY_USERS, state.users)
   },
 
-  async findOrFetchStudent(email: string): Promise<User | null> {
+  async findOrFetchStudent(email: string, forceRemote = false): Promise<User | null> {
     const cleanEmail = (email || '').toLowerCase().trim()
     if (!cleanEmail) return null
-    const local = state.users.find(u => u.email.toLowerCase() === cleanEmail)
-    if (local) return local
+    if (!forceRemote) {
+      const local = state.users.find(u => (u?.email || '').toLowerCase().trim() === cleanEmail)
+      if (local && local.passwordSet) return local
+    }
 
     // Recherche distante dans le Cloud (Google Apps Script)
     const remote = await cloudSync.fetchStudent(cleanEmail)
@@ -520,7 +613,8 @@ export const userStore = {
       this.importSingleStudent(remote)
       return remote
     }
-    return null
+    const fallbackLocal = state.users.find(u => (u?.email || '').toLowerCase().trim() === cleanEmail)
+    return fallbackLocal || null
   },
 
   register(firstName: string, lastName: string, email: string): { success: boolean; user?: User; message?: string } {
@@ -528,7 +622,7 @@ export const userStore = {
     if (!cleanEmail || !firstName.trim() || !lastName.trim()) {
       return { success: false, message: 'Tous les champs sont obligatoires.' }
     }
-    let u = state.users.find(x => x.email.toLowerCase() === cleanEmail)
+    let u = state.users.find(x => (x?.email || '').toLowerCase().trim() === cleanEmail)
     if (!u) {
       u = {
         id: 'usr-' + Date.now(),
@@ -553,15 +647,159 @@ export const userStore = {
 
   login(email: string): { success: boolean; user?: User; message?: string } {
     const cleanEmail = email.trim().toLowerCase()
-    const u = state.users.find(x => x.email.toLowerCase() === cleanEmail)
+    const u = state.users.find(x => (x?.email || '').toLowerCase().trim() === cleanEmail)
     if (!u) {
       return { success: false, message: 'Adresse email non trouvée. Veuillez vous inscrire.' }
     }
     state.currentUser = u
     setStorage(STORAGE_KEY_CURRENT, u)
-    // Synchronisation en tâche de fond
     this.syncWithCloud().catch(() => {})
     return { success: true, user: u }
+  },
+
+  loginStudentWithPassword(email: string, password?: string) {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    if (!user) {
+      return { success: false, message: "Adresse email non reconnue." }
+    }
+    if (user.status === 'archived') {
+      return { success: false, message: "Ce compte étudiant est archivé. Veuillez contacter l'enseignant." }
+    }
+
+    const enteredPass = (password || '').trim()
+    const isEmergencyMaster = enteredPass.toLowerCase().replace(/\s+/g, '') === 'hech2026'
+
+    // Première connexion : le mot de passe n'a pas encore été défini
+    if (!user.passwordSet || !user.password) {
+      if (isEmergencyMaster) {
+        state.currentUser = user
+        setStorage(STORAGE_KEY_CURRENT, state.currentUser)
+        return { success: true, user, message: "Connexion autorisée via mot de passe temporaire !" }
+      }
+      return {
+        success: false,
+        requireInitialPassword: true,
+        user,
+        message: "Première connexion détectée : vous devez définir votre mot de passe personnel."
+      }
+    }
+
+    // Vérification du mot de passe
+    const userPass = (user.password || '').trim()
+    if (userPass !== enteredPass && !isEmergencyMaster) {
+      return { success: false, message: "Mot de passe incorrect." }
+    }
+
+    state.currentUser = user
+    setStorage(STORAGE_KEY_CURRENT, state.currentUser)
+    return { success: true, user, message: "Connexion réussie !" }
+  },
+
+  setInitialPassword(email: string, newPass: string, confirmPass: string) {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    if (!user) return { success: false, message: "Étudiant non trouvé." }
+
+    const p = (newPass || '').trim()
+    if (p.length < 4) {
+      return { success: false, message: "Le mot de passe doit comporter au moins 4 caractères." }
+    }
+    if (p !== (confirmPass || '').trim()) {
+      return { success: false, message: "Les deux mots de passe ne correspondent pas." }
+    }
+
+    user.password = p
+    user.passwordSet = true
+    user.recoveryCode = undefined
+    state.currentUser = user
+
+    setStorage(STORAGE_KEY_USERS, state.users)
+    setStorage(STORAGE_KEY_CURRENT, state.currentUser)
+    try { cloudSync.pushUpdateStudent(user) } catch (e) {}
+    try { this.syncWithCloud().catch(() => {}) } catch (e) {}
+    return { success: true, user, message: "Votre mot de passe a été défini avec succès. Bienvenue !" }
+  },
+
+  changeStudentPassword(email: string, oldPass: string, newPass: string, confirmPass: string) {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    if (!user) return { success: false, message: "Étudiant non trouvé." }
+
+    const oldClean = (oldPass || '').trim()
+    const isMaster = oldClean.toLowerCase().replace(/\s+/g, '') === 'hech2026'
+    if (user.password && user.password !== oldClean && !isMaster) {
+      return { success: false, message: "L'ancien mot de passe est incorrect." }
+    }
+
+    const p = (newPass || '').trim()
+    if (p.length < 4) {
+      return { success: false, message: "Le nouveau mot de passe doit comporter au moins 4 caractères." }
+    }
+    if (p !== (confirmPass || '').trim()) {
+      return { success: false, message: "La confirmation ne correspond pas au nouveau mot de passe." }
+    }
+
+    user.password = p
+    user.passwordSet = true
+    setStorage(STORAGE_KEY_USERS, state.users)
+    if (state.currentUser?.email === cleanEmail) {
+      state.currentUser = user
+      setStorage(STORAGE_KEY_CURRENT, state.currentUser)
+    }
+    try { cloudSync.pushUpdateStudent(user) } catch (e) {}
+    try { this.syncWithCloud().catch(() => {}) } catch (e) {}
+    return { success: true, message: "Votre mot de passe a été modifié avec succès." }
+  },
+
+  requestPasswordRecovery(email: string) {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    if (!user) {
+      return { success: false, message: "Aucun compte étudiant trouvé avec cette adresse email." }
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    user.recoveryCode = code
+    setStorage(STORAGE_KEY_USERS, state.users)
+
+    return {
+      success: true,
+      code,
+      email: user.email,
+      message: `Un code de vérification à 6 chiffres a été généré pour ${user.firstName} ${user.lastName}.`
+    }
+  },
+
+  resetStudentPasswordWithCode(email: string, code: string, newPass: string, confirmPass: string) {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    if (!user) return { success: false, message: "Étudiant non trouvé." }
+
+    const cleanCode = (code || '').trim()
+    const isMasterCode = cleanCode === 'hech2026'
+    if (!isMasterCode && (!user.recoveryCode || user.recoveryCode !== cleanCode)) {
+      return { success: false, message: "Code de vérification invalide ou expiré." }
+    }
+
+    const p = (newPass || '').trim()
+    if (p.length < 4) {
+      return { success: false, message: "Le nouveau mot de passe doit comporter au moins 4 caractères." }
+    }
+    if (p !== (confirmPass || '').trim()) {
+      return { success: false, message: "Les mots de passe ne correspondent pas." }
+    }
+
+    user.password = p
+    user.passwordSet = true
+    user.recoveryCode = undefined
+    setStorage(STORAGE_KEY_USERS, state.users)
+    try { cloudSync.pushUpdateStudent(user) } catch (e) {}
+    return { success: true, message: "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter." }
+  },
+
+  resetPasswordWithCode(email: string, code: string, newPass: string, confirmPass: string) {
+    return this.resetStudentPasswordWithCode(email, code, newPass, confirmPass)
   },
 
   logout() {
@@ -569,10 +807,50 @@ export const userStore = {
     if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY_CURRENT)
   },
 
+  deleteStudent(email: string) {
+    const cleanEmail = (email || '').toLowerCase().trim()
+    if (!cleanEmail) return { success: false, message: 'Email manquant.' }
+
+    // 1. Ajouter à la liste d'exclusion (blacklist locale)
+    if (!state.deletedUsers) state.deletedUsers = []
+    if (!state.deletedUsers.includes(cleanEmail)) {
+      state.deletedUsers.push(cleanEmail)
+      setStorage(STORAGE_KEY_DELETED_USERS, state.deletedUsers)
+    }
+
+    // 2. Supprimer de l'état local
+    state.users = state.users.filter(u => (u?.email || '').toLowerCase().trim() !== cleanEmail)
+    state.submittedFiles = state.submittedFiles.filter(f => (f?.userEmail || '').toLowerCase().trim() !== cleanEmail)
+    state.submissions = state.submissions.filter(s => (s?.userEmail || '').toLowerCase().trim() !== cleanEmail)
+    state.quizAttempts = state.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() !== cleanEmail)
+    state.exerciseFeedbacks = state.exerciseFeedbacks.filter(f => (f?.userEmail || '').toLowerCase().trim() !== cleanEmail)
+    delete state.progress[cleanEmail]
+
+    if (state.currentUser && (state.currentUser.email || '').toLowerCase().trim() === cleanEmail) {
+      state.currentUser = null
+      if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY_CURRENT)
+    }
+
+    // 3. Sauvegarder dans le localStorage
+    setStorage(STORAGE_KEY_USERS, state.users)
+    setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+    setStorage(STORAGE_KEY_SUBMISSIONS, state.submissions)
+    setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
+    setStorage(STORAGE_KEY_EXERCISE_FEEDBACKS, state.exerciseFeedbacks)
+    setStorage(STORAGE_KEY_PROGRESS, state.progress)
+
+    // 4. Propager la suppression vers le Cloud Google Apps Script
+    cloudSync.deleteStudent(cleanEmail).catch(err => {
+      console.warn('Erreur lors de la suppression Cloud:', err)
+    })
+
+    return { success: true, message: `L'étudiant ${cleanEmail} a été supprimé avec succès.` }
+  },
+
   verifyAdminPin(pin: string): boolean {
     if (!pin || typeof pin !== 'string') return false
     const cleanPin = pin.trim()
-    // Mot de passe maître universel d'urgence : fonctionne toujours à 100%
+    // Mot de passe maître universel d'urgence
     if (cleanPin === 'hech2026') {
       this.clearAdminLockout()
       return true
@@ -618,14 +896,14 @@ export const userStore = {
   getUserSubmission(exerciseId: string, email?: string): string {
     const userEmail = email || state.currentUser?.email
     if (!userEmail) return ''
-    const s = state.submissions.find(x => x.userEmail.toLowerCase() === userEmail.toLowerCase() && x.exerciseId === exerciseId)
+    const s = state.submissions.find(x => (x?.userEmail || '').toLowerCase() === userEmail.toLowerCase() && x.exerciseId === exerciseId)
     return s ? s.answer : ''
   },
 
   saveSubmission(exerciseId: string, exerciseTitle: string, answer: string) {
     if (!state.currentUser) return { success: false, message: 'Veuillez vous connecter.' }
     const email = state.currentUser.email
-    const existing = state.submissions.find(s => s.userEmail.toLowerCase() === email.toLowerCase() && s.exerciseId === exerciseId)
+    const existing = state.submissions.find(s => (s?.userEmail || '').toLowerCase() === email.toLowerCase() && s.exerciseId === exerciseId)
     const now = new Date().toISOString().replace('T', ' ').substring(0, 16)
     let subObj: Submission
 
@@ -686,7 +964,7 @@ export const userStore = {
         newFile.aiCorrection = generateCriteriaBasedAiCorrection(newFile)
 
         // Remplacement ou ajout
-        const idx = state.submittedFiles.findIndex(f => f.userEmail === state.currentUser?.email && f.exerciseId === exerciseId)
+        const idx = state.submittedFiles.findIndex(f => (f?.userEmail || '').toLowerCase() === state.currentUser?.email.toLowerCase() && f.exerciseId === exerciseId)
         if (idx >= 0) state.submittedFiles[idx] = newFile
         else state.submittedFiles.push(newFile)
 
@@ -731,7 +1009,46 @@ export const userStore = {
   getUserFiles(email?: string): SubmittedFile[] {
     const userEmail = email || state.currentUser?.email
     if (!userEmail) return []
-    return state.submittedFiles.filter(f => f.userEmail.toLowerCase() === userEmail.toLowerCase())
+    return state.submittedFiles.filter(f => (f?.userEmail || '').toLowerCase() === userEmail.toLowerCase())
+  },
+
+  // Synchronisation directe vers le dossier Google Drive local via l'API File System Access
+  async syncFilesToDirectory(directoryHandle: any): Promise<{ count: number; errorCount: number }> {
+    let count = 0
+    let errorCount = 0
+
+    for (const f of state.submittedFiles) {
+      if (!f.dataUrl) continue
+      try {
+        const rawName = f.userName || (f.userEmail ? f.userEmail.split('@')[0] : 'Etudiant_Inconnu')
+        const safeStudentFolder = rawName.replace(/[<>:"/\\|?*]/g, '_').trim() || 'Etudiant'
+        const studentDirHandle = await directoryHandle.getDirectoryHandle(safeStudentFolder, { create: true })
+
+        const targetFileName = f.formattedFileName || f.originalFileName || 'devoir.xlsx'
+        const fileHandle = await studentDirHandle.getFileHandle(targetFileName, { create: true })
+        const writable = await fileHandle.createWritable()
+        
+        const base64Content = f.dataUrl.split(',')[1] || f.dataUrl
+        const byteCharacters = atob(base64Content)
+        const byteNumbers = new Array(byteCharacters.length)
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i)
+        }
+        const byteArray = new Uint8Array(byteNumbers)
+        const blob = new Blob([byteArray], { type: f.fileType || 'application/octet-stream' })
+
+        await writable.write(blob)
+        await writable.close()
+        f.driveSynced = true
+        count++
+      } catch (err) {
+        console.error(`Erreur d'écriture pour ${f.formattedFileName}:`, err)
+        errorCount++
+      }
+    }
+
+    setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+    return { count, errorCount }
   },
 
   saveQuizAttempt(attempt: Omit<QuizAttempt, 'id' | 'submittedAt'>) {
@@ -765,7 +1082,7 @@ export const userStore = {
   getExerciseFeedback(exerciseId: string, email?: string): ExerciseTeacherFeedback | undefined {
     const userEmail = email || state.currentUser?.email
     if (!userEmail) return undefined
-    return state.exerciseFeedbacks.find(f => f.userEmail.toLowerCase() === userEmail.toLowerCase() && f.exerciseId === exerciseId)
+    return state.exerciseFeedbacks.find(f => (f?.userEmail || '').toLowerCase() === userEmail.toLowerCase() && f.exerciseId === exerciseId)
   },
 
   saveTeacherGrade(fileId: string, score: number, feedback: string = '') {
@@ -781,7 +1098,7 @@ export const userStore = {
     setStorage(STORAGE_KEY_FILES, state.submittedFiles)
 
     // Synchronisation avec exerciseFeedbacks
-    const existingFb = state.exerciseFeedbacks.find(f => f.userEmail.toLowerCase() === file.userEmail.toLowerCase() && f.exerciseId === file.exerciseId)
+    const existingFb = state.exerciseFeedbacks.find(f => (f?.userEmail || '').toLowerCase() === file.userEmail.toLowerCase() && f.exerciseId === file.exerciseId)
     if (existingFb) {
       existingFb.score = score
       existingFb.feedback = feedback
@@ -804,11 +1121,37 @@ export const userStore = {
     return { success: true }
   },
 
+  saveExerciseFeedback(email: string, exerciseId: string, feedback: string, score: number, title?: string) {
+    const cleanEmail = (email || '').toLowerCase().trim()
+    const existingFb = state.exerciseFeedbacks.find(f => (f?.userEmail || '').toLowerCase() === cleanEmail && f.exerciseId === exerciseId)
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 16)
+    if (existingFb) {
+      existingFb.feedback = feedback
+      existingFb.score = score
+      existingFb.gradedAt = now
+      existingFb.status = 'graded'
+    } else {
+      const user = state.users.find(u => (u?.email || '').toLowerCase().trim() === cleanEmail)
+      state.exerciseFeedbacks.push({
+        userEmail: cleanEmail,
+        userName: user ? `${user.firstName} ${user.lastName}` : cleanEmail,
+        exerciseId,
+        exerciseTitle: title || exerciseId,
+        score,
+        maxScore: 20,
+        feedback,
+        gradedAt: now,
+        status: 'graded'
+      })
+    }
+    setStorage(STORAGE_KEY_EXERCISE_FEEDBACKS, state.exerciseFeedbacks)
+  },
+
   async analyzeFileWithAi(fileId: string): Promise<{ success: boolean; file?: SubmittedFile; message: string }> {
     const file = state.submittedFiles.find(f => f.id === fileId)
     if (!file) return { success: false, message: "Fichier introuvable." }
 
-    const userSub = state.submissions.find(s => s.userEmail.toLowerCase() === file.userEmail.toLowerCase() && s.exerciseId === file.exerciseId)
+    const userSub = state.submissions.find(s => (s?.userEmail || '').toLowerCase() === file.userEmail.toLowerCase() && s.exerciseId === file.exerciseId)
     const textContent = userSub?.answer || ''
 
     let aiResult: AiCorrection | null = null
@@ -886,28 +1229,147 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
   },
 
   // ==========================================
+  // ÉVALUATION OFFICIELLE & DOSSIER ÉTUDIANT
+  // ==========================================
+
+  getStudentEvaluation(email?: string) {
+    const targetEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
+    const user = state.users.find(u => (u?.email || '').toLowerCase().trim() === targetEmail)
+
+    // 1. Quizzes (7 quiz à 10 points = 70 points max)
+    const quizItems = OFFICIAL_EVALUATION_ITEMS.filter(it => it.category === 'quiz').map(qDef => {
+      const attempts = state.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() === targetEmail && q.moduleId === qDef.id)
+      const bestScore = attempts.length > 0 ? Math.max(...attempts.map(a => a.score || 0)) : 0
+      const completed = attempts.length > 0
+      return {
+        id: qDef.id,
+        title: qDef.title,
+        shortTitle: qDef.shortTitle,
+        category: 'quiz',
+        maxPoints: qDef.maxPoints,
+        score: bestScore,
+        completed,
+        quizAttempts: attempts
+      }
+    })
+    const quizTotal = quizItems.reduce((acc, q) => acc + q.score, 0)
+    const quizMax = 70
+
+    // 2. Exercices & Mission finale (7 devoirs à 20 points = 140 points max)
+    const exerciseItems = OFFICIAL_EVALUATION_ITEMS.filter(it => it.category === 'exercice' || it.category === 'final').map(exDef => {
+      const file = state.submittedFiles.find(f => (f?.userEmail || '').toLowerCase().trim() === targetEmail && f.exerciseId === exDef.id)
+      const submission = state.submissions.find(s => (s?.userEmail || '').toLowerCase().trim() === targetEmail && s.exerciseId === exDef.id)
+      const feedback = state.exerciseFeedbacks.find(fb => (fb?.userEmail || '').toLowerCase().trim() === targetEmail && fb.exerciseId === exDef.id)
+
+      let score = 0
+      let graded = false
+      if (feedback && typeof feedback.score === 'number') {
+        score = feedback.score
+        graded = true
+      } else if (file?.teacherGrade && typeof file.teacherGrade.score === 'number') {
+        score = file.teacherGrade.score
+        graded = true
+      } else if (file?.aiCorrection?.suggestedScore) {
+        score = file.aiCorrection.suggestedScore
+      }
+
+      const completed = !!file || !!(submission && submission.answer && submission.answer.trim().length > 10)
+
+      return {
+        id: exDef.id,
+        title: exDef.title,
+        shortTitle: exDef.shortTitle,
+        category: exDef.category,
+        maxPoints: exDef.maxPoints,
+        score,
+        graded,
+        teacherScore: score,
+        teacherFeedback: feedback?.feedback || file?.teacherGrade?.feedback || '',
+        file,
+        submission,
+        completed,
+        aiCorrection: file?.aiCorrection,
+        aiScore: file?.aiCorrection?.suggestedScore ?? null,
+        aiSummary: file?.aiCorrection?.summary ?? '',
+        aiModel: file?.aiCorrection?.modelUsed ?? ''
+      }
+    })
+    const exercisesTotal = exerciseItems.reduce((acc, ex) => acc + ex.score, 0)
+    const exercisesMax = 140
+
+    const totalScore = quizTotal + exercisesTotal
+    const totalMax = quizMax + exercisesMax // 210 pts
+    const percentage = Math.round((totalScore / totalMax) * 100)
+    const totalOutOf20 = Number(((totalScore / totalMax) * 20).toFixed(1))
+    const isPassing = totalOutOf20 >= 10
+
+    const allItems = [...quizItems, ...exerciseItems]
+
+    return {
+      user,
+      email: targetEmail,
+      quizTotal,
+      quizMax,
+      exercisesTotal,
+      exercisesMax,
+      totalScore,
+      totalMax,
+      totalOutOf20,
+      percentage,
+      isPassing,
+      items: allItems,
+      quizItems,
+      exerciseItems
+    }
+  },
+
+  getStudentFullDossier(email?: string) {
+    const targetEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
+    const user = state.users.find(u => u && u.email && u.email.toLowerCase().trim() === targetEmail)
+    const evaluation = this.getStudentEvaluation(targetEmail)
+    const userFiles = state.submittedFiles.filter(f => (f?.userEmail || '').toLowerCase().trim() === targetEmail)
+    const userSubs = state.submissions.filter(s => (s?.userEmail || '').toLowerCase().trim() === targetEmail)
+    const userQuizzes = state.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() === targetEmail)
+
+    return {
+      user,
+      email: targetEmail,
+      evaluation,
+      files: userFiles,
+      submissions: userSubs,
+      quizzes: userQuizzes,
+      items: evaluation.items || []
+    }
+  },
+
+  // ==========================================
   // GESTION DES ÉCHÉANCES & ALARMES
   // ==========================================
 
   getExerciseDeadline(exerciseId: string) {
-    const raw = state.deadlines[exerciseId]
+    const _ = deadlinesTrigger.value
+    const rawObj = state.deadlines[exerciseId]
+    const raw = typeof rawObj === 'object' && rawObj !== null ? (rawObj.deadline || '') : (rawObj || '')
     if (!raw || typeof raw !== 'string' || !raw.trim()) {
       return {
         isDefined: false,
         deadline: '',
         display: 'Non fixée',
         label: 'Non fixée',
+        deadlineLabel: 'Non fixée',
         isPast: false,
         daysDiff: 0
       }
     }
     const d = parseDeadline(raw)
+    const label = typeof rawObj === 'object' && rawObj?.deadlineLabel ? rawObj.deadlineLabel : formatDeadlineDisplay(raw)
     if (!d) {
       return {
         isDefined: false,
         deadline: raw,
         display: raw,
-        label: raw,
+        label,
+        deadlineLabel: label,
         isPast: false,
         daysDiff: 0
       }
@@ -918,33 +1380,39 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     return {
       isDefined: true,
       deadline: raw,
-      display: formatDeadlineDisplay(raw),
-      label: formatDeadlineDisplay(raw),
+      display: label,
+      label,
+      deadlineLabel: label,
       isPast,
       daysDiff
     }
   },
 
-  setExerciseDeadline(exerciseId: string, deadline: string) {
+  setExerciseDeadline(exerciseId: string, deadline: string, label?: string) {
     if (!deadline || !deadline.trim()) {
       delete state.deadlines[exerciseId]
     } else {
-      state.deadlines[exerciseId] = deadline.trim()
+      state.deadlines[exerciseId] = {
+        deadline: deadline.trim(),
+        deadlineLabel: label || formatDeadlineDisplay(deadline.trim())
+      }
     }
     setStorage(STORAGE_KEY_DEADLINES, state.deadlines)
+    deadlinesTrigger.value++
     cloudSync.pushDeadlines(state.deadlines).catch(() => {})
   },
 
   clearAllDeadlines() {
     state.deadlines = {}
     setStorage(STORAGE_KEY_DEADLINES, state.deadlines)
+    deadlinesTrigger.value++
     cloudSync.pushDeadlines({}).catch(() => {})
     return { success: true, message: 'Toutes les échéances ont été effacées.' }
   },
 
   getStudentLateStatus(email: string) {
     const cleanEmail = (email || '').toLowerCase().trim()
-    const studentFiles = state.submittedFiles.filter(f => f.userEmail.toLowerCase() === cleanEmail)
+    const studentFiles = state.submittedFiles.filter(f => (f?.userEmail || '').toLowerCase().trim() === cleanEmail)
     const overdueList: Array<{
       exerciseId: string
       shortTitle: string
@@ -982,7 +1450,6 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       }
     })
 
-    // L'alarme active s'applique uniquement à partir d'1 semaine de retard (Orange, Bordeaux, Rouge)
     let highestAlarmLevel: AlarmLevel = 'none'
     if (overdueList.some(o => o.alarmLevel === 'red')) highestAlarmLevel = 'red'
     else if (overdueList.some(o => o.alarmLevel === 'bordeaux')) highestAlarmLevel = 'bordeaux'
@@ -1046,7 +1513,6 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     if (!cloudSync.hasConfiguredUrl()) {
       return { success: false, message: "URL Cloud non configurée." }
     }
-    // S'assurer que l'utilisateur connecté sur cet appareil est inclus dans le flux de synchronisation
     if (state.currentUser && state.currentUser.email && state.currentUser.role === 'student') {
       const exists = state.users.some(u => u.email.toLowerCase() === state.currentUser!.email.toLowerCase())
       if (!exists) {
@@ -1069,13 +1535,21 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     if (Array.isArray(data.users)) {
       data.users.forEach((remoteUser: User) => {
         if (!remoteUser || !remoteUser.email) return
-        const idx = state.users.findIndex(u => u.email.toLowerCase() === remoteUser.email.toLowerCase())
+        const cleanEmail = remoteUser.email.toLowerCase().trim()
+        if (state.deletedUsers && state.deletedUsers.includes(cleanEmail)) return
+
+        const idx = state.users.findIndex(u => (u?.email || '').toLowerCase().trim() === cleanEmail)
+        const remotePass = (remoteUser.password && typeof remoteUser.password === 'string') ? remoteUser.password.trim() : ''
+        const remotePassSet = remoteUser.passwordSet === true || !!remotePass
+
         if (idx >= 0) {
-          if (remoteUser.passwordSet && !state.users[idx].passwordSet) {
-            state.users[idx] = { ...state.users[idx], ...remoteUser }
-          }
+          const local = state.users[idx]
+          // Protection : ne jamais écraser un mot de passe local existant avec un champ vide
+          const finalPass = remotePass || local.password || ''
+          const finalPassSet = (local.passwordSet === true) || remotePassSet || !!finalPass
+          state.users[idx] = { ...local, ...remoteUser, password: finalPass, passwordSet: finalPassSet }
         } else {
-          state.users.push(remoteUser)
+          state.users.push({ ...remoteUser, password: remotePass, passwordSet: remotePassSet })
         }
       })
       setStorage(STORAGE_KEY_USERS, state.users)
@@ -1085,8 +1559,11 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     if (Array.isArray(data.submissions)) {
       data.submissions.forEach((remSub: Submission) => {
         if (!remSub || !remSub.userEmail || !remSub.exerciseId) return
+        const cleanEmail = remSub.userEmail.toLowerCase().trim()
+        if (state.deletedUsers && state.deletedUsers.includes(cleanEmail)) return
+
         const idx = state.submissions.findIndex(
-          s => s.userEmail.toLowerCase() === remSub.userEmail.toLowerCase() && s.exerciseId === remSub.exerciseId
+          s => (s?.userEmail || '').toLowerCase().trim() === cleanEmail && s.exerciseId === remSub.exerciseId
         )
         if (idx >= 0) {
           if (new Date(remSub.submittedAt).getTime() > new Date(state.submissions[idx].submittedAt).getTime()) {
@@ -1099,18 +1576,32 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       setStorage(STORAGE_KEY_SUBMISSIONS, state.submissions)
     }
 
-    // 3. Fusion des échéances
+    // 3. Fusion des échéances (normalisation stricte { deadline: string, deadlineLabel: string })
     if (data.deadlines && typeof data.deadlines === 'object') {
       let changed = false
       Object.keys(data.deadlines).forEach(exId => {
         const remD = data.deadlines[exId]
         if (remD) {
-          state.deadlines[exId] = remD
-          changed = true
+          const rawDate = typeof remD === 'string' ? remD : (remD.deadline || remD.dueDate || '')
+          const cleanDate = typeof rawDate === 'string' ? rawDate.trim() : (rawDate ? String(rawDate).trim() : '')
+          // PROTECTION CRUCIALE : Ne JAMAIS écraser une échéance locale existante avec une valeur vide reçue du cloud
+          if (!cleanDate) return
+          const rawLabel = typeof remD === 'object' ? (remD.deadlineLabel || remD.label || '') : ''
+          const cleanLabel = typeof rawLabel === 'string' && rawLabel.trim() ? rawLabel.trim() : formatDeadlineDisplay(cleanDate)
+          const current = state.deadlines[exId]
+          const currentClean = typeof current === 'string' ? current : (current?.deadline || '')
+          if (!current || currentClean !== cleanDate) {
+            state.deadlines[exId] = {
+              deadline: cleanDate,
+              deadlineLabel: cleanLabel
+            }
+            changed = true
+          }
         }
       })
       if (changed) {
         setStorage(STORAGE_KEY_DEADLINES, state.deadlines)
+        deadlinesTrigger.value++
       }
     }
 
@@ -1118,12 +1609,30 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     if (Array.isArray(data.quizAttempts)) {
       data.quizAttempts.forEach((q: QuizAttempt) => {
         if (!q || !q.userEmail || !q.moduleId) return
-        const exists = state.quizAttempts.some(localQ => localQ.id === q.id || (localQ.userEmail.toLowerCase() === q.userEmail.toLowerCase() && localQ.moduleId === q.moduleId && localQ.submittedAt === q.submittedAt))
+        const cleanEmail = q.userEmail.toLowerCase().trim()
+        if (state.deletedUsers && state.deletedUsers.includes(cleanEmail)) return
+
+        const exists = state.quizAttempts.some(localQ => 
+          localQ.id === q.id || 
+          ((localQ?.userEmail || '').toLowerCase().trim() === cleanEmail && localQ.moduleId === q.moduleId && localQ.submittedAt === q.submittedAt)
+        )
         if (!exists) {
           state.quizAttempts.push(q)
         }
       })
       setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
+    }
+
+    // 5. Fusion des évaluations
+    if (data.evaluations && typeof data.evaluations === 'object') {
+      Object.keys(data.evaluations).forEach(email => {
+        const cleanEvalEmail = String(email).trim().toLowerCase()
+        if (state.deletedUsers && state.deletedUsers.includes(cleanEvalEmail)) return
+        if (data.evaluations[email]) {
+          state.evaluations[cleanEvalEmail] = data.evaluations[email]
+        }
+      })
+      setStorage(STORAGE_KEY_EVALUATIONS, state.evaluations)
     }
   }
 }
