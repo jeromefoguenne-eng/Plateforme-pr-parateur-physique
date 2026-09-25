@@ -406,6 +406,14 @@ function exportCsv() {
   link.click()
   document.body.removeChild(link)
 }
+
+function handleResetAllStudents() {
+  if (confirm("Voulez-vous réinitialiser entièrement la liste des préparateurs physiques à 0 étudiant pour la rentrée de lundi ?\n\n(Cette action n'impacte en rien la plateforme Didactique M1).")) {
+    userStore.resetAllStudents()
+    closeStudentDossier()
+    alert("La liste des étudiants a été réinitialisée à 0 avec succès.")
+  }
+}
 </script>
 
 <template>
@@ -526,9 +534,14 @@ function exportCsv() {
       <div v-if="adminTab === 'students'">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="margin: 0;">Liste des préparateurs physiques ({{ users.length }})</h3>
-          <button @click="exportCsv" style="padding: 6px 12px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">
-            📥 Exporter le relevé (CSV)
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button @click="handleResetAllStudents" style="padding: 6px 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fecdd3; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;" title="Efface les données résiduelles pour repartir à 0 étudiant">
+              🧹 Vider la liste (0 étudiant)
+            </button>
+            <button @click="exportCsv" style="padding: 6px 12px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">
+              📥 Exporter le relevé (CSV)
+            </button>
+          </div>
         </div>
 
         <div style="overflow-x: auto; background: var(--vp-c-bg-soft); border-radius: 12px; border: 1px solid var(--vp-c-divider);">

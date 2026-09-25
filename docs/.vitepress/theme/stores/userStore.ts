@@ -549,6 +549,23 @@ export const userStore = {
 
   syncFromStorage() {
     state.deletedUsers = getStorage(STORAGE_KEY_DELETED_USERS, [])
+
+    // Purge automatique de sécurité : Élimine les étudiants de Didactique M1 importés par mégarde lors de la sync initiale
+    const hasPurgedM1 = typeof window !== 'undefined' ? localStorage.getItem('hech_prepa_purged_m1_v2') : 'true'
+    if (typeof window !== 'undefined' && !hasPurgedM1) {
+      localStorage.removeItem(STORAGE_KEY_USERS)
+      localStorage.removeItem(STORAGE_KEY_SUBMISSIONS)
+      localStorage.removeItem(STORAGE_KEY_FILES)
+      localStorage.removeItem(STORAGE_KEY_QUIZZES)
+      localStorage.removeItem(STORAGE_KEY_EXERCISE_FEEDBACKS)
+      localStorage.removeItem(STORAGE_KEY_PROGRESS)
+      localStorage.removeItem(STORAGE_KEY_CURRENT)
+      localStorage.removeItem(STORAGE_KEY_EVALUATIONS)
+      localStorage.removeItem('hech_prepa_cloud_url')
+      localStorage.removeItem('hech_prepa_drive_webhook')
+      localStorage.setItem('hech_prepa_purged_m1_v2', 'true')
+    }
+
     const demoEmails = [
       'antoine.mercier@student.hech.be',
       'camille.lemoine@student.hech.be',
@@ -579,6 +596,31 @@ export const userStore = {
     state.exerciseFeedbacks = getStorage(STORAGE_KEY_EXERCISE_FEEDBACKS, [])
     state.deadlines = getStorage(STORAGE_KEY_DEADLINES, {})
     state.evaluations = getStorage(STORAGE_KEY_EVALUATIONS, {})
+  },
+
+  resetAllStudents() {
+    state.users = []
+    state.submissions = []
+    state.submittedFiles = []
+    state.quizAttempts = []
+    state.exerciseFeedbacks = []
+    state.progress = {}
+    state.evaluations = {}
+    state.currentUser = null
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY_USERS)
+      localStorage.removeItem(STORAGE_KEY_SUBMISSIONS)
+      localStorage.removeItem(STORAGE_KEY_FILES)
+      localStorage.removeItem(STORAGE_KEY_QUIZZES)
+      localStorage.removeItem(STORAGE_KEY_EXERCISE_FEEDBACKS)
+      localStorage.removeItem(STORAGE_KEY_PROGRESS)
+      localStorage.removeItem(STORAGE_KEY_CURRENT)
+      localStorage.removeItem(STORAGE_KEY_EVALUATIONS)
+      localStorage.removeItem('hech_prepa_cloud_url')
+      localStorage.removeItem('hech_prepa_drive_webhook')
+      localStorage.setItem('hech_prepa_purged_m1_v2', 'true')
+    }
+    return { success: true, message: "La liste des préparateurs physiques a été réinitialisée à 0." }
   },
 
   checkStudentStatus(email: string): { exists: boolean; passwordSet: boolean; user?: User } {
