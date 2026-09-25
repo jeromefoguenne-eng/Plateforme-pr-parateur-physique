@@ -422,13 +422,8 @@ function setStorage<T>(key: string, value: T): void {
   }
 }
 
-// Étudiants initiaux de démonstration pour le cours Préparateur Physique
-const DEFAULT_USERS: User[] = [
-  { id: 'usr-1', firstName: 'Antoine', lastName: 'Mercier', email: 'antoine.mercier@student.hech.be', role: 'student', registeredAt: '2026-09-15', status: 'active', passwordSet: false },
-  { id: 'usr-2', firstName: 'Camille', lastName: 'Lemoine', email: 'camille.lemoine@student.hech.be', role: 'student', registeredAt: '2026-09-15', status: 'active', passwordSet: false },
-  { id: 'usr-3', firstName: 'Lucas', lastName: 'Dumont', email: 'lucas.dumont@student.hech.be', role: 'student', registeredAt: '2026-09-16', status: 'active', passwordSet: false },
-  { id: 'usr-4', firstName: 'Emma', lastName: 'Rousseau', email: 'emma.rousseau@student.hech.be', role: 'student', registeredAt: '2026-09-16', status: 'active', passwordSet: false }
-]
+// Liste initiale des étudiants pour le cours Préparateur Physique (vide pour la rentrée)
+const DEFAULT_USERS: User[] = []
 
 const state = reactive({
   users: [] as User[],
@@ -554,10 +549,26 @@ export const userStore = {
 
   syncFromStorage() {
     state.deletedUsers = getStorage(STORAGE_KEY_DELETED_USERS, [])
+    const demoEmails = [
+      'antoine.mercier@student.hech.be',
+      'camille.lemoine@student.hech.be',
+      'lucas.dumont@student.hech.be',
+      'emma.rousseau@student.hech.be'
+    ]
     const rawUsers = getStorage(STORAGE_KEY_USERS, DEFAULT_USERS)
-    state.users = (rawUsers || []).filter(u => u && u.email && !state.deletedUsers.includes(u.email.toLowerCase().trim()))
+    state.users = (rawUsers || []).filter(u => 
+      u && 
+      u.email && 
+      !demoEmails.includes(u.email.toLowerCase().trim()) &&
+      !state.deletedUsers.includes(u.email.toLowerCase().trim())
+    )
+    setStorage(STORAGE_KEY_USERS, state.users)
+
     state.currentUser = getStorage(STORAGE_KEY_CURRENT, null)
-    if (state.currentUser && state.deletedUsers.includes((state.currentUser.email || '').toLowerCase().trim())) {
+    if (state.currentUser && (
+      demoEmails.includes((state.currentUser.email || '').toLowerCase().trim()) || 
+      state.deletedUsers.includes((state.currentUser.email || '').toLowerCase().trim())
+    )) {
       state.currentUser = null
       if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY_CURRENT)
     }

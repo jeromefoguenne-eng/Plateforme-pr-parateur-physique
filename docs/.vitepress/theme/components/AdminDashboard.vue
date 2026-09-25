@@ -605,6 +605,11 @@ function exportCsv() {
                   </button>
                 </td>
               </tr>
+              <tr v-if="users.length === 0">
+                <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--vp-c-text-2);">
+                  Aucun préparateur physique inscrit pour le moment. La classe sera automatiquement complétée au fur et à mesure des inscriptions des étudiants.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
