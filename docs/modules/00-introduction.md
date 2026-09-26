@@ -29,6 +29,31 @@ Le changement est donc profond : le sportif devient progressivement un objet mes
 Cette évolution est d'ailleurs explicitement intégrée dans la formation des futurs préparateurs physiques. Le profil d'enseignement de la Spécialisation en Préparation physique et entraînement indique que la gestion des données sportives doit permettre de « collecter, stocker, traiter et partager des données » afin de prendre des décisions favorisant la performance et la prévention des blessures.
 
 
+<div class="video-tutorial-box">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Documentaire ARTE — Le code a changé :</strong> <em>Les datas dans la mêlée (Xavier de La Porte)</em>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/kYJmQ67B620" 
+      title="Les datas dans la mêlée — Le code a changé — ARTE" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Documentaire de référence :</strong> Comment les datas, les capteurs et les modèles algorithmiques révolutionnent la préparation physique, la gestion de charge et la prévention des blessures dans le sport de haut niveau.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📁 Vidéo issue de votre dossier de cours : <code>Les datas dans la mêlée  Le code a changé  ARTE.mp4</code> 
+      • <a href="https://drive.google.com/file/d/1Xg5JL7HPS7lVzMEpXhZ7VKFTeueHevIO/view" target="_blank" rel="noopener noreferrer">Consulter sur Google Drive ↗</a>
+    </span>
+  </p>
+</div>
+
+
 Passer du « je pense » au « je mesure »
 
 
