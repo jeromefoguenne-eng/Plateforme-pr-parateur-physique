@@ -988,23 +988,29 @@ function getWordDownloadUrl(fileBase) {
               <tr style="background: var(--vp-c-bg-soft); border-bottom: 2px solid var(--vp-c-divider); text-align: left;">
                 <th style="padding: 8px;">Critère officiel</th>
                 <th style="padding: 8px; text-align: center;">Poids</th>
+                <th style="padding: 8px; text-align: center;">Niveau</th>
                 <th style="padding: 8px; text-align: center;">Points</th>
-                <th style="padding: 8px;">Commentaire</th>
+                <th style="padding: 8px;">Commentaire formatif</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="c in selectedAiModalFile.aiCorrection.criteriaTable" :key="c.name" style="border-bottom: 1px solid var(--vp-c-divider);">
                 <td style="padding: 8px; font-weight: 600;">{{ c.name }}</td>
                 <td style="padding: 8px; text-align: center;">{{ c.weightPct }}%</td>
+                <td style="padding: 8px; text-align: center;">
+                  <span style="font-size: 0.8rem; background: var(--vp-c-bg-soft); padding: 2px 6px; border-radius: 4px; font-weight: 600;">
+                    {{ c.level }}/4
+                  </span>
+                </td>
                 <td style="padding: 8px; text-align: center; font-weight: 700; color: #0284c7;">{{ c.score }}/{{ c.maxScore }}</td>
-                <td style="padding: 8px; color: var(--vp-c-text-2);">{{ c.comment }}</td>
+                <td style="padding: 8px; color: var(--vp-c-text-2); font-size: 0.85rem;">{{ c.comment }}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Points forts et axes d'amélioration -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <!-- Points forts, axes d'amélioration et priorités -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px;">
             <strong style="color: #166534; display: block; margin-bottom: 6px;">💪 Points forts</strong>
             <ul style="margin: 0; padding-left: 18px; font-size: 0.85rem; color: #14532d;">
@@ -1016,6 +1022,12 @@ function getWordDownloadUrl(fileBase) {
             <ul style="margin: 0; padding-left: 18px; font-size: 0.85rem; color: #78350f;">
               <li v-for="imp in selectedAiModalFile.aiCorrection.improvements" :key="imp">{{ imp }}</li>
             </ul>
+          </div>
+          <div v-if="selectedAiModalFile.aiCorrection.nextSteps?.length" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px;">
+            <strong style="color: #1e40af; display: block; margin-bottom: 6px;">🚀 Priorités d'action</strong>
+            <ol style="margin: 0; padding-left: 18px; font-size: 0.85rem; color: #1e3a8a;">
+              <li v-for="ns in selectedAiModalFile.aiCorrection.nextSteps" :key="ns">{{ ns }}</li>
+            </ol>
           </div>
         </div>
 
