@@ -139,27 +139,47 @@ export interface EvaluationItemDefinition {
   title: string
   shortTitle: string
   maxPoints: number
+  weightPct: number
   category: 'quiz' | 'exercice' | 'final'
   googleDriveLink?: string
 }
 
-export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
-  { id: 'quiz-00', title: "Quiz 00 : Introduction & Révolution des données", shortTitle: "Quiz 00 (Intro)", maxPoints: 10, category: 'quiz' },
-  { id: 'quiz-01', title: "Quiz 01 : Capteurs & Données de terrain", shortTitle: "Quiz 01 (Capteurs)", maxPoints: 10, category: 'quiz' },
-  { id: 'quiz-02', title: "Quiz 02 : Formats & Logiciels dédiés", shortTitle: "Quiz 02 (Logiciels)", maxPoints: 10, category: 'quiz' },
-  { id: 'quiz-03', title: "Quiz 03 : Structuration & Tableur Excel", shortTitle: "Quiz 03 (Excel)", maxPoints: 10, category: 'quiz' },
-  { id: 'quiz-04', title: "Quiz 04 : Outils de collecte personnalisés", shortTitle: "Quiz 04 (Outils)", maxPoints: 10, category: 'quiz' },
-  { id: 'quiz-05', title: "Quiz 05 : Recherche scientifique & Décision", shortTitle: "Quiz 05 (Science)", maxPoints: 10, category: 'quiz' },
-  { id: 'quiz-06', title: "Quiz 06 : Intelligence Artificielle & Agents", shortTitle: "Quiz 06 (IA)", maxPoints: 10, category: 'quiz' },
-  
-  { id: 'exercice-01', title: "Exercice 01 : Quel capteur choisir ? (10 situations)", shortTitle: "Ex 01 (Capteurs)", maxPoints: 20, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex1" },
-  { id: 'exercice-02', title: "Exercice 02 : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02 (Logiciels)", maxPoints: 20, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex2" },
-  { id: 'exercice-03', title: "Exercice 03 : Excel - Collecte et structuration de données", shortTitle: "Ex 03 (Structuration)", maxPoints: 20, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex3" },
-  { id: 'exercice-04', title: "Exercice 04 : Excel - Créer ses propres outils de suivi", shortTitle: "Ex 04 (Outils Excel)", maxPoints: 20, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex4" },
-  { id: 'exercice-05', title: "Exercice 05 : De la donnée à la décision (analyse & ajustement)", shortTitle: "Ex 05 (Décision)", maxPoints: 20, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex5" },
-  { id: 'exercice-06', title: "Exercice 06 : Créer une application IA et un agent", shortTitle: "Ex 06 (Application IA)", maxPoints: 20, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex6" },
-  { id: 'exercice-07', title: "Exercice 07 : Mission professionnelle finale (Du terrain à la décision)", shortTitle: "Ex 07 (Mission Finale)", maxPoints: 20, category: 'final', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex7" }
+export interface QuizModuleDefinition {
+  id: string
+  title: string
+  shortTitle: string
+  maxPoints: number
+}
+
+export const ALL_QUIZ_MODULES: QuizModuleDefinition[] = [
+  { id: 'quiz-00', title: "Quiz 00 : Introduction & Révolution des données", shortTitle: "Quiz 00 (Intro)", maxPoints: 10 },
+  { id: 'quiz-01', title: "Quiz 01 : Capteurs & Données de terrain", shortTitle: "Quiz 01 (Capteurs)", maxPoints: 10 },
+  { id: 'quiz-02', title: "Quiz 02 : Formats & Logiciels dédiés", shortTitle: "Quiz 02 (Logiciels)", maxPoints: 10 },
+  { id: 'quiz-03', title: "Quiz 03 : Structuration & Tableur Excel", shortTitle: "Quiz 03 (Excel)", maxPoints: 10 },
+  { id: 'quiz-04', title: "Quiz 04 : Outils de collecte personnalisés", shortTitle: "Quiz 04 (Outils)", maxPoints: 10 },
+  { id: 'quiz-05', title: "Quiz 05 : Recherche scientifique & Décision", shortTitle: "Quiz 05 (Science)", maxPoints: 10 },
+  { id: 'quiz-06', title: "Quiz 06 : Intelligence Artificielle & Agents", shortTitle: "Quiz 06 (IA)", maxPoints: 10 }
 ]
+
+export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
+  { id: 'quiz', title: "Quiz de la plateforme (Moyenne des 7 quiz)", shortTitle: "Quiz (10%)", maxPoints: 10, weightPct: 10, category: 'quiz' },
+  { id: 'exercice-01', title: "Exercice 01 : Quel capteur choisir ? (10 situations)", shortTitle: "Ex 01 (Capteurs)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex1" },
+  { id: 'exercice-02', title: "Exercice 02 : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02 (Logiciels)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex2" },
+  { id: 'exercice-03', title: "Exercice 03 : Excel - Collecte et structuration de données", shortTitle: "Ex 03 (Structuration)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex3" },
+  { id: 'exercice-04', title: "Exercice 04 : Excel - Créer ses propres outils de suivi", shortTitle: "Ex 04 (Outils Excel)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex4" },
+  { id: 'exercice-05', title: "Exercice 05 : De la donnée à la décision (analyse & ajustement)", shortTitle: "Ex 05 (Décision)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex5" },
+  { id: 'exercice-06', title: "Exercice 06 : Créer une application IA et un agent", shortTitle: "Ex 06 (Application IA)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex6" },
+  { id: 'exercice-07', title: "Exercice 07 : Mission professionnelle finale (Du terrain à la décision)", shortTitle: "Ex 07 (Mission Finale)", maxPoints: 30, weightPct: 30, category: 'final', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex7" }
+]
+
+export interface EvaluationRecord {
+  userEmail: string
+  quizScore?: number
+  itemsScores?: Record<string, number>
+  itemsFeedbacks?: Record<string, string>
+  teacherFeedback?: string
+  lastGradedAt?: string
+}
 
 export type AlarmLevel = 'none' | 'recent' | 'orange' | 'bordeaux' | 'red'
 
@@ -1127,9 +1147,15 @@ export const userStore = {
   },
 
   isCompleted(itemId: string, email?: string): boolean {
-    const userEmail = email || state.currentUser?.email
+    const userEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
     if (!userEmail) return false
-    return (state.progress[userEmail] || []).includes(itemId)
+    if (itemId === 'quiz') {
+      return state.quizAttempts.some(q => (q?.userEmail || '').toLowerCase().trim() === userEmail)
+    }
+    const hasFile = state.submittedFiles.some(f => (f?.userEmail || '').toLowerCase().trim() === userEmail && f.exerciseId === itemId)
+    const hasSub = state.submissions.some(s => (s?.userEmail || '').toLowerCase().trim() === userEmail && s.exerciseId === itemId && (s.answer || '').trim().length > 10)
+    const inProg = (state.progress[userEmail] || []).includes(itemId)
+    return hasFile || hasSub || inProg
   },
 
   getExerciseFeedback(exerciseId: string, email?: string): ExerciseTeacherFeedback | undefined {
@@ -1288,91 +1314,237 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
   getStudentEvaluation(email?: string) {
     const targetEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
     const user = state.users.find(u => (u?.email || '').toLowerCase().trim() === targetEmail)
+    const evalRec: EvaluationRecord = (state.evaluations && state.evaluations[targetEmail]) || {
+      userEmail: targetEmail,
+      itemsScores: {},
+      itemsFeedbacks: {},
+      teacherFeedback: ''
+    }
 
-    // 1. Quizzes (7 quiz à 10 points = 70 points max)
-    const quizItems = OFFICIAL_EVALUATION_ITEMS.filter(it => it.category === 'quiz').map(qDef => {
-      const attempts = state.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() === targetEmail && q.moduleId === qDef.id)
-      const bestScore = attempts.length > 0 ? Math.max(...attempts.map(a => a.score || 0)) : 0
-      const completed = attempts.length > 0
-      return {
-        id: qDef.id,
-        title: qDef.title,
-        shortTitle: qDef.shortTitle,
-        category: 'quiz',
-        maxPoints: qDef.maxPoints,
-        score: bestScore,
-        completed,
-        quizAttempts: attempts
+    // 1. Quizzes (Moyenne des 7 quiz du cours, convertie sur 10 points)
+    const userQuizzes = state.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() === targetEmail)
+    const bestQuizzes: Record<string, number> = {}
+    userQuizzes.forEach(q => {
+      const current = bestQuizzes[q.moduleId] || 0
+      if ((q.score || 0) > current) {
+        bestQuizzes[q.moduleId] = q.score || 0
       }
     })
-    const quizTotal = quizItems.reduce((acc, q) => acc + q.score, 0)
-    const quizMax = 70
+    const totalPointsAcquired = Object.values(bestQuizzes).reduce((acc, pts) => acc + pts, 0)
+    // 7 quiz de 10 points = 70 points max au total.
+    // La note sur 10 est donc (totalPointsAcquired / 70) * 10
+    const quizCount = Object.keys(bestQuizzes).length
+    let quizAiScore = 0
+    if (quizCount > 0) {
+      quizAiScore = Math.round(((totalPointsAcquired / 70) * 10) * 10) / 10
+    }
+    const isQuizDone = quizCount > 0
 
-    // 2. Exercices & Mission finale (7 devoirs à 20 points = 140 points max)
-    const exerciseItems = OFFICIAL_EVALUATION_ITEMS.filter(it => it.category === 'exercice' || it.category === 'final').map(exDef => {
-      const file = state.submittedFiles.find(f => (f?.userEmail || '').toLowerCase().trim() === targetEmail && f.exerciseId === exDef.id)
-      const submission = state.submissions.find(s => (s?.userEmail || '').toLowerCase().trim() === targetEmail && s.exerciseId === exDef.id)
-      const feedback = state.exerciseFeedbacks.find(fb => (fb?.userEmail || '').toLowerCase().trim() === targetEmail && fb.exerciseId === exDef.id)
+    // Construction des 8 composantes de la pondération officielle
+    const evaluationItems = OFFICIAL_EVALUATION_ITEMS.map(def => {
+      if (def.id === 'quiz') {
+        const effDeadlineQuiz = this.getExerciseDeadline('quiz')
+        const quizDeadlineDate = parseDeadline(effDeadlineQuiz.deadline)
+        const isQuizOverdue = !isQuizDone && !!quizDeadlineDate && (new Date() > quizDeadlineDate)
+        const quizDaysOverdue = isQuizOverdue && quizDeadlineDate ? Math.max(1, Math.floor((new Date().getTime() - quizDeadlineDate.getTime()) / (1000 * 60 * 60 * 24))) : 0
+        const quizAlarmInfo = isQuizOverdue ? getAlarmLevelInfo(quizDaysOverdue) : getAlarmLevelInfo(-1)
 
-      let score = 0
-      let graded = false
-      if (feedback && typeof feedback.score === 'number') {
-        score = feedback.score
-        graded = true
-      } else if (file?.teacherGrade && typeof file.teacherGrade.score === 'number') {
-        score = file.teacherGrade.score
-        graded = true
-      } else if (file?.aiCorrection?.suggestedScore) {
-        score = file.aiCorrection.suggestedScore
+        let teacherScore = evalRec.quizScore !== undefined ? evalRec.quizScore : (evalRec.itemsScores?.['quiz'] !== undefined ? evalRec.itemsScores['quiz'] : (isQuizDone ? quizAiScore : 0))
+        teacherScore = Math.min(def.maxPoints, Math.max(0, Number(teacherScore || 0)))
+
+        return {
+          id: 'quiz',
+          title: def.title,
+          shortTitle: def.shortTitle,
+          maxPoints: def.maxPoints,
+          weightPct: def.weightPct,
+          category: 'quiz' as const,
+          aiScore: isQuizDone ? quizAiScore : 0,
+          aiSummary: isQuizDone ? `${quizCount}/7 quiz complété(s) • Total brut : ${totalPointsAcquired}/70 pts` : 'Aucun quiz passé sur la plateforme (0 pt)',
+          teacherScore,
+          feedback: evalRec.itemsFeedbacks?.['quiz'] || (!isQuizDone ? 'Quiz non passés (0 pt)' : ''),
+          completed: isQuizDone,
+          file: null,
+          quizAttempts: userQuizzes,
+          submission: null,
+          deadline: effDeadlineQuiz.deadline,
+          deadlineLabel: effDeadlineQuiz.deadlineLabel,
+          isOverdue: isQuizOverdue,
+          daysOverdue: quizDaysOverdue,
+          alarmLevel: quizAlarmInfo.level,
+          alarmColor: quizAlarmInfo.color,
+          alarmBgColor: quizAlarmInfo.bgColor,
+          alarmBorderColor: quizAlarmInfo.borderColor,
+          alarmLabel: quizAlarmInfo.label,
+          alarmIcon: quizAlarmInfo.icon
+        }
       }
 
-      const completed = !!file || !!(submission && submission.answer && submission.answer.trim().length > 10)
+      // Exercices 01 à 07
+      const file = state.submittedFiles.find(f => (f?.userEmail || '').toLowerCase().trim() === targetEmail && f?.exerciseId === def.id)
+      const submission = state.submissions.find(s => (s?.userEmail || '').toLowerCase().trim() === targetEmail && s?.exerciseId === def.id)
+      const feedback = state.exerciseFeedbacks.find(fb => (fb?.userEmail || '').toLowerCase().trim() === targetEmail && fb?.exerciseId === def.id)
+      const isDone = !!file || !!(submission && submission.answer && submission.answer.trim().length > 10)
+
+      const effDeadline = this.getExerciseDeadline(def.id)
+      const deadlineDate = parseDeadline(effDeadline.deadline)
+      const isOverdue = !isDone && !!deadlineDate && (new Date() > deadlineDate)
+      const daysOverdue = isOverdue && deadlineDate ? Math.max(1, Math.floor((new Date().getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24))) : 0
+      const alarmInfo = isOverdue ? getAlarmLevelInfo(daysOverdue) : getAlarmLevelInfo(-1)
+
+      // Calcul de la cote IA suggérée
+      let aiScore = 0
+      let aiSummary = ''
+      if (!isDone) {
+        aiScore = 0
+        aiSummary = 'Exercice non rendu (0 pt)'
+      } else if (file?.aiCorrection?.suggestedScore !== undefined) {
+        const rawOutOf20 = Number(file.aiCorrection.suggestedScore) || 0
+        aiScore = Math.round(((rawOutOf20 / 20) * def.maxPoints) * 10) / 10
+        aiSummary = file.aiCorrection.summary || 'Devoir analysé par l\'IA'
+      } else {
+        // Travail déposé en attente : cote indicative par défaut à 80% du max
+        aiScore = Math.round((def.maxPoints * 0.8) * 10) / 10
+        aiSummary = 'Travail déposé en attente de validation'
+      }
+
+      // Cote enseignant enregistrée
+      let teacherScore: number
+      if (evalRec.itemsScores && evalRec.itemsScores[def.id] !== undefined) {
+        teacherScore = evalRec.itemsScores[def.id]
+      } else if (feedback && typeof feedback.score === 'number') {
+        // Si feedback ancien était sur 20, convertir vers le barème max de l'item
+        teacherScore = Math.round(((feedback.score / 20) * def.maxPoints) * 10) / 10
+      } else if (file?.teacherGrade && typeof file.teacherGrade.score === 'number') {
+        teacherScore = Math.round(((file.teacherGrade.score / 20) * def.maxPoints) * 10) / 10
+      } else if (!isDone) {
+        teacherScore = 0
+      } else {
+        teacherScore = aiScore
+      }
+      teacherScore = Math.min(def.maxPoints, Math.max(0, Number(teacherScore || 0)))
+
+      const teacherComment = evalRec.itemsFeedbacks?.[def.id] || feedback?.feedback || file?.teacherGrade?.feedback || ''
 
       return {
-        id: exDef.id,
-        title: exDef.title,
-        shortTitle: exDef.shortTitle,
-        category: exDef.category,
-        maxPoints: exDef.maxPoints,
-        score,
-        graded,
-        teacherScore: score,
-        teacherFeedback: feedback?.feedback || file?.teacherGrade?.feedback || '',
+        id: def.id,
+        title: def.title,
+        shortTitle: def.shortTitle,
+        maxPoints: def.maxPoints,
+        weightPct: def.weightPct,
+        category: def.category,
+        aiScore,
+        aiSummary,
+        teacherScore,
+        feedback: teacherComment,
+        completed: isDone,
         file,
         submission,
-        completed,
-        aiCorrection: file?.aiCorrection,
-        aiScore: file?.aiCorrection?.suggestedScore ?? null,
-        aiSummary: file?.aiCorrection?.summary ?? '',
-        aiModel: file?.aiCorrection?.modelUsed ?? ''
+        deadline: effDeadline.deadline,
+        deadlineLabel: effDeadline.deadlineLabel,
+        isOverdue,
+        daysOverdue,
+        alarmLevel: alarmInfo.level,
+        alarmColor: alarmInfo.color,
+        alarmBgColor: alarmInfo.bgColor,
+        alarmBorderColor: alarmInfo.borderColor,
+        alarmLabel: alarmInfo.label,
+        alarmIcon: alarmInfo.icon
       }
     })
-    const exercisesTotal = exerciseItems.reduce((acc, ex) => acc + ex.score, 0)
-    const exercisesMax = 140
 
-    const totalScore = quizTotal + exercisesTotal
-    const totalMax = quizMax + exercisesMax // 210 pts
-    const percentage = Math.round((totalScore / totalMax) * 100)
-    const totalOutOf20 = Number(((totalScore / totalMax) * 20).toFixed(1))
+    const totalScore = Math.round(evaluationItems.reduce((acc, item) => acc + item.teacherScore, 0) * 10) / 10
+    const totalMax = 100
+    const totalOutOf20 = Math.round((totalScore / 5) * 10) / 10
+    const percentage = Math.round(totalScore)
     const isPassing = totalOutOf20 >= 10
 
-    const allItems = [...quizItems, ...exerciseItems]
+    let mention = 'Ajourné'
+    if (totalOutOf20 >= 18) mention = 'La plus grande distinction'
+    else if (totalOutOf20 >= 16) mention = 'Grande distinction'
+    else if (totalOutOf20 >= 14) mention = 'Distinction'
+    else if (totalOutOf20 >= 10) mention = 'Satisfaction (Réussite)'
+
+    const lateInfo = this.getStudentLateStatus(targetEmail)
 
     return {
       user,
       email: targetEmail,
-      quizTotal,
-      quizMax,
-      exercisesTotal,
-      exercisesMax,
+      items: evaluationItems,
       totalScore,
       totalMax,
       totalOutOf20,
       percentage,
       isPassing,
-      items: allItems,
-      quizItems,
-      exerciseItems
+      mention,
+      lateInfo,
+      feedback: evalRec.teacherFeedback || ''
+    }
+  },
+
+  saveFullStudentEvaluation(email: string, itemsGrades: { id: string; teacherScore: number; feedback?: string }[], generalFeedback: string = '') {
+    const targetEmail = email.trim().toLowerCase()
+    if (!state.evaluations[targetEmail]) {
+      state.evaluations[targetEmail] = {
+        userEmail: targetEmail,
+        itemsScores: {},
+        itemsFeedbacks: {},
+        teacherFeedback: ''
+      }
+    }
+    const rec = state.evaluations[targetEmail]
+    if (!rec.itemsScores) rec.itemsScores = {}
+    if (!rec.itemsFeedbacks) rec.itemsFeedbacks = {}
+
+    for (const item of itemsGrades) {
+      rec.itemsScores[item.id] = Number(item.teacherScore) || 0
+      if (item.feedback !== undefined) {
+        rec.itemsFeedbacks[item.id] = item.feedback
+      }
+      if (item.id === 'quiz') {
+        rec.quizScore = Number(item.teacherScore) || 0
+      }
+    }
+    rec.teacherFeedback = generalFeedback
+    rec.lastGradedAt = new Date().toISOString()
+    setStorage(STORAGE_KEY_EVALUATIONS, state.evaluations)
+    return { success: true, message: "La grille d'évaluation a été enregistrée avec succès !" }
+  },
+
+  getClassEvaluationStats() {
+    const activeUsers = state.users.filter(u => u && u.email && u.status !== 'archived')
+    if (activeUsers.length === 0) {
+      return {
+        totalStudents: 0,
+        averageScore100: 0,
+        averageOutOf20: 0,
+        passingCount: 0,
+        passingRate: 0,
+        highestNote: 0,
+        lowestNote: 0,
+        lateStudentsCount: 0
+      }
+    }
+
+    const evals = activeUsers.map(u => this.getStudentEvaluation(u.email))
+    const total100Sum = evals.reduce((acc, ev) => acc + ev.totalScore, 0)
+    const outOf20Sum = evals.reduce((acc, ev) => acc + ev.totalOutOf20, 0)
+    const passingCount = evals.filter(ev => ev.isPassing).length
+    const lateStudentsCount = evals.filter(ev => ev.lateInfo && ev.lateInfo.isLate).length
+
+    const notes20 = evals.map(ev => ev.totalOutOf20)
+    const highestNote = notes20.length > 0 ? Math.max(...notes20) : 0
+    const lowestNote = notes20.length > 0 ? Math.min(...notes20) : 0
+
+    return {
+      totalStudents: activeUsers.length,
+      averageScore100: Math.round((total100Sum / activeUsers.length) * 10) / 10,
+      averageOutOf20: Math.round((outOf20Sum / activeUsers.length) * 10) / 10,
+      passingCount,
+      passingRate: Math.round((passingCount / activeUsers.length) * 100),
+      highestNote,
+      lowestNote,
+      lateStudentsCount
     }
   },
 
@@ -1479,13 +1651,18 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     let daysOverdueMax = 0
     const now = new Date()
 
-    OFFICIAL_EVALUATION_ITEMS.filter(it => it.category === 'exercice' || it.category === 'final').forEach(item => {
+    OFFICIAL_EVALUATION_ITEMS.forEach(item => {
       const dInfo = this.getExerciseDeadline(item.id)
       if (dInfo.isDefined && dInfo.deadline) {
         const deadlineDate = parseDeadline(dInfo.deadline)
         if (deadlineDate && now.getTime() > deadlineDate.getTime()) {
-          const hasFile = studentFiles.some(f => f.exerciseId === item.id)
-          if (!hasFile) {
+          let isDone = false
+          if (item.id === 'quiz') {
+            isDone = state.quizAttempts.some(q => (q?.userEmail || '').toLowerCase().trim() === cleanEmail)
+          } else {
+            isDone = studentFiles.some(f => f.exerciseId === item.id)
+          }
+          if (!isDone) {
             const daysOverdue = Math.max(1, Math.floor((now.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24)))
             if (daysOverdue > daysOverdueMax) daysOverdueMax = daysOverdue
             const info = getAlarmLevelInfo(daysOverdue)

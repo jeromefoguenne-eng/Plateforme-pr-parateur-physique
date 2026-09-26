@@ -48,6 +48,101 @@ const dossierFilter = ref('all') // 'all' | 'quiz' | 'exercises' | 'submitted_on
 const expandedTexts = ref({})
 const saveGridStatus = ref('')
 
+// GRILLE D'ÉVALUATION ET NOTATION OFFICIELLE (100 PTS / 20)
+const selectedGridStudentEmail = ref('')
+const activeGridItems = ref([])
+const activeGridGeneralFeedback = ref('')
+
+const classStats = computed(() => userStore.getClassEvaluationStats())
+
+const activeGridStudent = computed(() => {
+  return users.value.find(u => (u?.email || '').toLowerCase().trim() === (selectedGridStudentEmail.value || '').toLowerCase().trim())
+})
+
+const activeStudentLateInfo = computed(() => {
+  if (!selectedGridStudentEmail.value) return { isLate: false, lateCount: 0, daysOverdueMax: 0, lateItems: [] }
+  const late = userStore.getStudentLateStatus(selectedGridStudentEmail.value)
+  return {
+    isLate: late.isLate,
+    lateCount: late.lateCount,
+    daysOverdueMax: late.daysOverdueMax,
+    highestAlarmLabel: late.highestAlarmInfo.label,
+    highestAlarmIcon: late.highestAlarmInfo.icon,
+    highestAlarmColor: late.highestAlarmInfo.color,
+    highestAlarmBgColor: late.highestAlarmInfo.bgColor,
+    lateItems: late.overdueList
+  }
+})
+
+function loadStudentGrid(email) {
+  if (!email) return
+  selectedGridStudentEmail.value = email.trim().toLowerCase()
+  const ev = userStore.getStudentEvaluation(email)
+  activeGridItems.value = (ev.items || []).map(it => ({
+    id: it.id,
+    title: it.title,
+    shortTitle: it.shortTitle,
+    maxPoints: it.maxPoints,
+    weightPct: it.weightPct,
+    category: it.category,
+    aiScore: it.aiScore,
+    aiSummary: it.aiSummary,
+    teacherScore: it.teacherScore,
+    feedback: it.feedback || '',
+    completed: it.completed,
+    file: it.file,
+    isOverdue: it.isOverdue,
+    deadlineLabel: it.deadlineLabel
+  }))
+  activeGridGeneralFeedback.value = ev.feedback || ''
+}
+
+function onSelectGridStudent() {
+  loadStudentGrid(selectedGridStudentEmail.value)
+}
+
+function adoptAiScoreForItem(item) {
+  item.teacherScore = item.aiScore
+}
+
+function adoptAllAiScoresForActiveStudent() {
+  activeGridItems.value.forEach(item => {
+    item.teacherScore = item.aiScore
+  })
+}
+
+const activeGridTotalScore = computed(() => {
+  return Math.round(activeGridItems.value.reduce((acc, it) => acc + (Number(it.teacherScore) || 0), 0) * 10) / 10
+})
+
+const activeGridTotalOutOf20 = computed(() => {
+  return Math.round((activeGridTotalScore.value / 5) * 10) / 10
+})
+
+const activeGridMention = computed(() => {
+  const n = activeGridTotalOutOf20.value
+  if (n >= 18) return { label: 'La plus grande distinction', class: 'm-g-dist' }
+  if (n >= 16) return { label: 'Grande distinction', class: 'm-dist' }
+  if (n >= 14) return { label: 'Distinction', class: 'm-dist' }
+  if (n >= 10) return { label: 'Satisfaction (Réussite)', class: 'm-pass' }
+  return { label: 'Ajourné', class: 'm-fail' }
+})
+
+function saveActiveStudentGrid() {
+  if (!selectedGridStudentEmail.value) return
+  userStore.saveFullStudentEvaluation(
+    selectedGridStudentEmail.value,
+    activeGridItems.value.map(it => ({ id: it.id, teacherScore: it.teacherScore, feedback: it.feedback })),
+    activeGridGeneralFeedback.value
+  )
+  const currentTotal = activeGridTotalScore.value
+  const current20 = activeGridTotalOutOf20.value
+  saveGridStatus.value = `✅ Grille enregistrée avec succès pour ${selectedGridStudentEmail.value} ! (Total : ${currentTotal}/100 • Note : ${current20}/20)`
+  setTimeout(() => {
+    saveGridStatus.value = ''
+  }, 4500)
+}
+
 const currentDossier = computed(() => {
   if (!selectedDossierEmail.value) return null
   return userStore.getStudentFullDossier(selectedDossierEmail.value)
@@ -196,10 +291,22 @@ onMounted(() => {
     initDeadlineInputs()
   }).catch(() => {})
 
+  const active = users.value.filter(u => u && u.status !== 'archived')
+  if (active.length > 0 && !selectedGridStudentEmail.value) {
+    loadStudentGrid(active[0].email)
+  }
+
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', handleDossierKeyDown)
   }
 })
+
+watch(() => users.value, (newUsers) => {
+  const active = (newUsers || []).filter(u => u && u.status !== 'archived')
+  if (active.length > 0 && (!selectedGridStudentEmail.value || !active.some(u => u.email === selectedGridStudentEmail.value))) {
+    loadStudentGrid(active[0].email)
+  }
+}, { immediate: true })
 
 onUnmounted(() => {
   if (typeof window !== 'undefined') {
@@ -390,21 +497,48 @@ function handleResetDeadlines() {
   }
 }
 
-function exportCsv() {
-  let csv = "Nom de l'étudiant;Email institutionnel;Quiz (/70);Exercices (/140);Total Général (/210);Note sur 20;Pourcentage;Statut\n"
-  users.value.forEach(u => {
+function exportAllResultsToExcel() {
+  const activeStudents = users.value.filter(u => u && u.email && u.status !== 'archived')
+  if (activeStudents.length === 0) {
+    alert("Aucun étudiant à exporter pour l'instant.")
+    return
+  }
+
+  // En-têtes CSV avec point-virgule (compatible avec toutes les versions d'Excel en français)
+  let csv = `"Nom";"Prénom";"Email";"Statut Retard";"Quiz (Moyenne 7 quiz /10)";"Ex 01 - Capteurs (/10)";"Ex 02 - Formats/Logiciels (/10)";"Ex 03 - Excel Tidy Data (/10)";"Ex 04 - Outils de suivi (/10)";"Ex 05 - Recherche & Décision (/10)";"Ex 06 - IA & Agents (/10)";"Ex 07 - Mission Finale (/30)";"Total Points (/100)";"Note Finale Officielle (/20)";"Pourcentage";"Statut Académique";"Mention";"Commentaire Général Enseignant"\n`
+
+  activeStudents.forEach(u => {
     const ev = userStore.getStudentEvaluation(u.email)
-    const status = ev.isPassing ? 'Admis' : 'En cours'
-    csv += `"${u.lastName} ${u.firstName}";"${u.email}";"${ev.quizTotal}";"${ev.exercisesTotal}";"${ev.totalScore}";"${ev.totalOutOf20}";"${ev.percentage}%";"${status}"\n`
+    const late = ev.lateInfo && ev.lateInfo.isLate ? `RETARD (${ev.lateInfo.lateCount} doc)` : 'À jour'
+    const items = ev.items || []
+
+    const q = items.find(i => i.id === 'quiz')?.teacherScore ?? 0
+    const ex1 = items.find(i => i.id === 'exercice-01')?.teacherScore ?? 0
+    const ex2 = items.find(i => i.id === 'exercice-02')?.teacherScore ?? 0
+    const ex3 = items.find(i => i.id === 'exercice-03')?.teacherScore ?? 0
+    const ex4 = items.find(i => i.id === 'exercice-04')?.teacherScore ?? 0
+    const ex5 = items.find(i => i.id === 'exercice-05')?.teacherScore ?? 0
+    const ex6 = items.find(i => i.id === 'exercice-06')?.teacherScore ?? 0
+    const ex7 = items.find(i => i.id === 'exercice-07')?.teacherScore ?? 0
+
+    const status = ev.isPassing ? 'Admis' : 'Ajourné'
+    const cleanFb = (ev.feedback || '').replace(/"/g, '""').replace(/\r?\n/g, ' ')
+
+    csv += `"${u.lastName || ''}";"${u.firstName || ''}";"${u.email}";"${late}";"${q}";"${ex1}";"${ex2}";"${ex3}";"${ex4}";"${ex5}";"${ex6}";"${ex7}";"${ev.totalScore}";"${ev.totalOutOf20}";"${ev.percentage}%";"${status}";"${ev.mention}";"${cleanFb}"\n`
   })
 
+  // Encodage UTF-8 BOM pour ouverture directe parfaite dans Microsoft Excel
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
-  link.setAttribute('download', `Releve_Notes_Prepa_Physique_${new Date().toISOString().substring(0,10)}.csv`)
+  link.setAttribute('download', `HECh_Prepa_Physique_Notes_Officielles_sur_20_${new Date().toISOString().substring(0, 10)}.csv`)
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+function exportCsv() {
+  exportAllResultsToExcel()
 }
 
 function handleResetAllStudents() {
@@ -509,10 +643,11 @@ function handleResetAllStudents() {
         <button 
           v-for="t in [
             { id: 'students', label: '👥 Étudiants & Dossiers', count: users.length },
+            { id: 'evaluation', label: '🏆 Notes & Évaluation', count: users.length },
             { id: 'deadlines', label: '📅 Échéances & Délais', count: OFFICIAL_EVALUATION_ITEMS.length },
             { id: 'files', label: '📁 Travaux Déposés', count: submittedFiles.length },
             { id: 'quizzes', label: '🧠 Tentatives Quiz', count: quizAttempts.length },
-            { id: 'export', label: '📊 Export & Webhook', count: null }
+            { id: 'export', label: '⚙️ Cloud & Synchronisation', count: null }
           ]" 
           :key="t.id"
           @click="adminTab = t.id"
@@ -628,7 +763,266 @@ function handleResetAllStudents() {
         </div>
       </div>
 
-      <!-- ONGLET 2 : GESTION DES ÉCHÉANCES -->
+      <!-- ONGLET 2 : NOTES & ÉVALUATION OFFICIELLE (100 PTS / 20) -->
+      <div v-if="adminTab === 'evaluation'" class="tab-panel">
+        <!-- BARRE D'OUTILS PRINCIPALE & EXPORT EXCEL -->
+        <div class="eval-admin-toolbar">
+          <div>
+            <h3 style="margin: 0; font-size: 1.3rem;">🏆 Grille d'Évaluation & Relevé Officiel des Notes (100 Pts / 20)</h3>
+            <p class="eval-toolbar-sub">
+              8 composantes pondérées • Évaluation formative indicative de l'IA dès le dépôt • <strong>Seule la note de l'enseignant est prise en compte</strong> • Note finale sur /20
+            </p>
+          </div>
+          <button @click="exportAllResultsToExcel" class="btn-export-excel-highlight" title="Télécharger le fichier Excel officiel avec les notes sur 20 de toute la classe">
+            📊 Exporter tous les résultats (Excel)
+          </button>
+        </div>
+
+        <!-- KPI STATISTIQUES DE LA CLASSE -->
+        <div class="eval-kpi-grid">
+          <div class="eval-kpi-card highlight-moy">
+            <span class="ekpi-icon">📈</span>
+            <div>
+              <div class="ekpi-val"><strong>{{ classStats.averageOutOf20 }}</strong> / 20</div>
+              <div class="ekpi-label">Moyenne générale de la classe ({{ classStats.averageScore100 }} / 100 pts)</div>
+            </div>
+          </div>
+          <div class="eval-kpi-card highlight-pass">
+            <span class="ekpi-icon">🎓</span>
+            <div>
+              <div class="ekpi-val"><strong>{{ classStats.passingRate }}%</strong> de réussite</div>
+              <div class="ekpi-label">{{ classStats.passingCount }} admis sur {{ classStats.totalStudents }} étudiants</div>
+            </div>
+          </div>
+          <div class="eval-kpi-card highlight-high">
+            <span class="ekpi-icon">🌟</span>
+            <div>
+              <div class="ekpi-val"><strong>{{ classStats.highestNote }}</strong> / 20</div>
+              <div class="ekpi-label">Note la plus haute</div>
+            </div>
+          </div>
+          <div class="eval-kpi-card highlight-low">
+            <span class="ekpi-icon">📉</span>
+            <div>
+              <div class="ekpi-val"><strong>{{ classStats.lowestNote }}</strong> / 20</div>
+              <div class="ekpi-label">Note la plus basse</div>
+            </div>
+          </div>
+          <div class="eval-kpi-card highlight-alarm" :class="{ 'has-alerts': classStats.lateStudentsCount > 0 }">
+            <span class="ekpi-icon">🔔</span>
+            <div>
+              <div class="ekpi-val"><strong :class="{ 'text-danger': classStats.lateStudentsCount > 0 }">{{ classStats.lateStudentsCount }}</strong> en retard</div>
+              <div class="ekpi-label">Échéance(s) dépassée(s) (détecté par IA)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FICHE D'ÉVALUATION DÉTAILLÉE PAR ÉTUDIANT -->
+        <div v-if="users.filter(x => x.status !== 'archived').length > 0" class="grid-eval-card-container">
+          <div class="gec-header-row">
+            <div class="gec-selector-group">
+              <label>👤 Sélectionner l'étudiant à évaluer :</label>
+              <select v-model="selectedGridStudentEmail" @change="onSelectGridStudent" class="student-eval-select">
+                <option 
+                  v-for="u in users.filter(x => x.status !== 'archived')" 
+                  :key="u.email" 
+                  :value="u.email"
+                >
+                  {{ userStore.getStudentLateStatus(u.email).isLate ? '🔔 [RETARD] ' : '' }}{{ u.lastName }} {{ u.firstName }} ({{ u.email }}) — Note : {{ userStore.getStudentEvaluation(u.email).totalOutOf20 }}/20
+                </option>
+              </select>
+            </div>
+            <div class="gec-actions-group">
+              <button @click="adoptAllAiScoresForActiveStudent" class="btn-bulk-adopt-ai" type="button" title="Reprendre en 1 clic toutes les suggestions de l'IA pour cet étudiant">
+                ⚡ Reprendre toutes les cotes IA
+              </button>
+              <button @click="saveActiveStudentGrid" class="btn-save-grid-main" type="button">
+                💾 Enregistrer la grille
+              </button>
+            </div>
+          </div>
+
+          <!-- SIGNAL ALARME IA SI DOCUMENTS EN RETARD -->
+          <div 
+            v-if="activeStudentLateInfo.isLate" 
+            class="alarm-student-banner"
+            :style="{ 
+              background: activeStudentLateInfo.highestAlarmBgColor, 
+              borderColor: activeStudentLateInfo.highestAlarmColor 
+            }"
+          >
+            <div class="asb-icon-wrap">
+              <span class="alarm-bell-large" :style="{ color: activeStudentLateInfo.highestAlarmColor }">🔔</span>
+            </div>
+            <div class="asb-content">
+              <div class="asb-title" :style="{ color: activeStudentLateInfo.highestAlarmColor }">
+                {{ activeStudentLateInfo.highestAlarmIcon }} {{ activeStudentLateInfo.highestAlarmLabel.toUpperCase() }} : Devoirs non remis en temps et en heure
+              </div>
+              <div class="asb-desc" :style="{ color: activeStudentLateInfo.highestAlarmColor }">
+                L'IA a analysé les échéances du cours et détecté que cet étudiant a <strong>{{ activeStudentLateInfo.lateCount }} document(s) non rendu(s) à temps</strong> (retard maximal : <strong>{{ activeStudentLateInfo.daysOverdueMax }} jours</strong>) :
+              </div>
+              <div class="asb-badges-list">
+                <span 
+                  v-for="it in activeStudentLateInfo.lateItems" 
+                  :key="it.exerciseId" 
+                  class="asb-item-badge"
+                  :style="{ 
+                    background: it.alarmColor ? it.alarmColor + '15' : '#fee2e2', 
+                    color: it.alarmColor || '#991b1b', 
+                    borderColor: it.alarmColor || '#f87171' 
+                  }"
+                >
+                  {{ it.alarmIcon }} <strong>{{ it.shortTitle }}</strong> — Retard : {{ it.daysOverdue }} j (Échéance : {{ it.deadline }})
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="saveGridStatus" class="grid-save-feedback-banner">
+            {{ saveGridStatus }}
+          </div>
+
+          <!-- TABLEAU COMPARATIF DES 8 COMPOSANTES -->
+          <div class="table-responsive">
+            <table class="data-table detailed-8-table">
+              <thead>
+                <tr>
+                  <th style="width: 34%;">Composante d'Évaluation (Pondération %)</th>
+                  <th style="width: 12%; text-align: center;">Barème Max</th>
+                  <th style="width: 18%; text-align: center;">🤖 Cote indicative IA</th>
+                  <th style="width: 16%; text-align: center;">👨‍🏫 Cote Enseignant</th>
+                  <th style="width: 20%;">💬 Commentaire formatif</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="item in activeGridItems" 
+                  :key="item.id" 
+                  :class="['grid-item-row', { 'row-overdue': item.isOverdue, 'row-final-step': item.category === 'final' }]"
+                >
+                  <td>
+                    <div class="item-title-group">
+                      <span class="item-status-icon">{{ item.completed ? '✅' : (item.isOverdue ? '🔔' : '⏳') }}</span>
+                      <div>
+                        <strong :class="{ 'is-late': item.isOverdue, 'highlight-final': item.category === 'final' }">
+                          {{ item.title }}
+                        </strong>
+                        <div v-if="item.file" class="item-file-link">
+                          📎 Document remis : <code>{{ item.file.formattedFileName }}</code>
+                        </div>
+                        <div v-else-if="item.id === 'quiz'" class="item-file-link quiz-sub" :class="{ overdue: item.isOverdue }">
+                          {{ item.completed ? '💡 Évaluation automatique via les quiz du cours' : (item.isOverdue ? '🚨 ALARME : Quiz non passé (Échéance dépassée)' : '⏳ En attente de réalisation des quiz') }}
+                        </div>
+                        <div v-else-if="item.isOverdue" class="item-file-link overdue">
+                          🚨 ALARME RETARD : Document non déposé (Échéance dépassée le {{ item.deadlineLabel }})
+                        </div>
+                        <div v-else class="item-file-link missing">
+                          ⚠️ En attente de dépôt étudiant (Échéance : {{ item.deadlineLabel || 'Non définie' }})
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="text-align: center;">
+                    <span class="max-badge">/ {{ item.maxPoints }} pts ({{ item.weightPct }}%)</span>
+                  </td>
+                  <!-- COLONNE COTE IA -->
+                  <td style="text-align: center;">
+                    <div v-if="!item.completed" class="ai-score-cell-wrap">
+                      <span class="ai-pill zero-pill" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;" title="Non rendu : note automatique de 0">
+                        <strong>0</strong> / {{ item.maxPoints }}
+                      </span>
+                      <button 
+                        @click="adoptAiScoreForItem(item)" 
+                        type="button" 
+                        class="btn-adopt-mini"
+                        title="Appliquer 0 pt pour non-rendu"
+                        style="background: #fee2e2; color: #991b1b; border-color: #fca5a5;"
+                      >
+                        ⚡ Reprendre (0)
+                      </button>
+                    </div>
+                    <div v-else-if="item.aiScore !== null && item.aiScore !== undefined" class="ai-score-cell-wrap">
+                      <span class="ai-pill"><strong>{{ item.aiScore }}</strong> / {{ item.maxPoints }}</span>
+                      <button 
+                        @click="adoptAiScoreForItem(item)" 
+                        type="button" 
+                        class="btn-adopt-mini"
+                        title="Copier la suggestion de l'IA"
+                      >
+                        ⚡ Reprendre
+                      </button>
+                    </div>
+                    <div v-else class="ai-none-cell">
+                      <span class="ai-pending-text">{{ item.isOverdue ? '⚠️ Non rendu' : '⏳ En attente' }}</span>
+                    </div>
+                  </td>
+                  <!-- COLONNE COTE ENSEIGNANT (ÉDITABLE) -->
+                  <td style="text-align: center;">
+                    <div class="teacher-input-cell-wrap">
+                      <input 
+                        v-model.number="item.teacherScore" 
+                        type="number" 
+                        :min="0" 
+                        :max="item.maxPoints" 
+                        step="0.5" 
+                        class="teacher-score-input"
+                      />
+                      <span class="pts-denom">/ {{ item.maxPoints }}</span>
+                    </div>
+                  </td>
+                  <!-- COMMENTAIRE FORMATIF -->
+                  <td>
+                    <input 
+                      v-model="item.feedback" 
+                      type="text" 
+                      placeholder="Commentaire personnalisé..." 
+                      class="teacher-comment-input"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CARTOUCHE DE RÉCAPITULATIF & NOTE SUR 20 -->
+          <div class="grid-recap-footer">
+            <div class="grf-scores-box">
+              <div class="grf-score-item total-100">
+                <span class="grf-label">TOTAL GÉNÉRAL</span>
+                <span class="grf-val">{{ activeGridTotalScore }} / 100 pts</span>
+              </div>
+              <div class="grf-score-item final-20">
+                <span class="grf-label">NOTE FINALE OFFICIELLE</span>
+                <span class="grf-val-huge">{{ activeGridTotalOutOf20 }} / 20</span>
+                <span :class="['grf-mention-badge', activeGridMention.class]">{{ activeGridMention.label }}</span>
+              </div>
+            </div>
+
+            <div class="grf-feedback-box">
+              <label>💬 Observation générale & synthèse pour le bulletin :</label>
+              <textarea 
+                v-model="activeGridGeneralFeedback" 
+                rows="3" 
+                placeholder="Rédigez ici votre synthèse d'évaluation globale visible par l'étudiant..."
+                class="grf-textarea"
+              ></textarea>
+              <div class="grf-btn-row">
+                <button @click="saveActiveStudentGrid" class="btn-save-grid-main" type="button">
+                  💾 Enregistrer la grille d'évaluation
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else style="padding: 3rem; text-align: center; color: var(--vp-c-text-2); background: var(--vp-c-bg-soft); border-radius: 12px; border: 1px solid var(--vp-c-divider);">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+          <h3>Aucun étudiant inscrit pour le moment</h3>
+          <p>Les étudiants inscrits apparaîtront automatiquement ici pour que vous puissiez consulter leurs cotes IA et saisir leurs notes officielles.</p>
+        </div>
+      </div>
+
+      <!-- ONGLET 3 : GESTION DES ÉCHÉANCES -->
       <div v-if="adminTab === 'deadlines'">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
           <div>
@@ -1060,3 +1454,494 @@ function handleResetAllStudents() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.eval-admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: var(--vp-c-bg-soft);
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.eval-toolbar-sub {
+  margin: 6px 0 0 0;
+  font-size: 0.9rem;
+  color: var(--vp-c-text-2);
+}
+
+.btn-export-excel-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-export-excel-highlight:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+.eval-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.eval-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 1.25rem;
+  background: var(--vp-c-bg);
+  border-radius: 10px;
+  border: 1px solid var(--vp-c-divider);
+  box-shadow: var(--tile-shadow);
+}
+
+.eval-kpi-card.highlight-moy {
+  border-left: 4px solid var(--vp-c-brand-1);
+}
+
+.eval-kpi-card.highlight-pass {
+  border-left: 4px solid #10b981;
+}
+
+.eval-kpi-card.highlight-high {
+  border-left: 4px solid #f59e0b;
+}
+
+.eval-kpi-card.highlight-low {
+  border-left: 4px solid #64748b;
+}
+
+.eval-kpi-card.highlight-alarm {
+  border-left: 4px solid #ef4444;
+}
+
+.ekpi-icon {
+  font-size: 1.75rem;
+}
+
+.ekpi-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+}
+
+.ekpi-val strong {
+  font-size: 1.5rem;
+}
+
+.ekpi-label {
+  font-size: 0.78rem;
+  color: var(--vp-c-text-2);
+  margin-top: 2px;
+}
+
+.grid-eval-card-container {
+  background: var(--vp-c-bg);
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-divider);
+  padding: 1.5rem;
+  box-shadow: var(--tile-shadow);
+}
+
+.gec-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.gec-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.gec-selector-group label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.student-eval-select {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.gec-actions-group {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-bulk-adopt-ai {
+  padding: 9px 14px;
+  background: #eff6ff;
+  color: #0284c7;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-bulk-adopt-ai:hover {
+  background: #dbeafe;
+}
+
+.btn-save-grid-main {
+  padding: 9px 18px;
+  background: var(--vp-c-brand-1);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-grid-main:hover {
+  opacity: 0.92;
+}
+
+.alarm-student-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid;
+  margin-bottom: 1.25rem;
+}
+
+.alarm-bell-large {
+  font-size: 1.5rem;
+}
+
+.asb-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.asb-desc {
+  font-size: 0.88rem;
+  margin-bottom: 8px;
+}
+
+.asb-badges-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.asb-item-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 0.8rem;
+}
+
+.grid-save-feedback-banner {
+  padding: 10px 14px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.detailed-8-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.detailed-8-table th {
+  padding: 12px 14px;
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+}
+
+.detailed-8-table td {
+  padding: 12px 14px;
+  border: 1px solid var(--vp-c-divider);
+  vertical-align: middle;
+}
+
+.grid-item-row.row-overdue {
+  background: #fff1f2;
+}
+
+.grid-item-row.row-final-step {
+  background: #fdf4ff;
+}
+
+.item-title-group {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.item-status-icon {
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.highlight-final {
+  color: #86198f;
+}
+
+.item-file-link {
+  font-size: 0.8rem;
+  color: var(--vp-c-text-2);
+  margin-top: 4px;
+}
+
+.item-file-link code {
+  color: var(--vp-c-brand-1);
+  background: rgba(2, 132, 199, 0.08);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.item-file-link.overdue {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.item-file-link.missing {
+  color: #ea580c;
+}
+
+.max-badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 3px 8px;
+  background: var(--vp-c-bg-soft);
+  border-radius: 6px;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.ai-score-cell-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  font-size: 0.88rem;
+}
+
+.btn-adopt-mini {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 4px;
+  border: 1px solid #bfdbfe;
+  background: #f0fdf4;
+  color: #166534;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-adopt-mini:hover {
+  background: #dcfce7;
+}
+
+.teacher-input-cell-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.teacher-score-input {
+  width: 72px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 2px solid var(--vp-c-brand-1);
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+}
+
+.pts-denom {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+}
+
+.teacher-comment-input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--vp-c-divider);
+  font-size: 0.85rem;
+  background: var(--vp-c-bg);
+}
+
+.grid-recap-footer {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: var(--vp-c-bg-soft);
+  border-radius: 10px;
+  border: 1px solid var(--vp-c-divider);
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .grid-recap-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.grf-scores-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+}
+
+.grf-score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--vp-c-bg);
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.grf-score-item.final-20 {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.08) 0%, rgba(2, 132, 199, 0.15) 100%);
+  border: 2px solid var(--vp-c-brand-1);
+  padding: 12px;
+}
+
+.grf-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--vp-c-text-2);
+}
+
+.grf-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.grf-val-huge {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--vp-c-brand-1);
+}
+
+.grf-mention-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.grf-mention-badge.m-g-dist {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.grf-mention-badge.m-dist {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.grf-mention-badge.m-pass {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.grf-mention-badge.m-fail {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.grf-feedback-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grf-feedback-box label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.grf-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+  font-size: 0.9rem;
+  resize: vertical;
+  background: var(--vp-c-bg);
+}
+
+.grf-btn-row {
+  display: flex;
+  justify-content: flex-end;
+}
+</style>
+

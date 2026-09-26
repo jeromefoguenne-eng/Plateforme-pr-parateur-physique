@@ -30,13 +30,31 @@ Le cours d'**Exploitation des outils informatiques spécifiques** s'inscrit au c
 
 ---
 
-## ⚖️ Modalités d'évaluation
+## ⚖️ Modalités d'Évaluation & Pondération Officielle
 
-L'évaluation repose sur un dispositif continu et formatif favorisant l'apprentissage par la pratique :
+L'évaluation repose sur un dispositif continu et authentique calculé sur **100 points**, ramené à une note finale sur **20** (seuil de réussite : **10/20**).
 
-- **Évaluations formatives continues (Quiz)** : À la fin de chaque module, un quiz en ligne permet à l'étudiant de valider l'acquisition des notions fondamentales.
-- **Travaux pratiques de terrain (Exercices 01 à 06)** : Fiches de cas professionnels réels (sélection de capteurs, choix logiciels, structuration Excel, outils de collecte, veille IA).
-- **Mission professionnelle intégrative (Exercice 07 - Projet Final)** : Conception d'un système numérique complet de monitoring d'un groupe d'athlètes sur 6 semaines à partir d'un jeu de données brut.
-- **Transparence critériée** : Tous les travaux sont corrigés selon la [grille officielle d'évaluation IA à 6 critères pondérés](/guide/criteres-correction-ia).
+::: tip 🤖 Feedback formatif par IA & Validation exclusive par l'enseignant
+* **Rôle de l'IA** : Dès votre dépôt, une IA pédagogique analyse votre travail selon la [grille à 6 critères pondérés](/guide/criteres-correction-ia) et délivre un **feedback formatif immédiat avec note indicative** sur 20.
+* **Rôle de l'Enseignant** : **Seul l'enseignant cote et valide la note finale officielle**. Il réévalue chaque production et fixe la cote définitive pour le bulletin.
+:::
+
+### 📊 Tableau de Pondération Officielle (100 Points / 20)
+
+| Composante d'Évaluation | Pondération (%) | Points (/100) | Contribution sur 20 |
+| :--- | :---: | :---: | :---: |
+| **Quiz de la plateforme** *(Moyenne des 7 quiz)* | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 1** : Quel capteur choisir ? *(10 situations)* | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 2** : Quel outil pour quelle situation ? *(10 cas)* | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 3** : Excel - Structuration de données de terrain | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 4** : Excel - Créer ses propres outils de suivi | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 5** : De la donnée à la décision *(Veille & Science)* | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 6** : Créer une application IA et un agent | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 7 (Mission Finale)** : Du terrain à la décision | **30 %** | 30 pts | 6,0 pts |
+| **TOTAL GÉNÉRAL** | **100 %** | **100 pts** | **20,0 pts** |
+
+👉 **[Consulter les Modalités Complètes d'Évaluation & Mentions Académiques ↗](/guide/evaluation)**  
+👉 **[Consulter la Grille Officielle d'Évaluation IA à 6 critères ↗](/guide/criteres-correction-ia)**
 
 </div>
+

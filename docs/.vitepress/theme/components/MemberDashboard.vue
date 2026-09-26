@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { userStore, OFFICIAL_EVALUATION_ITEMS, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline } from '../stores/userStore'
+import { userStore, OFFICIAL_EVALUATION_ITEMS, ALL_QUIZ_MODULES, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline } from '../stores/userStore'
 
 const currentUser = computed(() => userStore.currentUser)
 
@@ -37,7 +37,7 @@ const confirmPasswordCurrent = ref('')
 const changePassFeedback = ref({ type: '', message: '' })
 
 // Onglet actif du dashboard membre
-const activeTab = ref('exercises') // 'exercises' | 'quizzes' | 'files'
+const activeTab = ref('exercises') // 'exercises' | 'quizzes' | 'evaluation' | 'files'
 
 // Dépôt de fichiers individualisé par exercice
 const exerciseUploadFiles = ref({})
@@ -57,7 +57,7 @@ const exercisesList = computed(() => {
 })
 
 const quizList = computed(() => {
-  return OFFICIAL_EVALUATION_ITEMS.filter(item => item.category === 'quiz')
+  return ALL_QUIZ_MODULES
 })
 
 const studentFiles = computed(() => {
@@ -570,11 +570,12 @@ function closeAiModal() {
       </div>
 
       <!-- ONGLETS MEMBRE -->
-      <div style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 2px solid var(--vp-c-divider); padding-bottom: 4px;">
+      <div style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 2px solid var(--vp-c-divider); padding-bottom: 4px; overflow-x: auto;">
         <button 
           v-for="t in [
             { id: 'exercises', label: '📋 Exercices & Devoirs (7)' },
             { id: 'quizzes', label: '🧠 Quiz en ligne (7)' },
+            { id: 'evaluation', label: '🏆 Relevé Officiel & Notes (/20)' },
             { id: 'files', label: '📁 Mes documents déposés' }
           ]" 
           :key="t.id"
@@ -586,7 +587,8 @@ function closeAiModal() {
             cursor: 'pointer',
             fontWeight: activeTab === t.id ? '700' : '500',
             background: activeTab === t.id ? 'var(--vp-c-brand-1)' : 'transparent',
-            color: activeTab === t.id ? '#fff' : 'inherit'
+            color: activeTab === t.id ? '#fff' : 'inherit',
+            whiteSpace: 'nowrap'
           }"
         >
           {{ t.label }}
@@ -741,7 +743,97 @@ function closeAiModal() {
         </div>
       </div>
 
-      <!-- ONGLET 3 : MES DOCUMENTS DÉPOSÉS -->
+      <!-- ONGLET 3 : RELEVÉ OFFICIEL & PONDÉRATION SUR 100 POINTS / 20 -->
+      <div v-if="activeTab === 'evaluation'">
+        <div style="background: var(--vp-c-bg-soft); border-radius: 12px; border: 1px solid var(--vp-c-divider); padding: 1.5rem; margin-bottom: 1.5rem;">
+          <h3 style="margin-top: 0; color: var(--vp-c-brand-1);">🏆 Synthèse Officielle des Évaluations (Barème sur 100 Points / 20)</h3>
+          <p style="font-size: 0.95rem; color: var(--vp-c-text-2); margin-bottom: 1rem;">
+            L'évaluation du cours s'articule autour de 8 composantes pondérées représentant 100 points, automatiquement ramenées à une note finale sur 20.
+          </p>
+
+          <div style="padding: 12px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.9rem; color: #1e40af;">
+            <strong>🤖 Note indicative de l'IA vs 👨‍🏫 Note officielle de l'enseignant :</strong>
+            <p style="margin: 4px 0 0 0;">
+              L'IA génère des retours formatifs et une cote indicative dès le dépôt de vos travaux afin de vous guider. <strong>Seul votre enseignant cote officiellement et valide la note définitive de vos devoirs</strong> lors de la délibération.
+            </p>
+          </div>
+
+          <!-- TABLEAU COMPARATIF POUR L'ÉTUDIANT -->
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+              <thead>
+                <tr style="background: var(--vp-c-bg); border-bottom: 2px solid var(--vp-c-divider); text-align: left;">
+                  <th style="padding: 10px 12px; border: 1px solid var(--vp-c-divider);">Composante d'Évaluation</th>
+                  <th style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center;">Pondération</th>
+                  <th style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center;">Statut</th>
+                  <th style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center;">🤖 Suggestion IA</th>
+                  <th style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center;">👨‍🏫 Note Officielle</th>
+                  <th style="padding: 10px 12px; border: 1px solid var(--vp-c-divider);">Commentaire</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="it in (studentEvaluation?.items || [])" :key="it.id" :style="{ background: it.category === 'final' ? '#fdf4ff' : 'var(--vp-c-bg)' }">
+                  <td style="padding: 10px 12px; border: 1px solid var(--vp-c-divider);">
+                    <strong>{{ it.title }}</strong>
+                  </td>
+                  <td style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center; font-weight: 700;">
+                    {{ it.maxPoints }} pts ({{ it.weightPct }}%)
+                  </td>
+                  <td style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center;">
+                    <span :style="{
+                      display: 'inline-block',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '0.8rem',
+                      fontWeight: '700',
+                      background: it.completed ? '#ecfdf5' : (it.isOverdue ? '#fee2e2' : '#f1f5f9'),
+                      color: it.completed ? '#047857' : (it.isOverdue ? '#991b1b' : '#64748b')
+                    }">
+                      {{ it.completed ? '✓ Rendu' : (it.isOverdue ? '⚠️ En retard' : '⏳ En attente') }}
+                    </span>
+                  </td>
+                  <td style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center; color: #0284c7; font-weight: 700;">
+                    {{ it.completed ? it.aiScore + ' / ' + it.maxPoints : '—' }}
+                  </td>
+                  <td style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); text-align: center;">
+                    <strong style="font-size: 1.05rem; color: var(--vp-c-brand-1);">
+                      {{ it.teacherScore }} / {{ it.maxPoints }}
+                    </strong>
+                  </td>
+                  <td style="padding: 10px 12px; border: 1px solid var(--vp-c-divider); font-size: 0.85rem; color: var(--vp-c-text-2);">
+                    {{ it.feedback || it.aiSummary || 'En attente' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CARTOUCHE DE RÉCAPITULATIF ÉTUDIANT -->
+          <div style="margin-top: 1.5rem; padding: 1.25rem; background: var(--vp-c-bg); border-radius: 10px; border: 2px solid var(--vp-c-brand-1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--vp-c-text-2); display: block;">BILAN ACADÉMIQUE OFFICIEL</span>
+              <strong style="font-size: 1.8rem; color: var(--vp-c-brand-1);">
+                {{ studentEvaluation?.totalOutOf20 }} / 20
+              </strong>
+              <span style="font-size: 0.95rem; color: var(--vp-c-text-2); margin-left: 8px;">
+                ({{ studentEvaluation?.totalScore }} / 100 points • {{ studentEvaluation?.percentage }}%)
+              </span>
+            </div>
+            <div>
+              <span style="display: inline-block; padding: 6px 14px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                {{ studentEvaluation?.mention }}
+              </span>
+            </div>
+          </div>
+
+          <div v-if="studentEvaluation?.feedback" style="margin-top: 1rem; padding: 12px 16px; background: var(--vp-c-bg); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+            <strong style="font-size: 0.9rem; color: var(--vp-c-brand-1);">💬 Synthèse & Observation générale de l'enseignant :</strong>
+            <p style="margin: 6px 0 0 0; font-size: 0.95rem;">{{ studentEvaluation.feedback }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ONGLET 4 : MES DOCUMENTS DÉPOSÉS -->
       <div v-if="activeTab === 'files'">
         <div v-if="studentFiles.length === 0" style="padding: 2rem; text-align: center; color: var(--vp-c-text-2);">
           Vous n'avez pas encore déposé de documents.

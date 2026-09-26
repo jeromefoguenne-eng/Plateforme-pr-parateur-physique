@@ -25,7 +25,14 @@ export default defineConfig({
       { text: "Accueil", link: "/" },
       { text: "👤 Espace Membre", link: "/espace-membre" },
       { text: "📚 Modules", link: "/modules/00-introduction" },
-      { text: "🧭 Guide & Évaluation", link: "/guide/" },
+      { 
+        text: "🧭 Guide & Évaluation", 
+        items: [
+          { text: "📌 Présentation & Objectifs", link: "/guide/" },
+          { text: "⚖️ Modalités d'Évaluation (100 pts / 20)", link: "/guide/evaluation" },
+          { text: "🤖 Grille & Critères de correction IA", link: "/guide/criteres-correction-ia" }
+        ]
+      },
       { text: "📁 Ressources", link: "/ressources/documents" },
       { text: "🔒 Admin", link: "/admin" }
     ],
@@ -75,6 +82,7 @@ export default defineConfig({
           text: "Guide & Modalités",
           items: [
             { text: "📌 Présentation de l'UE & Objectifs", link: "/guide/" },
+            { text: "⚖️ Modalités d'Évaluation (100 pts / 20)", link: "/guide/evaluation" },
             { text: "🤖 Grille & Critères de correction IA", link: "/guide/criteres-correction-ia" }
           ]
         }
