@@ -1075,7 +1075,17 @@ function handleResetAllStudents() {
 
       <!-- ONGLET 3 : TRAVAUX DÉPOSÉS -->
       <div v-if="adminTab === 'files'">
-        <h3 style="margin-top: 0;">Fichiers remis par les préparateurs physiques ({{ submittedFiles.length }})</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+          <h3 style="margin: 0;">Fichiers remis par les préparateurs physiques ({{ submittedFiles.length }})</h3>
+          <a 
+            href="https://drive.google.com/drive/folders/1p_8jFrooNUxUl5tlcMyhBGDbfskJfpZH" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: #e0f2fe; color: #0369a1; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; border: 1px solid #bae6fd;"
+          >
+            📂 Dossier Drive « Dossier exercices étudiants plateforme » ↗
+          </a>
+        </div>
         <div v-if="submittedFiles.length === 0" style="padding: 2rem; text-align: center; color: var(--vp-c-text-2);">
           Aucun document n'a encore été déposé.
         </div>

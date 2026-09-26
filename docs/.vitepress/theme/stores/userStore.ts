@@ -161,15 +161,127 @@ export const ALL_QUIZ_MODULES: QuizModuleDefinition[] = [
   { id: 'quiz-06', title: "Quiz 06 : Intelligence Artificielle & Agents", shortTitle: "Quiz 06 (IA)", maxPoints: 10 }
 ]
 
+export const GOOGLE_DRIVE_EXERCISES_FOLDER_ID = '1fRbYhPZKrhIB6uzQJonDgNdrqUdiuLOt'
+export const GOOGLE_DRIVE_EXERCISES_FOLDER_URL = 'https://drive.google.com/drive/folders/1fRbYhPZKrhIB6uzQJonDgNdrqUdiuLOt'
+export const GOOGLE_DRIVE_STUDENT_UPLOADS_FOLDER_ID = '1p_8jFrooNUxUl5tlcMyhBGDbfskJfpZH'
+export const GOOGLE_DRIVE_STUDENT_UPLOADS_FOLDER_URL = 'https://drive.google.com/drive/folders/1p_8jFrooNUxUl5tlcMyhBGDbfskJfpZH'
+
+export interface ExerciseCompanionFile {
+  name: string
+  fileBase: string
+  icon: string
+  downloadName?: string
+}
+
+export interface ExerciseDocInfo {
+  id: string
+  docId: string
+  fileBase: string
+  title: string
+  shortTitle: string
+  description: string
+  weightPct: number
+  points: number
+  category: 'exercice' | 'final'
+  companionFiles?: ExerciseCompanionFile[]
+}
+
+export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
+  'exercice-01': {
+    id: 'exercice-01',
+    docId: '1VoW7J4Yh-NfICyTeCALni0_bgQG0ITes',
+    fileBase: 'Exercice-01.docx',
+    title: 'Exercice 01 — Quel capteur choisir ?',
+    shortTitle: 'Ex 01 (Capteurs)',
+    description: "À partir de 10 études de cas professionnelles (football, sprint, rugby, CMJ basket, musculation, cyclisme, nutrition, variabilité cardiaque...), sélectionnez l'outil de mesure le plus pertinent pour recueillir la donnée utile, justifiez votre choix et indiquez les limites potentielles.",
+    weightPct: 10,
+    points: 10,
+    category: 'exercice'
+  },
+  'exercice-02': {
+    id: 'exercice-02',
+    docId: '1BjJKttNRbCntatiEF2yeM7G01dt0_aAq',
+    fileBase: 'Exercice-02.docx',
+    title: 'Exercice 02 — Quel outil pour quelle situation ?',
+    shortTitle: 'Ex 02 (Logiciels)',
+    description: "Pour chacun des 10 cas décisionnels proposés, identifiez les données requises, sélectionnez l'application spécialisée la plus adaptée (Nolio, WKO5, Kinovea, TrainingPeaks, Excel, Intervals.icu, MyJumpLab, MySprint...), proposez une alternative et justifiez les limites de votre choix.",
+    weightPct: 10,
+    points: 10,
+    category: 'exercice'
+  },
+  'exercice-03': {
+    id: 'exercice-03',
+    docId: '1XPGvFM1bagfFYJdGzwa062F5yGtYIHW0',
+    fileBase: 'Exercice-03.docx',
+    title: 'Exercice 03 — De la donnée brute au tableau de bord Excel',
+    shortTitle: 'Ex 03 (Structuration)',
+    description: "Nettoyer un jeu de données réelles U18 (détection d'anomalies, formats), automatiser les calculs de charge (Durée × RPE), construire 3 tableaux croisés dynamiques, 3 graphiques et concevoir un tableau de bord décisionnel synthétique pour le staff.",
+    weightPct: 10,
+    points: 10,
+    category: 'exercice',
+    companionFiles: [
+      { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-03-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-03-Tutoriel.docx' },
+      { name: 'Modèle attendu U18 (.xlsx)', fileBase: 'Exercice 03 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-03-Production-Attendue.xlsx' }
+    ]
+  },
+  'exercice-04': {
+    id: 'exercice-04',
+    docId: '142nATrt_U63k22rUvviCtAM-6lDGzwP7',
+    fileBase: 'Exercice-04.docx',
+    title: 'Exercice 04 — Concevoir ses propres outils numériques de suivi',
+    shortTitle: 'Ex 04 (Outils Excel)',
+    description: "Conception de 4 outils complets pour le préparateur physique : suivi de récupération (Hooper), quantification de charge interne smartphone (RPE), carnet numérique d'entraînement et batterie de tests physiques automatisée.",
+    weightPct: 10,
+    points: 10,
+    category: 'exercice'
+  },
+  'exercice-05': {
+    id: 'exercice-05',
+    docId: '1gZaNazzuep1Y965zZ9PJRTD13DGU1W5S',
+    fileBase: 'Exercice-05.docx',
+    title: 'Exercice 05 — De la donnée à la décision (analyse & ajustement)',
+    shortTitle: 'Ex 05 (Décision)',
+    description: "Étude du cas réel de Thomas : analyse des charges et de la fatigue, formulation de questions scientifiques, constitution d'un corpus sur NotebookLM, validation critique des sources et décision d'ajustement argumentée.",
+    weightPct: 10,
+    points: 10,
+    category: 'exercice'
+  },
+  'exercice-06': {
+    id: 'exercice-06',
+    docId: '1ln-MM2329wbYlZ9PnG9I173Yz7IGXqvn',
+    fileBase: 'Exercice-06.docx',
+    title: 'Exercice 06 — Créer une application et un agent IA pour le préparateur',
+    shortTitle: 'Ex 06 (Application IA)',
+    description: "Création guidée d'un prototype d'application et d'un agent IA d'assistance au staff avec Antigravity : distinction stricte Données → Analyse → Recommandation, intégration de calculs et tests de cohérence.",
+    weightPct: 10,
+    points: 10,
+    category: 'exercice'
+  },
+  'exercice-07': {
+    id: 'exercice-07',
+    docId: '16JPuDWgZtbV9iDg3gokRc8RzGM1iq5J-',
+    fileBase: 'Exercice-07.docx',
+    title: 'Exercice 07 — Mission professionnelle finale : Du terrain à la décision',
+    shortTitle: 'Ex 07 (Mission Finale)',
+    description: "Mission intégrative sur 6 semaines : import et structuration de données multisources (tests physiques, GPS, RPE, sommeil), calculs automatisés, modélisation de fatigue, tableau de bord pour l'entraîneur et prototype d'application mobile.",
+    weightPct: 30,
+    points: 30,
+    category: 'final',
+    companionFiles: [
+      { name: 'Jeu de données complet (.xlsx)', fileBase: 'donnees_exercice_final_outils_informatiques.xlsx', icon: '📈', downloadName: 'donnees_exercice_final_outils_informatiques.xlsx' }
+    ]
+  }
+}
+
 export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
   { id: 'quiz', title: "Quiz de la plateforme (Moyenne des 7 quiz)", shortTitle: "Quiz (10%)", maxPoints: 10, weightPct: 10, category: 'quiz' },
-  { id: 'exercice-01', title: "Exercice 01 : Quel capteur choisir ? (10 situations)", shortTitle: "Ex 01 (Capteurs)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex1" },
-  { id: 'exercice-02', title: "Exercice 02 : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02 (Logiciels)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex2" },
-  { id: 'exercice-03', title: "Exercice 03 : Excel - Collecte et structuration de données", shortTitle: "Ex 03 (Structuration)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex3" },
-  { id: 'exercice-04', title: "Exercice 04 : Excel - Créer ses propres outils de suivi", shortTitle: "Ex 04 (Outils Excel)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex4" },
-  { id: 'exercice-05', title: "Exercice 05 : De la donnée à la décision (analyse & ajustement)", shortTitle: "Ex 05 (Décision)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex5" },
-  { id: 'exercice-06', title: "Exercice 06 : Créer une application IA et un agent", shortTitle: "Ex 06 (Application IA)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex6" },
-  { id: 'exercice-07', title: "Exercice 07 : Mission professionnelle finale (Du terrain à la décision)", shortTitle: "Ex 07 (Mission Finale)", maxPoints: 30, weightPct: 30, category: 'final', googleDriveLink: "https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex7" }
+  { id: 'exercice-01', title: "Exercice 01 : Quel capteur choisir ? (10 situations)", shortTitle: "Ex 01 (Capteurs)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1VoW7J4Yh-NfICyTeCALni0_bgQG0ITes/preview" },
+  { id: 'exercice-02', title: "Exercice 02 : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02 (Logiciels)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1BjJKttNRbCntatiEF2yeM7G01dt0_aAq/preview" },
+  { id: 'exercice-03', title: "Exercice 03 : Excel - Collecte et structuration de données", shortTitle: "Ex 03 (Structuration)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1XPGvFM1bagfFYJdGzwa062F5yGtYIHW0/preview" },
+  { id: 'exercice-04', title: "Exercice 04 : Excel - Créer ses propres outils de suivi", shortTitle: "Ex 04 (Outils Excel)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/142nATrt_U63k22rUvviCtAM-6lDGzwP7/preview" },
+  { id: 'exercice-05', title: "Exercice 05 : De la donnée à la décision (analyse & ajustement)", shortTitle: "Ex 05 (Décision)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1gZaNazzuep1Y965zZ9PJRTD13DGU1W5S/preview" },
+  { id: 'exercice-06', title: "Exercice 06 : Créer une application IA et un agent", shortTitle: "Ex 06 (Application IA)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1ln-MM2329wbYlZ9PnG9I173Yz7IGXqvn/preview" },
+  { id: 'exercice-07', title: "Exercice 07 : Mission professionnelle finale (Du terrain à la décision)", shortTitle: "Ex 07 (Mission Finale)", maxPoints: 30, weightPct: 30, category: 'final', googleDriveLink: "https://docs.google.com/document/d/16JPuDWgZtbV9iDg3gokRc8RzGM1iq5J-/preview" }
 ]
 
 export interface EvaluationRecord {

@@ -1,6 +1,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { userStore, OFFICIAL_EVALUATION_ITEMS, ALL_QUIZ_MODULES, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline } from '../stores/userStore'
+import { withBase } from 'vitepress'
+import { 
+  userStore, 
+  OFFICIAL_EVALUATION_ITEMS, 
+  ALL_QUIZ_MODULES, 
+  formatDeadlineDisplay, 
+  getAlarmLevelInfo, 
+  parseDeadline,
+  EXERCISE_DOCS_DATA 
+} from '../stores/userStore'
 
 const currentUser = computed(() => userStore.currentUser)
 
@@ -338,6 +347,22 @@ function openAiModal(file) {
 function closeAiModal() {
   selectedAiModalFile.value = null
 }
+
+function getDocData(exId) {
+  return EXERCISE_DOCS_DATA[exId] || null
+}
+
+function getGoogleDocsViewUrl(docId) {
+  return `https://docs.google.com/document/d/${docId}/preview`
+}
+
+function getGoogleDocsCopyUrl(docId) {
+  return `https://docs.google.com/document/d/${docId}/copy`
+}
+
+function getWordDownloadUrl(fileBase) {
+  return withBase(`/documents/${fileBase}`)
+}
 </script>
 
 <template>
@@ -646,6 +671,49 @@ function closeAiModal() {
               <span style="font-weight: 700; color: var(--vp-c-brand-1); font-size: 1rem;">
                 / {{ ex.maxPoints }} pts
               </span>
+            </div>
+
+            <!-- RESSOURCES, CONSIGNES & MODÈLES GOOGLE DOCS -->
+            <div v-if="getDocData(ex.id)" style="margin-bottom: 1rem; padding: 10px 14px; background: var(--vp-c-bg); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+              <div style="font-size: 0.85rem; color: var(--vp-c-text-2); margin-bottom: 8px; line-height: 1.4;">
+                {{ getDocData(ex.id).description }}
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <a 
+                  :href="getGoogleDocsViewUrl(getDocData(ex.id).docId)" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.82rem; font-weight: 600; text-decoration: none;"
+                >
+                  📄 Ouvrir le sujet Google Docs ↗
+                </a>
+                <a 
+                  :href="getGoogleDocsCopyUrl(getDocData(ex.id).docId)" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 0.82rem; font-weight: 600; text-decoration: none;"
+                >
+                  📋 Créer une copie Google Drive
+                </a>
+                <a 
+                  :href="getWordDownloadUrl(getDocData(ex.id).fileBase)" 
+                  download
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; font-size: 0.82rem; font-weight: 600; text-decoration: none; color: inherit;"
+                >
+                  💾 Format Word (.docx)
+                </a>
+                <template v-if="getDocData(ex.id).companionFiles">
+                  <a 
+                    v-for="cf in getDocData(ex.id).companionFiles" 
+                    :key="cf.fileBase"
+                    :href="withBase('/documents/' + cf.fileBase)"
+                    :download="cf.downloadName || cf.fileBase"
+                    style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; border-radius: 6px; font-size: 0.82rem; font-weight: 600; text-decoration: none;"
+                  >
+                    {{ cf.icon }} {{ cf.name }}
+                  </a>
+                </template>
+              </div>
             </div>
 
             <!-- STATUT ACTUEL & FEEDBACK ENSEIGNANT -->

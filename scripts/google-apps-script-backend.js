@@ -26,7 +26,9 @@
  */
 
 var SPREADSHEET_NAME = "Préparation Physique HECh - Données Plateforme";
-var DRIVE_FOLDER_NAME = "Exercices étudiants Préparation Physique";
+// Dossier Google Drive de destination (synchronisé avec "C:\Google Drive\Prépas light\HECh\Préparateur physique\Dossier exercices étudiants plateforme")
+var DRIVE_FOLDER_ID = "1p_8jFrooNUxUl5tlcMyhBGDbfskJfpZH";
+var DRIVE_FOLDER_NAME = "Dossier exercices étudiants plateforme";
 
 /**
  * Point d'entrée GET (Lecture / Synchronisation)
@@ -478,12 +480,21 @@ function saveEvaluationToSheet(email, evalData) {
 
 function saveFileToDrive(filePayload) {
   try {
-    var folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
-    var rootFolder;
-    if (folders.hasNext()) {
-      rootFolder = folders.next();
-    } else {
-      rootFolder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
+    var rootFolder = null;
+    if (typeof DRIVE_FOLDER_ID !== 'undefined' && DRIVE_FOLDER_ID) {
+      try {
+        rootFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+      } catch (eId) {
+        rootFolder = null;
+      }
+    }
+    if (!rootFolder) {
+      var folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
+      if (folders.hasNext()) {
+        rootFolder = folders.next();
+      } else {
+        rootFolder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
+      }
     }
 
     // Sous-dossier par étudiant (ex: MERCIER_Lucas)
