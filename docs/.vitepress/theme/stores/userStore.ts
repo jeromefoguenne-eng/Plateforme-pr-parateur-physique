@@ -220,6 +220,7 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     points: 10,
     category: 'exercice',
     companionFiles: [
+      { name: 'Données brutes U18 (.xlsx)', fileBase: 'Exercice 03 - Donnees brutes U18.xlsx', icon: '📈', downloadName: 'Exercice-03-Donnees-Brutes-U18.xlsx' },
       { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-03-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-03-Tutoriel.docx' },
       { name: 'Modèle attendu U18 (.xlsx)', fileBase: 'Exercice 03 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-03-Production-Attendue.xlsx' }
     ]
@@ -235,6 +236,7 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     points: 10,
     category: 'exercice',
     companionFiles: [
+      { name: 'Données brutes de l\'exercice (.xlsx)', fileBase: 'Exercice 04 - Donnees brutes.xlsx', icon: '📈', downloadName: 'Exercice-04-Donnees-Brutes.xlsx' },
       { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-04-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-04-Tutoriel.docx' },
       { name: 'Modèle attendu - Outils de suivi (.xlsx)', fileBase: 'Exercice 04 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-04-Production-Attendue.xlsx' }
     ]
@@ -248,7 +250,10 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     description: "Étude du cas réel de Thomas : analyse des charges et de la fatigue, formulation de questions scientifiques, constitution d'un corpus sur NotebookLM, validation critique des sources et décision d'ajustement argumentée.",
     weightPct: 10,
     points: 10,
-    category: 'exercice'
+    category: 'exercice',
+    companionFiles: [
+      { name: 'Données de suivi de Thomas (.xlsx)', fileBase: 'Exercice 05 - Donnees de suivi Thomas.xlsx', icon: '📈', downloadName: 'Exercice-05-Donnees-Suivi-Thomas.xlsx' }
+    ]
   },
   'exercice-06': {
     id: 'exercice-06',
@@ -265,16 +270,16 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     id: 'exercice-07',
     docId: '16JPuDWgZtbV9iDg3gokRc8RzGM1iq5J-',
     fileBase: 'Exercice-07.docx',
-    title: 'Exercice 07 — Mission professionnelle finale : Du terrain à la décision',
-    shortTitle: 'Ex 07 (Mission Finale)',
-    description: "Mission intégrative sur 6 semaines : import et structuration de données multisources (tests physiques, GPS, RPE, sommeil), calculs automatisés, modélisation de fatigue, tableau de bord pour l'entraîneur et prototype d'application mobile.",
+    title: 'Exercice 07 — Mission finale : Modèle de lutte contre le surentraînement en football',
+    shortTitle: 'Ex 07 (Anti-Surentraînement)',
+    description: "Conception et implémentation d'un modèle décisionnel et algorithmique pour lutter contre le surentraînement dans une équipe de football (20 joueurs, 6 semaines) : croisement de télémétrie GPS, fréquence cardiaque, RPE de Foster, score Hooper et tests CMJ, cockpit décisionnel pour le staff et prototype mobile.",
     weightPct: 30,
     points: 30,
     category: 'final',
     companionFiles: [
-      { name: 'Jeu de données brut complet (.xlsx)', fileBase: 'donnees_exercice_final_outils_informatiques.xlsx', icon: '📈', downloadName: 'donnees_exercice_final_outils_informatiques.xlsx' },
+      { name: 'Données fictives de football (.xlsx)', fileBase: 'donnees_exercice_final_outils_informatiques.xlsx', icon: '⚽', downloadName: 'donnees_exercice_final_outils_informatiques.xlsx' },
       { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-07-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-07-Tutoriel.docx' },
-      { name: 'Modèle attendu finalisé (.xlsx)', fileBase: 'Exercice 07 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-07-Production-Attendue.xlsx' }
+      { name: 'Modèle attendu - Cockpit staff (.xlsx)', fileBase: 'Exercice 07 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-07-Production-Attendue.xlsx' }
     ]
   }
 }
@@ -287,7 +292,7 @@ export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
   { id: 'exercice-04', title: "Exercice 04 : Excel - Créer ses propres outils de suivi", shortTitle: "Ex 04 (Outils Excel)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/142nATrt_U63k22rUvviCtAM-6lDGzwP7/preview" },
   { id: 'exercice-05', title: "Exercice 05 : De la donnée à la décision (analyse & ajustement)", shortTitle: "Ex 05 (Décision)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1gZaNazzuep1Y965zZ9PJRTD13DGU1W5S/preview" },
   { id: 'exercice-06', title: "Exercice 06 : Créer une application IA et un agent", shortTitle: "Ex 06 (Application IA)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1ln-MM2329wbYlZ9PnG9I173Yz7IGXqvn/preview" },
-  { id: 'exercice-07', title: "Exercice 07 : Mission professionnelle finale (Du terrain à la décision)", shortTitle: "Ex 07 (Mission Finale)", maxPoints: 30, weightPct: 30, category: 'final', googleDriveLink: "https://docs.google.com/document/d/16JPuDWgZtbV9iDg3gokRc8RzGM1iq5J-/preview" }
+  { id: 'exercice-07', title: "Exercice 07 : Modèle de lutte contre le surentraînement en football", shortTitle: "Ex 07 (Anti-Surentraînement)", maxPoints: 30, weightPct: 30, category: 'final', googleDriveLink: "https://docs.google.com/document/d/16JPuDWgZtbV9iDg3gokRc8RzGM1iq5J-/preview" }
 ]
 
 export interface EvaluationRecord {
@@ -637,10 +642,10 @@ export const EXERCISE_RUBRICS: Record<string, ExerciseRubricConfig> = {
     minExpectedWords: 200
   },
   'exercice-07': {
-    title: "Exercice 07 — Mission professionnelle finale : du terrain à la décision",
-    expectedDeliverable: "Mission intégrative sur 6 semaines : import et structuration multisources, TCD, dashboard entraîneur, outil de collecte et prototype mobile.",
-    coreTopics: ['semaines', 'multisource', 'gps', 'rpe', 'hooper', 'testing', 'pre-post', 'tcd', 'dashboard', 'entraineur', 'mobile', 'glide', 'appsheet', 'plan d\'action', 'recommandation', 'charge', 'vitesse'],
-    keySituations: ['testing', 'suivi', 'dashboard', 'mobile', 'plan'],
+    title: "Exercice 07 — Mission finale : Modèle de lutte contre le surentraînement en football",
+    expectedDeliverable: "Modèle algorithmique anti-surentraînement sur une équipe de football (20 joueurs, 6 semaines) : GPS, FC, RPE, Hooper, CMJ, Cockpit staff et prototype mobile.",
+    coreTopics: ['football', 'surentrainement', 'overtraining', 'gps', 'acwr', 'hsr', 'sprint', 'deceleration', 'acceleration', 'hooper', 'sommeil', 'rpe', 'foster', 'cmj', 'cockpit', 'dashboard', 'staff', 'entraineur', 'decouplage', 'derive', 'tapering', 'koulibaly', 'claes', 'mobile'],
+    keySituations: ['surentrainement', 'gps', 'acwr', 'hooper', 'cockpit', 'mobile'],
     requiresLimits: true,
     minExpectedWords: 350
   }

@@ -46,7 +46,7 @@ Le barème officiel s'articule autour de **8 composantes complémentaires** int�
 | **📱 Exercice 4** : Excel - Créer ses propres outils de suivi | **10 %** | **10 pts** | 2,0 pts | Automatisation de questionnaires (Hooper, Session-RPE de Foster) et Dashboards TCD |
 | **🔬 Exercice 5** : De la donnée à la décision *(Veille & Science)* | **10 %** | **10 pts** | 2,0 pts | Veille scientifique avec NotebookLM, esprit critique et refus des dérives déterministes |
 | **🤖 Exercice 6** : Créer une application IA et un agent | **10 %** | **10 pts** | 2,0 pts | Conception et prototypage d'un assistant IA dédié à l'optimisation de l'entraînement |
-| **🏆 Exercice 7 (Mission Finale)** : Du terrain à la décision | **30 %** | **30 pts** | 6,0 pts | **Projet intégrateur d'expertise** : Plan complet de monitoring sur 6 semaines à partir d'un jeu de données brut |
+| **🏆 Exercice 7 (Mission Finale)** : Modèle anti-surentraînement | **30 %** | **30 pts** | 6,0 pts | **Projet intégrateur d'expertise** : Modélisation algorithmique et cockpit décisionnel en football professionnel à partir de télémétrie GPS, cardio, RPE et Hooper |
 | **TOTAL GÉNÉRAL** | **100 %** | **100 pts** | **20,0 pts** | **Note finale officielle (Seuil de validation : 50/100 soit 10/20)** |
 
 ---
@@ -67,7 +67,8 @@ Chaque atelier professionnel est noté sur une pondération de **10 points** (so
 
 ### 3. Mission Professionnelle Finale (Exercice 07 — 30% — 30 points)
 L'Exercice 07 représente **l'épreuve intégratrice majeure** du cours :
-* À partir d'un fichier de données sportives réelles et brutes récoltées sur 6 semaines (charges GPS, RPE, questionnaires Hooper, tests neuromusculaires), vous devez concevoir le dispositif complet d'aide à la décision pour le staff technique.
+* À partir d'une base multisource de 20 footballeurs professionnels suivis pendant 6 semaines (télémétrie GPS Catapult/Apex, fréquences cardiaques, RPE de Foster, questionnaires Hooper et tests neuromusculaires), vous concevez **votre propre modèle algorithmique de détection et prévention du surentraînement (OTS / NFOR)**.
+* Vous livrez le classeur Excel automatisé, un cockpit exécutif d'aide à la décision pour le staff technique, 4 préconisations opérationnelles pour la Semaine 7 et la maquette d'une application mobile pour les athlètes.
 * Cette mission synthétise l'ensemble des compétences de l'unité d'enseignement et compte pour **30% de la note finale** (30 points sur 100, soit une contribution de 6 points entiers sur 20).
 
 ---

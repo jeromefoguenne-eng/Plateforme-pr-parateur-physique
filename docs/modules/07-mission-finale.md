@@ -1,92 +1,79 @@
 ---
-title: "07. Mission Professionnelle Finale : Du Terrain à la Décision"
-description: "Épreuve intégrative mobilisant l'ensemble des compétences du cours : structuration de base de données sportive, automatisation Excel, TCD, tableau de bord coach et outil mobile de collecte."
+title: "07. Mission Finale : Modèle de Lutte contre le Surentraînement en Football"
+description: "Épreuve intégrative majeure (30% / 30 pts) : concevoir son propre modèle algorithmique pour anticiper le surentraînement et optimiser la disponibilité des joueurs à partir de données réelles GPS, cardio, RPE et Hooper."
 ---
 
-# 07. Mission Professionnelle Finale : Du Terrain à la Décision
+# 07. Mission Finale : Modèle de Lutte contre le Surentraînement en Football
 
 <div class="course-content justified-text">
 
-Cet exercice final propose une situation professionnelle intégrative mobilisant les principales compétences travaillées dans le cours : **collecte et importation de données, structuration dans un tableur, automatisation, analyse, visualisation, partage, comparaison d’outils et création d’un outil mobile de suivi**. Ces compétences correspondent directement aux acquis d’apprentissage de l’activité *« Exploitation des outils informatiques spécifiques (1/2) »* du profil de formation de la Haute École Charlemagne.
+Cet exercice final propose une situation professionnelle d'expertise mobilisant l'ensemble des compétences de l'unité d'enseignement : **conception de son propre modèle de suivi, automatisation avancée sous Excel, analyse de télémétrie GPS de football, croisement de la charge externe et interne, et cockpit décisionnel pour le staff technique**.
 
 ---
 
-## 🎯 Situation professionnelle
+## 🎯 Situation professionnelle : Head of Performance
 
 <div class="course-image-block">
   <img src="/images/illustration-testing-mission.jpg" alt="Évaluation et testing physique en situation professionnelle" class="course-img" loading="lazy" />
-  <span class="img-caption">Figure 9 : Mise en situation professionnelle : de l'audit des données brutes à la restitution stratégique au staff.</span>
+  <span class="img-caption">Figure 9 : Cockpit de monitoring et modélisation du risque de surentraînement en football professionnel.</span>
 </div>
 
+Vous êtes **Head of Performance** (Responsable de la préparation physique) d'un club de football professionnel. Durant un cycle dense de 6 semaines en cours de saison régulière, l'entraîneur principal et la direction sportive vous confient une mission déterminante :
 
-Vous êtes préparateur physique dans un club de sport collectif. L’entraîneur principal vous demande de mettre en place un **système numérique complet** permettant de suivre l’évolution des sportifs au cours d’une période de 6 semaines.
+> *« Nous devons enchaîner les matchs sans perdre nos cadres sur blessure, mais sans non plus sous-entraîner l'équipe. Je veux un système objectif capable d'identifier les joueurs en surmenage avant qu'ils ne se blessent ou ne sombrent physiquement le week-end. Créez notre propre modèle d'alerte et de décision. »*
 
-Vous disposez de plusieurs sources de données brutes :
-- Résultats de tests physiques initiaux et intermédiaires ;
-- Charge et durée des séances d’entraînement ;
-- Données de fréquence cardiaque et d'intensité ;
-- Présence / absence aux entraînements ;
-- Perception de l’effort (Session-RPE de Foster) ;
-- Qualité du sommeil, niveau de stress et fatigue ressentie (score de Hooper) ;
-- Informations relatives aux matchs et compétitions.
-
-Les données sont actuellement dispersées dans différents fichiers bruts (`donnees_exercice_final_outils_informatiques.xlsx`) et leur exploitation manuelle est fastidieuse et propice aux erreurs.
-
-**Votre mission :** concevoir un environnement numérique simple, automatisé, fiable et directement exploitable permettant au staff technique et médical de suivre les sportifs et d'objectiver leurs décisions au quotidien.
+Vous disposez d'un jeu de données complet (`donnees_exercice_final_outils_informatiques.xlsx`) issu des capteurs GPS Catapult/Apex, des ceintures cardiofréquencemètres et des questionnaires quotidiens des 20 joueurs de l'effectif :
+- **Télémétrie GPS (Matchs et Entraînements)** : Distance totale (km), courses à basse intensité, courses modérées, High-Speed Running (HSR 19.8-25.2 km/h en mètres), distance et nombre de sprints (>25.2 km/h), accélérations (>3 m/s²), décélérations (<-3 m/s²), vitesse de pointe et PlayerLoad.
+- **Charge Interne & Cardio** : FC moyenne, FC max, temps passé en zone rouge (>85% FCmax) et Session-RPE de Foster (1-10).
+- **Récupération Matinale (Indice de Hooper)** : Heures de sommeil, qualité du sommeil, stress, fatigue, courbatures et signalement de douleurs localisées sur 42 jours consécutifs.
+- **Marqueurs Neuromusculaires & Tests** : Suivi longitudinal en Semaines 1, 3 et 6 (Sprint 10m/30m, Détente CMJ, Navette Yo-Yo IR1 et dérive de fréquence cardiaque sous-maximale à 12 km/h).
 
 ---
 
 ## 📋 Cahier des charges du travail à réaliser
 
-### 1. Collecter et structurer les données
-À partir des données fournies :
-- Importez les données dans votre environnement de travail Excel ;
-- Identifiez et nettoyez les éventuelles erreurs, doublons, données aberrantes ou valeurs manquantes ;
-- Organisez les données dans un tableau structuré (1 colonne = 1 variable, 1 ligne = 1 observation) ;
-- Définissez clairement les variables, formats de cellules et unités de mesure utilisées.
+### 1. Contrôler et structurer la base de données multisource
+- Importez le fichier officiel de données fictives dans Excel.
+- Auditez la cohérence des variables (vitesse max, durées effectives, détection d'anomalies de saisie).
+- Structurez les tables de façon à permettre des calculs croisés instantanés entre charge externe (GPS) et charge interne (RPE/Cardio).
 
-> **Objectif :** passer d'une masse de données brutes hétérogènes à une véritable base de données tabulaire propre et exploitable.
+### 2. Concevoir votre propre modèle algorithmique anti-surentraînement
+Vous ne devez pas vous contenter d'appliquer une formule unique. Vous devez **concevoir votre propre indice multifactoriel de vulnérabilité (Score sur 100)** en intégrant :
+- **Les Ratios ACWR (Aigu:Chronique)** : Sur la distance totale et les métriques critiques (HSR, sprints, décélérations).
+- **La Monotonie et le Strain de Foster** : Détection des semaines à charge excessive et sans variation régénérative.
+- **Le Découplage Charge Externe / Charge Interne** : Identifier les athlètes dont le RPE et la FC augmentent anormalement alors que leur production mécanique (distance, sprints) régresse (signe pathognomonique de fatigue non fonctionnelle).
+- **L'Indice de Hooper & le Sommeil** : Intégration des signaux faibles de fatigue centrale et des dettes de sommeil.
+- **La Perte de Réactivité Neuromusculaire** : Prise en compte de la baisse de performance au saut CMJ.
 
-### 2. Automatiser le traitement et les calculs
-Construisez un tableau de suivi permettant notamment de calculer automatiquement :
-- Les moyennes, totaux et évolutions hebdomadaires ;
-- La charge de séance et la charge cumulée ;
-- Des indicateurs individuels par athlète ;
-- Des seuils d'alerte automatiques (mise en forme conditionnelle) signalant un pic de fatigue inhabituel ou un déséquilibre de charge ;
-- Les comparaisons inter-sportifs et l'évolution par rapport à la moyenne du groupe.
+### 3. Construire le Cockpit Décisionnel du Staff
+Créez un tableau de bord exécutif destiné au briefing matinal avec l'entraîneur :
+- **Cartes KPI globales** : Effectif opérationnel, nombre de joueurs sous alerte rouge, qualité moyenne du sommeil.
+- **Classification par feu tricolore** :
+  - 🟢 **Optimal (Vert)** : Adaptation positive, prêt pour haute intensité.
+  - 🟡 **Vigilance (Jaune)** : Charge élevée sous contrôle, surveillance sommeil.
+  - 🟠 **Surmenage Fonctionnel (Orange)** : Fatigue aiguë marquée, allègement partiel conseillé.
+  - 🔴 **Surentraînement / Risque Lésionnel (Rouge)** : Décharge immédiate, soins médicaux, retrait des sprints.
+- **Analyse des cas cliniques prioritaires** : Diagnostiquez précisément les athlètes en dérive (ex: Koulibaly, Claes, Dubois).
 
-### 3. Analyser et visualiser avec rigueur
-À partir de votre base de données :
-- Créez des graphiques clairs et percutants (évolution temporelle de la charge, profils individuels) ;
-- Réalisez au moins un **Tableau Croisé Dynamique (TCD)** synthétisant les données par semaine ou par poste de jeu ;
-- Identifiez les tendances, régularités ou anomalies physiologiques ;
-- Formulez **au moins trois constats étayés** à partir des données chiffrées ;
-- Proposez des pistes d'intervention concrètes fondées sur vos résultats.
+### 4. Rédiger le Plan d'Action Opérationnel pour la Semaine 7
+Formulez **4 préconisations argumentées** pour le staff technique en vue du match décisif du week-end :
+- Stratégie d'affûtage (*tapering*) collectif ;
+- Individualisation des formats d'entraînement (modulation des jeux réduits SSG vs grands espaces) ;
+- Recommandations tactiques de rotation d'effectif basées sur vos chiffres.
 
-> [!IMPORTANT]
-> Un graphique n'est pas une analyse en soi. Vous devez expliquer avec rigueur ce que les chiffres permettent réellement d'affirmer, sans extrapoler au-delà de la mesure.
-
-### 4. Construire un tableau de bord (Dashboard) pour l'entraîneur
-Transformez vos résultats en un tableau de bord synthétique destiné à l'entraîneur principal. Il doit lui permettre de répondre en un coup d'œil à des questions opérationnelles :
-- *Comment évolue la charge d'entraînement globale de l'équipe ?*
-- *Quels athlètes nécessitent une adaptation individuelle immédiate ?*
-- *Quelle est l'évolution de la condition physique mesurée lors des tests ?*
-- *Existe-t-il des corrélations visibles entre fatigue déclarée, charge subie et baisse de performance ?*
-- *Quels paramètres le staff doit-il surveiller lors des prochaines séances ?*
-
-### 5. Concevoir un outil de collecte de terrain
-Créez un formulaire numérique simple (Google Forms, Microsoft Forms ou formulaire tableur) permettant aux sportifs de renseigner facilement leurs données du matin ou d'après-séance (score de Hooper, RPE). Les réponses doivent pouvoir alimenter votre système de suivi.
-
-### 6. Créer un prototype mobile
-À partir de votre feuille de calcul, construisez ou prototypez une interface utilisable sur smartphone (via Glide, AppSheet ou un affichage optimisé) permettant au sportif de consulter son profil et au préparateur physique d'accéder aux données clés au bord du terrain.
+### 5. Prototyper l'Application Mobile de Terrain
+Détaillez les fonctionnalités clés d'une application smartphone dédiée :
+- **Côté Joueur** : Check-in Hooper du réveil en 30 secondes et RPE d'après-séance ;
+- **Côté Staff** : Alertes push instantanées au bord du terrain avant le début de l'entraînement.
 
 ---
 
 ## 📦 Fichiers et données de travail
 
-Vous pouvez télécharger les jeux de données bruts directement dans l'onglet **Ressources** ou via l'encadré ci-dessous :
-- `donnees_exercice_final_outils_informatiques.xlsx`
-- `Rapport de testing vierge.xlsx`
+Tous les documents d'accompagnement sont disponibles directement dans l'encadré ci-dessous :
+- ⚽ **Données fictives de football (.xlsx)** : Base multisource complète (Effectif, GPS 36 séances, Hooper 42 jours, Tests).
+- 📘 **Tutoriel pas-à-pas (.docx)** : Guide méthodologique détaillé pour concevoir votre modèle sous Excel.
+- 📊 **Modèle attendu - Cockpit staff (.xlsx)** : Exemple de classeur finalisé avec algorithme de vulnérabilité et tableau de bord.
 
 </div>
 
@@ -95,8 +82,8 @@ Vous pouvez télécharger les jeux de données bruts directement dans l'onglet *
 <ClientOnly>
   <ExerciseBox 
     exerciseId="exercice-07" 
-    exerciseTitle="Exercice 07 — Mission professionnelle finale : du terrain à la décision" 
-    googleDriveLink="https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex7" 
-    description="Déposez ici votre classeur Excel complet (.xlsx), votre rapport d'analyse (.docx ou .pdf) et le lien vers votre outil de collecte / prototype mobile." 
+    exerciseTitle="Exercice 07 — Mission finale : Modèle de lutte contre le surentraînement en football" 
+    googleDriveLink="https://docs.google.com/document/d/16JPuDWgZtbV9iDg3gokRc8RzGM1iq5J-/preview" 
+    description="Déposez ici votre classeur Excel complet (.xlsx), votre rapport d'expertise méthodologique (.docx ou .pdf) et la maquette de votre prototype mobile." 
   />
 </ClientOnly>
