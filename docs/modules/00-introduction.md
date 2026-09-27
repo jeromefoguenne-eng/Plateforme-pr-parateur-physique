@@ -217,8 +217,37 @@ Cette logique concerne également la prévention. Une variation inhabituelle de 
 
 </div>
 
+<div class="video-tutorial-box" style="margin-top: 2.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Extrait Vidéo — Podcast « La 90ème » :</strong> <em>Fred Taquin & la réalité des datas dans un staff professionnel</em>
+  </div>
+  <div class="video-responsive-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000;">
+    <video 
+      controls 
+      preload="metadata" 
+      playsinline 
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px; outline: none;"
+    >
+      <source src="/videos/90eme-fred-taquin-datas.mp4" type="video/mp4">
+      Votre navigateur ne prend pas en charge la lecture de vidéos HTML5.
+    </video>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Témoignage terrain de Fred Taquin (Entraîneur ayant mené la RAAL La Louvière de la P4 à la D1 professionnelle) :</strong> 
+    Comment le préparateur physique et le staff technique croisent au quotidien les métriques GPS (distances, accélérations, sprints), la charge interne (cardio, RPE) et le dialogue direct avec le joueur pour réduire l'imprévisibilité et ajuster les charges sans tomber dans le piège du « tout algorithmique ».
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📁 Fichier source de cours : <code>90ème Fred Taquin - datas.mp4</code> 
+      • 🎧 Émission : <em>La 90ème</em>
+      • ⏱️ Durée : 3 min 08s
+    </span>
+  </p>
+</div>
+
 ## 🎯 Auto-évaluation formative
 
 <ClientOnly>
   <QuizBox moduleId="00-introduction" moduleTitle="Introduction & Révolution des Données" />
 </ClientOnly>
+

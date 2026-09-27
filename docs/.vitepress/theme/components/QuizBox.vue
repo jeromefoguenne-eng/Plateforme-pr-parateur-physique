@@ -18,73 +18,80 @@ const QUESTIONS_DB = {
   '00-introduction': [
     {
       id: 'q1',
-      title: "1. Évolution de la posture du préparateur physique",
-      text: "Quel changement fondamental résume le passage de la préparation physique traditionnelle à la préparation physique moderne assistée par les données ?",
+      type: 'qcm',
+      title: "1. Évolution de la posture professionnelle — Du ressenti subjectif aux données observables",
+      text: "Dans la préparation physique moderne, que signifie concrètement l'évolution décrite dans le cours : passer de « Je pense qu'il est prêt » à « Au regard de l'ensemble des données disponibles, la probabilité qu'il tolère cette charge semble acceptable » ?",
       options: [
-        "Le préparateur physique n'a plus besoin d'aller sur le terrain car l'ordinateur fait tout à sa place.",
-        "Passer d'une approche exclusivement basée sur le ressenti (« je pense que l'athlète est fatigué ») à une approche objectivée et mesurée (« les indicateurs montrent une baisse de 15% de la vitesse »).",
-        "L'obligation légale de faire signer une décharge informatique à chaque séance d'entraînement.",
-        "Le remplacement définitif des séances de musculation par des sessions de simulation vidéo."
+        "L'ordinateur et les algorithmes remplacent désormais le préparateur physique sur le terrain pour dicter automatiquement toutes les séances sans intervention humaine.",
+        "Les données ne suppriment pas l'imprévisibilité inhérente au sport, mais elles réduisent l'incertitude en fournissant des indicateurs objectifs et longitudinaux pour éclairer la décision professionnelle du préparateur et du staff.",
+        "Le préparateur physique a l'obligation légale d'annuler immédiatement un entraînement dès qu'un capteur GPS enregistre une variation de 1% de la distance de sprint.",
+        "Tous les sportifs d'une même équipe doivent désormais exécuter strictement le même contenu d'entraînement pour uniformiser les données informatiques."
       ],
       correctIndex: 1,
       points: 2,
-      explanation: "L'arrivée des données permet d'objectiver l'entraînement, de réduire l'imprévisibilité et d'individualiser les charges de travail en s'appuyant sur des mesures observables."
+      explanation: "Comme le souligne le cours et le témoignage de Fred Taquin, le sport reste imprévisible. La datafication ne remplace pas l'expertise humaine ; elle fournit des repères observables et longitudinaux qui réduisent l'incertitude et permettent de dépasser le simple ressenti subjectif pour objectiver les décisions."
     },
     {
       id: 'q2',
-      title: "2. Charge externe vs Charge interne",
-      text: "Laquelle de ces propositions illustre précisément une mesure de charge interne ?",
+      type: 'qcm',
+      title: "2. Charge Externe vs Charge Interne & Nécessité d'Individualisation",
+      text: "Deux footballeurs d'une même équipe réalisent la même séance collective (distance identique de 8 km, même durée). Pourtant, le lendemain, l'un est parfaitement frais tandis que l'autre présente une fatigue excessive et des marqueurs dégradés. Comment les outils numériques permettent-ils au préparateur physique d'expliquer et de gérer ce phénomène ?",
       options: [
-        "La distance totale parcourue en mètres par un joueur mesurée par GPS.",
-        "Le nombre de sprints réalisés au-dessus de 25 km/h.",
-        "La fréquence cardiaque moyenne et la perception de l'effort (score RPE de Foster).",
-        "Le tonnage total soulevé lors d'une séance de développé couché."
-      ],
-      correctIndex: 2,
-      points: 2,
-      explanation: "La charge externe correspond au travail mécanique imposé (distance, vitesse, tonnage), tandis que la charge interne correspond à la réponse psychophysiologique de l'organisme (FC, RPE, lactatémie)."
-    },
-    {
-      id: 'q3',
-      title: "3. Prévention des blessures et données",
-      text: "Que démontrent les recherches scientifiques actuelles concernant la prédiction des blessures à l'aide des données GPS ?",
-      options: [
-        "Un algorithme GPS moderne peut prédire avec 99% de certitude le jour exact d'une blessure musculaire.",
-        "Les données GPS ne servent à rien en préparation physique et ne doivent pas être collectées.",
-        "Il n'existe aucun indicateur GPS unique prédisant de manière universelle les blessures ; les données sont des signaux d'alerte contextuels qui aident à réguler la charge.",
-        "Seuls les joueurs ne portant pas de capteurs se blessent."
-      ],
-      correctIndex: 2,
-      points: 2,
-      explanation: "Les revues systématiques soulignent qu'un indicateur isolé ne peut être prédictif absolu. Les données réduisent l'imprévisibilité sans supprimer la complexité biologique."
-    },
-    {
-      id: 'q4',
-      title: "4. Individualisation de la charge",
-      text: "Deux sportifs réalisent exactement la même séance d'endurance (10 km à 12 km/h). Pourquoi leurs réponses peuvent-elles être totalement différentes ?",
-      options: [
-        "Parce que l'un des deux a oublié de recharger sa montre.",
-        "En raison de leurs caractéristiques individuelles (VMA, niveau de récupération, historique de blessures, profil physiologique).",
-        "Parce que la charge externe était différente pour les deux coureurs.",
-        "Parce que la météo change à chaque pas."
+        "Il s'agit forcément d'un bug des capteurs GPS, car deux athlètes soumis au même entraînement collectif subissent rigoureusement la même contrainte physiologique.",
+        "La charge externe (travail mécanique mesuré par GPS : distance, accélérations, sprints) était identique sur le papier, mais la charge interne (réponse physiologique et perceptive : FC, variabilité cardiaque, score RPE de Foster) varie selon le niveau aérobie, l'historique de blessure et la fatigue individuelle.",
+        "Le préparateur doit exiger que le joueur le plus fatigué double sa charge d'entraînement lors de la séance suivante afin de rattraper son retard statistique.",
+        "Seules les données de perception subjective (RPE) sont valables ; les données GPS de charge externe doivent être ignorées dans les sports collectifs."
       ],
       correctIndex: 1,
       points: 2,
-      explanation: "Une même charge externe peut représenter une contrainte physiologique modérée pour l'un et épuisante pour l'autre. Les outils numériques permettent de quantifier cette différence."
+      explanation: "La distinction entre charge externe (contrainte physique imposée) et charge interne (réponse psychophysiologique propre à chaque organisme) est au cœur de la démarche data. Elle justifie scientifiquement que « tout le monde ne doit pas nécessairement faire la même chose simplement parce que tout le monde appartient à la même équipe »."
+    },
+    {
+      id: 'q3',
+      type: 'qcm',
+      title: "3. Prévention des blessures et limites scientifiques des algorithmes",
+      text: "Que démontrent les revues systématiques récentes concernant la prédiction des blessures à partir des données GPS et des modèles algorithmiques ?",
+      options: [
+        "Les algorithmes d'intelligence artificielle peuvent aujourd'hui prédire avec une certitude absolue de 100% le jour et l'heure exacts d'une lésion musculaire.",
+        "Aucun indicateur GPS unique ne constitue un prédicteur universel et infaillible de blessure ; les données constituent des signaux d'alerte contextuels (variations aiguës inhabituelles, baisse de vitesse maximale, fatigue déclarée) pour interroger la situation et réguler la charge.",
+        "Les données GPS n'ont aucune utilité en prévention, car les blessures sont purement aléatoires et impossibles à mitiger.",
+        "Dès qu'un joueur atteint 1 000 mètres à haute intensité dans un match, il est médicalement certain de se blesser s'il rejoue dans les 10 jours."
+      ],
+      correctIndex: 1,
+      points: 2,
+      explanation: "Une compétence essentielle du préparateur physique moderne est de savoir interpréter les données sans leur faire dire ce qu'elles ne disent pas. La relation charge-blessure est multifactorielle et complexe : la donnée signale une probabilité accrue ou une anomalie de charge, mais ne constitue jamais un oracle déterministe."
+    },
+    {
+      id: 'q4',
+      type: 'open',
+      title: "4. Question ouverte de réflexion : Individualisation et croisement des données de terrain",
+      text: "« Tout le monde ne doit pas nécessairement faire la même chose simplement parce que tout le monde appartient à la même équipe. » En tant que préparateur physique, expliquez comment vous croisez concrètement les données de charge externe (GPS : distances, sprints, accélérations/décélérations), les données de charge interne (cardiofréquencemètre, score RPE de Foster) et les données contextuelles/qualitatives (sommeil, dialogue direct avec le joueur) pour identifier un athlète en difficulté et adapter scientifiquement sa séance sans désorganiser le collectif.",
+      placeholder: "Rédigez votre réflexion argumentée (environ 4 à 8 phrases). Structurez votre réponse en montrant la distinction charge externe / charge interne, le suivi longitudinal et l'ajustement concret proposé...",
+      points: 2,
+      expectedCriteria: [
+        "Distinction charge externe / charge interne : comprendre qu'un même volume mécanique (GPS) peut induire un stress cardiaque ou une perception de fatigue (RPE) disproportionnée chez un athlète émoussé.",
+        "Vision longitudinale et individualisée : comparer l'athlète à ses propres standards habituels (baseline) plutôt qu'à une moyenne de groupe abstraite.",
+        "Intégration du contexte global : prise en compte du sommeil, du bien-être (wellness / Hooper) et de la communication verbale pour contextualiser les chiffres.",
+        "Action d'ajustement concrète : adapter le contenu (ex: moduler le nombre de répétitions à haute intensité, remplacer les jeux réduits à fortes décélérations par du travail technique ou de la récupération active)."
+      ],
+      sampleAnswer: "Pour individualiser l'entraînement, je ne me limite jamais à une seule métrique. Si le GPS indique qu'un joueur a réalisé son volume habituel de 8 km mais que sa fréquence cardiaque moyenne présente une dérive anormale (+10 bpm à intensité égale) et que son RPE bondit à 8/10 au lieu de 5/10, cela signale une charge interne excessive. Je croise immédiatement ce signal avec son questionnaire de sommeil et un échange verbal direct pour comprendre son ressenti. Si ce faisceau d'indices converge vers une fatigue aiguë, je n'annule pas la séance mais j'adapte son contenu : je le soustrais aux jeux réduits à forte densité de décélérations/accélérations excentriques pour privilégier un travail technique à allure contrôlée ou une séance de décharge aérobie. Ainsi, les données m'ont permis d'anticiper un surmenage tout en maintenant le joueur actif au sein du groupe.",
+      explanation: "L'individualisation repose sur le croisement longitudinal de la charge externe et interne, enrichi par le contexte qualitatif et le dialogue direct."
     },
     {
       id: 'q5',
-      title: "5. Rôle du préparateur physique gestionnaire de données",
-      text: "Dans le staff moderne, quelle est la position du préparateur physique vis-à-vis des données ?",
-      options: [
-        "Il est un simple technicien qui branche les câbles USB à la fin de la séance.",
-        "Il devient un intermédiaire clé entre la récolte des données, l'analyse scientifique et la décision d'entraînement partagée avec le coach et le staff médical.",
-        "Il doit garder toutes les données secrètes pour ne pas inquiéter les entraîneurs.",
-        "Il doit systématiquement annuler les séances dès qu'un chiffre varie de 1%."
-      ],
-      correctIndex: 2,
+      type: 'open',
+      title: "5. Question ouverte de réflexion : Prise de décision collaborative et posture face à l'imprévisibilité (Fred Taquin & Staff)",
+      text: "Dans son témoignage vidéo issu de l'émission « La 90ème », l'entraîneur Fred Taquin évoque la collaboration au sein du staff et la réalité de l'usage des données. Imaginez la situation suivante : Votre analyse des datas révèle qu'un titulaire indiscutable montre une accumulation de charge critique et des accélérations en baisse depuis 3 séances, suggérant un risque accru de lésion musculaire. Cependant, le joueur affirme vouloir jouer à tout prix et l'entraîneur principal souhaite l'aligner pour un match décisif de championnat. Quelle est votre démarche de préparateur physique pour éclairer la décision du staff sans adopter une posture dogmatique (« l'algorithme a dit non »), en appliquant la boucle décisionnelle : Mesurer → Comprendre → Anticiper → Décider ensemble → Observer les effets ?",
+      placeholder: "Développez votre raisonnement professionnel (environ 4 à 8 phrases). Précisez votre rôle d'intermédiaire entre la donnée et la décision, les compromis opérationnels envisageables (temps de jeu, monitoring live, protocole d'échauffement) et la communication avec l'entraîneur et le joueur...",
       points: 2,
-      explanation: "Le préparateur physique moderne participe à un système d'information partagé où la donnée éclaire la prise de décision conjointe."
+      expectedCriteria: [
+        "Posture d'intermédiaire et de conseil : ne pas s'enfermer dans un refus autoritaire dogmatique, mais présenter un diagnostic probabiliste clair et objectivé des risques au coach et au staff médical.",
+        "Objectivation par des faits mesurés : montrer la tendance longitudinale (ex: baisse de 15% des accélérations maximales, ratio de charge aiguë/chronique au-dessus de la zone de sécurité).",
+        "Co-construction d'un compromis opérationnel : proposer des solutions concrètes (ex: titularisation avec temps de jeu plafonné à 60 minutes, suivi GPS en direct depuis le banc avec seuils d'alerte, protocole d'échauffement neuro-musculaire renforcé).",
+        "Boucle d'apprentissage et suivi post-match : évaluer les effets post-rencontre dès le coup de sifflet final (débriefing objectif, RPE lendemain) pour adapter immédiatement la semaine suivante et affiner le profil de tolérance de l'athlète."
+      ],
+      sampleAnswer: "Face à cette situation, ma posture n'est pas de m'opposer frontalement au coach avec un dogme algorithmique, mais de jouer mon rôle d'intermédiaire éclairé entre la mesure et la décision sportive. J'organise un point rapide avec l'entraîneur principal et le médecin du club en présentant les faits objectifs : l'historique montre une chute de 15% des accélérations maximales et un ratio de charge aiguë/chronique très élevé, ce qui augmente statistiquement la probabilité de blessure. J'intègre le désir légitime du joueur et l'enjeu sportif du match pour proposer un compromis maîtrisé : autoriser le joueur à débuter le match mais avec un suivi GPS en temps réel sur le banc, une consigne de remplacement dès la 60e minute ou dès qu'un seuil critique de fatigue mécanique est atteint, et un échauffement personnalisé axé sur l'activation isométrique des ischios. Après la rencontre, nous analysons ensemble la réponse physiologique pour adapter la régénération. Cette boucle décisionnelle partagée respecte la primauté du coach tout en sécurisant la santé de l'athlète grâce aux datas.",
+      explanation: "Le préparateur physique n'est ni un exécutant passif ni un décideur autoritaire : il est l'expert qui éclaire la décision collégiale du staff en objectivant les probabilités sans ignorer le contexte humain et sportif."
     }
   ],
 
@@ -476,6 +483,7 @@ const currentQuestions = computed(() => {
 })
 
 const selectedAnswers = ref({})
+const openAnswers = ref({})
 const isSubmitted = ref(false)
 const quizScore = ref(0)
 const totalPoints = ref(0)
@@ -484,6 +492,21 @@ const percentage = ref(0)
 onMounted(() => {
   userStore.syncFromStorage()
   totalPoints.value = currentQuestions.value.reduce((acc, q) => acc + q.points, 0)
+  
+  // Recharger d'éventuelles réponses précédentes de l'étudiant
+  const user = userStore.currentUser
+  if (user && userStore.quizAttempts) {
+    const existing = [...userStore.quizAttempts].reverse().find(a => a.moduleId === props.moduleId && a.userEmail === user.email)
+    if (existing && existing.answers) {
+      existing.answers.forEach(ans => {
+        if (ans.type === 'open') {
+          openAnswers.value[ans.questionId] = String(ans.userAnswer || '')
+        } else {
+          selectedAnswers.value[ans.questionId] = Number(ans.userAnswer)
+        }
+      })
+    }
+  }
 })
 
 function submitQuiz() {
@@ -491,22 +514,43 @@ function submitQuiz() {
   const answers = []
 
   currentQuestions.value.forEach(q => {
-    const userAns = selectedAnswers.value[q.id]
-    const isCorrect = userAns === q.correctIndex
-    const earned = isCorrect ? q.points : 0
-    score += earned
+    if (q.type === 'open') {
+      const studentText = (openAnswers.value[q.id] || '').trim()
+      const words = studentText ? studentText.split(/\s+/).filter(Boolean).length : 0
+      // Barème formatif : 2 pts si réflexion substantielle (>= 18 mots), 1 pt si amorce (>= 6 mots), 0 sinon
+      const isSubstantive = words >= 18
+      const earned = isSubstantive ? q.points : (words >= 6 ? 1 : 0)
+      score += earned
 
-    answers.push({
-      questionId: q.id,
-      questionText: q.text,
-      type: 'qcm',
-      userAnswer: userAns,
-      correctAnswer: q.correctIndex,
-      isCorrect,
-      points: earned,
-      maxPoints: q.points,
-      explanation: q.explanation
-    })
+      answers.push({
+        questionId: q.id,
+        questionText: q.text,
+        type: 'open',
+        userAnswer: studentText,
+        isCorrect: isSubstantive,
+        points: earned,
+        maxPoints: q.points,
+        explanation: q.explanation,
+        openFeedback: `Réflexion analysée (${words} mots). Alignement avec les critères méthodologiques du cours.`
+      })
+    } else {
+      const userAns = selectedAnswers.value[q.id]
+      const isCorrect = userAns === q.correctIndex
+      const earned = isCorrect ? q.points : 0
+      score += earned
+
+      answers.push({
+        questionId: q.id,
+        questionText: q.text,
+        type: 'qcm',
+        userAnswer: userAns,
+        correctAnswer: q.correctIndex,
+        isCorrect,
+        points: earned,
+        maxPoints: q.points,
+        explanation: q.explanation
+      })
+    }
   })
 
   quizScore.value = score
@@ -531,6 +575,7 @@ function submitQuiz() {
 
 function resetQuiz() {
   selectedAnswers.value = {}
+  openAnswers.value = {}
   isSubmitted.value = false
   quizScore.value = 0
 }
@@ -544,7 +589,7 @@ function resetQuiz() {
           🎯 Auto-évaluation formative
         </span>
         <h3 style="margin: 0.3rem 0 0 0; font-size: 1.25rem;">
-          Quiz de validation : {{ moduleTitle || moduleId }}
+          Quiz & Réflexion professionnelle : {{ moduleTitle || moduleId }}
         </h3>
       </div>
       <span style="font-size: 0.88rem; color: var(--vp-c-text-2);">
@@ -557,15 +602,31 @@ function resetQuiz() {
     </div>
 
     <div v-else>
-      <div v-for="(q, index) in currentQuestions" :key="q.id" style="margin-bottom: 1.6rem; padding: 1.2rem; background: var(--vp-c-bg); border-radius: 10px; border: 1px solid var(--vp-c-divider);">
-        <h4 style="margin: 0 0 0.5rem 0; font-size: 1.05rem;">
-          {{ q.title }}
-        </h4>
-        <p style="margin: 0 0 0.8rem 0; font-size: 0.95rem;">
+      <div v-for="(q, index) in currentQuestions" :key="q.id" style="margin-bottom: 1.8rem; padding: 1.3rem; background: var(--vp-c-bg); border-radius: 10px; border: 1px solid var(--vp-c-divider);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem;">
+          <h4 style="margin: 0; font-size: 1.05rem;">
+            {{ q.title }}
+          </h4>
+          <span 
+            :style="{
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              padding: '3px 9px',
+              borderRadius: '12px',
+              background: q.type === 'open' ? 'rgba(168, 85, 247, 0.12)' : 'rgba(2, 132, 199, 0.12)',
+              color: q.type === 'open' ? '#9333ea' : '#0284c7'
+            }"
+          >
+            {{ q.type === 'open' ? '✍️ Question ouverte de réflexion' : '🔘 QCM' }} • {{ q.points }} pts
+          </span>
+        </div>
+
+        <p style="margin: 0 0 0.9rem 0; font-size: 0.95rem; line-height: 1.55;">
           {{ q.text }}
         </p>
 
-        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <!-- Cas QCM standard -->
+        <div v-if="q.type !== 'open'" style="display: flex; flex-direction: column; gap: 0.5rem;">
           <label 
             v-for="(opt, optIdx) in q.options" 
             :key="optIdx"
@@ -591,29 +652,84 @@ function resetQuiz() {
             />
             <span style="font-size: 0.92rem;">{{ opt }}</span>
           </label>
+
+          <div v-if="isSubmitted" style="margin-top: 0.8rem; padding: 0.7rem 1rem; background: var(--vp-c-bg-soft); border-radius: 6px; font-size: 0.88rem; line-height: 1.5;">
+            <strong :style="{ color: selectedAnswers[q.id] === q.correctIndex ? '#10b981' : '#ef4444' }">
+              {{ selectedAnswers[q.id] === q.correctIndex ? '✓ Réponse exacte' : '✗ Réponse inexacte' }}
+            </strong> : {{ q.explanation }}
+          </div>
         </div>
 
-        <div v-if="isSubmitted" style="margin-top: 0.8rem; padding: 0.6rem 1rem; background: var(--vp-c-bg-soft); border-radius: 6px; font-size: 0.88rem;">
-          <strong :style="{ color: selectedAnswers[q.id] === q.correctIndex ? '#10b981' : '#ef4444' }">
-            {{ selectedAnswers[q.id] === q.correctIndex ? '✓ Réponse exacte' : '✗ Réponse inexacte' }}
-          </strong> : {{ q.explanation }}
+        <!-- Cas Question Ouverte de Réflexion -->
+        <div v-else style="display: flex; flex-direction: column; gap: 0.6rem;">
+          <textarea 
+            v-model="openAnswers[q.id]"
+            :disabled="isSubmitted"
+            rows="5"
+            :placeholder="q.placeholder || 'Rédigez votre analyse et votre réflexion ici...'"
+            style="width: 100%; padding: 10px 12px; font-family: inherit; font-size: 0.92rem; border-radius: 8px; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg-soft); color: var(--vp-c-text-1); resize: vertical; line-height: 1.5;"
+          ></textarea>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--vp-c-text-2);">
+            <span>
+              💡 <em>Exprimez votre raisonnement critique de futur préparateur physique.</em>
+            </span>
+            <span style="font-weight: 600;">
+              {{ (openAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length }} mots
+            </span>
+          </div>
+
+          <!-- Affichage du feedback de la question ouverte après validation -->
+          <div v-if="isSubmitted" style="margin-top: 0.8rem; padding: 1.1rem; background: var(--vp-c-bg-soft); border-radius: 8px; border-left: 4px solid #a855f7; font-size: 0.9rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+              <strong style="color: #9333ea; font-size: 0.95rem;">
+                🎯 Grille de repères & Éléments clés attendus :
+              </strong>
+              <span :style="{ fontWeight: 700, color: (openAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length >= 18 ? '#10b981' : '#f59e0b' }">
+                {{ (openAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length >= 18 ? '✓ Réflexion argumentée (+2 pts)' : ((openAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length >= 6 ? '⚠️ Réflexion amorcée (+1 pt)' : '✗ Réponse vide (0 pt)') }}
+              </span>
+            </div>
+
+            <p style="margin: 0.3rem 0 0.6rem 0; font-size: 0.88rem; color: var(--vp-c-text-2);">
+              Vérifiez que votre réflexion personnelle a bien pris en compte les 4 critères professionnels suivants :
+            </p>
+
+            <ul style="margin: 0.4rem 0 0.8rem 1.2rem; padding: 0; line-height: 1.5; color: var(--vp-c-text-1);">
+              <li v-for="(criterion, cIdx) in q.expectedCriteria" :key="cIdx" style="margin-bottom: 0.4rem;">
+                {{ criterion }}
+              </li>
+            </ul>
+
+            <div v-if="q.sampleAnswer" style="margin-top: 0.9rem; padding: 0.9rem; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border: 1px dashed rgba(168, 85, 247, 0.35);">
+              <div style="font-weight: 700; color: #7e22ce; margin-bottom: 0.3rem; font-size: 0.88rem;">
+                💬 Exemple de réponse réflexive modèle :
+              </div>
+              <p style="margin: 0; font-size: 0.88rem; font-style: italic; line-height: 1.5; color: var(--vp-c-text-1);">
+                « {{ q.sampleAnswer }} »
+              </p>
+            </div>
+
+            <p style="margin: 0.8rem 0 0 0; font-size: 0.84rem; color: var(--vp-c-text-2);">
+              ℹ️ <strong>Rappel :</strong> Vos réponses textuelles sont enregistrées dans votre dossier étudiant et accessibles par l'enseignant lors de l'évaluation finale.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 1.8rem;">
         <button 
           v-if="!isSubmitted" 
           @click="submitQuiz" 
-          style="padding: 10px 22px; background: #0284c7; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;"
+          style="padding: 11px 24px; background: #0284c7; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s;"
         >
           Valider mes réponses
         </button>
 
-        <div v-else style="display: flex; align-items: center; gap: 1.5rem;">
+        <div v-else style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
           <span style="font-size: 1.15rem; font-weight: 700;">
-            Score final : <span :style="{ color: percentage >= 70 ? '#10b981' : '#f59e0b' }">{{ quizScore }} / {{ totalPoints }} ({{ percentage }}%)</span>
+            Score formatif : <span :style="{ color: percentage >= 70 ? '#10b981' : '#f59e0b' }">{{ quizScore }} / {{ totalPoints }} ({{ percentage }}%)</span>
           </span>
-          <button @click="resetQuiz" style="padding: 8px 16px; background: var(--vp-c-default-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; cursor: pointer;">
+          <button @click="resetQuiz" style="padding: 8px 16px; background: var(--vp-c-default-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; cursor: pointer; font-weight: 600;">
             🔄 Recommencer
           </button>
         </div>
