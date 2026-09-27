@@ -64,7 +64,7 @@ export default defineConfig({
           text: "Ressources & Documents",
           collapsed: true,
           items: [
-            { text: "📁 Fichiers modèles & Données", link: "/ressources/documents" },
+            { text: "📁 Ressources", link: "/ressources/documents" },
             { text: "📚 Bibliographie scientifique", link: "/ressources/bibliographie" }
           ]
         }
@@ -99,7 +99,7 @@ export default defineConfig({
         {
           text: "Boîte à Outils",
           items: [
-            { text: "📁 Fichiers modèles & Jeux de données", link: "/ressources/documents" },
+            { text: "📁 Ressources", link: "/ressources/documents" },
             { text: "📚 Bibliographie scientifique complète", link: "/ressources/bibliographie" }
           ]
         }
