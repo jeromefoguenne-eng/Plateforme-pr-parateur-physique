@@ -233,7 +233,11 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     description: "Conception de 4 outils complets pour le préparateur physique : suivi de récupération (Hooper), quantification de charge interne smartphone (RPE), carnet numérique d'entraînement et batterie de tests physiques automatisée.",
     weightPct: 10,
     points: 10,
-    category: 'exercice'
+    category: 'exercice',
+    companionFiles: [
+      { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-04-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-04-Tutoriel.docx' },
+      { name: 'Modèle attendu - Outils de suivi (.xlsx)', fileBase: 'Exercice 04 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-04-Production-Attendue.xlsx' }
+    ]
   },
   'exercice-05': {
     id: 'exercice-05',
@@ -268,7 +272,9 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     points: 30,
     category: 'final',
     companionFiles: [
-      { name: 'Jeu de données complet (.xlsx)', fileBase: 'donnees_exercice_final_outils_informatiques.xlsx', icon: '📈', downloadName: 'donnees_exercice_final_outils_informatiques.xlsx' }
+      { name: 'Jeu de données brut complet (.xlsx)', fileBase: 'donnees_exercice_final_outils_informatiques.xlsx', icon: '📈', downloadName: 'donnees_exercice_final_outils_informatiques.xlsx' },
+      { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-07-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-07-Tutoriel.docx' },
+      { name: 'Modèle attendu finalisé (.xlsx)', fileBase: 'Exercice 07 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-07-Production-Attendue.xlsx' }
     ]
   }
 }
