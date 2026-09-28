@@ -148,6 +148,29 @@ Ils peuvent être beaucoup plus adaptés que le GPS pour les salles ou les infra
 
 Dans les études de validation, les systèmes LPS peuvent présenter une bonne précision, mais leurs performances dépendent fortement de la technologie et de l'installation. Une étude comparative a notamment obtenu de meilleurs résultats avec un LPS 20 Hz qu'avec des GPS 10 et 18 Hz pour plusieurs variables de déplacement.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo de terrain — Section Paloise (Top 14) :</strong> <em>90 secondes pour comprendre le tracking et les systèmes de positionnement</em>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/wWZlUoZb_GQ" 
+      title="90 secondes pour comprendre - Les systèmes de positionnement et GPS dans le sport professionnel" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application en sport d'élite :</strong> Présentation par le staff professionnel de la Section Paloise Rugby de l'utilisation des capteurs de positionnement portés par les athlètes pour quantifier les distances, les accélérations et les impacts en temps réel.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=wWZlUoZb_GQ" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+      • ⏱️ Durée : ~1 min 30
+    </span>
+  </p>
+</div>
 
 ## 2.4.Les accéléromètres et IMU
 
