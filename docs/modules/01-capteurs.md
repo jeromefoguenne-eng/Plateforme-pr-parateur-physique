@@ -238,6 +238,29 @@ C'est une distinction fondamentale pour comprendre la numérisation de la perfor
 
 Les revues scientifiques montrent que les capteurs inertiels sont particulièrement prometteurs pour l'analyse du mouvement, mais que leur validité dépend fortement du positionnement du capteur, de sa fixation, du mouvement étudié et de l'algorithme utilisé.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Prépa & Performance :</strong> <em>Les accéléromètres en préparation physique (Beast Sensor, Myotest, Flex GymAware...)</em>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/RvKWmdCro5Y?start=70" 
+      title="Les accéléromètres en préparation physique - Beast Sensor, Myotest, Flex GymAware" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Analyse pratique et matérielle :</strong> Présentation détaillée du fonctionnement des accéléromètres triaxiaux et unités inertielles (IMU), des capteurs de référence du marché (Myotest, Beast, Flex) et des précautions indispensables à prendre concernant la fixation et l'interprétation des données de vitesse et de puissance.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=RvKWmdCro5Y&t=70s" target="_blank" rel="noopener noreferrer">Visionner sur YouTube (début à 1 min 10s) ↗</a>
+      • 🎙️ Chaîne : <em>Prépa & Performance</em>
+    </span>
+  </p>
+</div>
 
 ## 2.5. Les cellules photoélectriques
 
