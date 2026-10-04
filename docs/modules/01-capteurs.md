@@ -375,6 +375,40 @@ Une autre étude comparant une plateforme portable à une plateforme de laborato
 
 C'est donc l'un des outils les plus complets pour analyser les qualités neuromusculaires.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Matériel & Test :</strong> <em>WIITest — Plateforme multimodale de test de force</em>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+    <a href="https://www.youtube.com/watch?v=u9CiOA5Rbso" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; position: relative; display: block; border-radius: 6px; overflow: hidden; max-width: 180px;">
+      <img src="/images/videos/video-plateforme-force.jpg" alt="Vignette WIITest plateforme de force" style="width: 100%; height: auto; display: block; border-radius: 6px; object-fit: cover;" />
+      <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.5rem; transition: background 0.2s;">▶</span>
+    </a>
+    <div style="font-size: 0.9rem; line-height: 1.45;">
+      <strong>Plateforme de force portable WIITest</strong><br />
+      <span style="color: var(--vp-c-text-2); font-size: 0.85rem;">Démonstration en conditions réelles de l'évaluation neuromusculaire, de la cinétique des sauts (CMJ, SJ) et de l'analyse des asymétries d'appui.</span><br />
+      <a href="https://www.youtube.com/watch?v=u9CiOA5Rbso" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 600;">Ouvrir sur YouTube ↗</a>
+    </div>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/u9CiOA5Rbso" 
+      title="WIITest : plateforme multimodale de test de force" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application terrain :</strong> Illustration concrète de l'utilisation d'une plateforme de force portable pour quantifier la production de force dynamique, la vitesse de développement de la force (RFD) et le suivi de l'état de fraîcheur neuromusculaire.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=u9CiOA5Rbso" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+      • 🔬 Thématique : <em>Évaluation de la force & sauts verticaux</em>
+    </span>
+  </p>
+</div>
 
 ## 2.7. Les dynamomètres
 
@@ -421,6 +455,40 @@ asymétries.
 
 Il constitue une référence pour certaines évaluations de force, mais son coût et son encombrement limitent son utilisation quotidienne.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Matériel & Pratique :</strong> <em>Dynamomètre musculaire connecté K-Force (Kinvent)</em>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+    <a href="https://www.youtube.com/watch?v=jHEp0Ys9J2o" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; position: relative; display: block; border-radius: 6px; overflow: hidden; max-width: 180px;">
+      <img src="/images/videos/video-dynamometre.jpg" alt="Vignette dynamomètre K-Force" style="width: 100%; height: auto; display: block; border-radius: 6px; object-fit: cover;" />
+      <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.5rem; transition: background 0.2s;">▶</span>
+    </a>
+    <div style="font-size: 0.9rem; line-height: 1.45;">
+      <strong>Dynamométrie portative connectée</strong><br />
+      <span style="color: var(--vp-c-text-2); font-size: 0.85rem;">Utilisation d'un dynamomètre électronique portatif pour évaluer la force isométrique maximale, les déficits bilatéraux et le monitoring de réathlétisation.</span><br />
+      <a href="https://www.youtube.com/watch?v=jHEp0Ys9J2o" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 600;">Ouvrir sur YouTube ↗</a>
+    </div>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/jHEp0Ys9J2o" 
+      title="Dynamomètre musculaire K-Force" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application terrain :</strong> Présentation du dynamomètre portatif connecté en pratique sportive et kinésithérapie, illustrant la fixation du capteur, le retour biofeedback en direct et l'analyse objective de la force maximale.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=jHEp0Ys9J2o" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+      • 🔬 Thématique : <em>Dynamométrie musculaire & asymétries</em>
+    </span>
+  </p>
+</div>
 
 ## 2.9. Les radars de vitesse
 
@@ -450,6 +518,41 @@ sports de balle.
 
 
 Il constitue notamment une technologie de référence utilisée dans certaines validations des systèmes GPS/LPS.
+
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Matériel & Pratique :</strong> <em>Radar de vitesse Doppler multi-sport</em>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+    <a href="https://www.youtube.com/watch?v=HVZUaZzGpzs" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; position: relative; display: block; border-radius: 6px; overflow: hidden; max-width: 180px;">
+      <img src="/images/videos/video-radar-vitesse.jpg" alt="Vignette radar de vitesse multi-sport" style="width: 100%; height: auto; display: block; border-radius: 6px; object-fit: cover;" />
+      <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.5rem; transition: background 0.2s;">▶</span>
+    </a>
+    <div style="font-size: 0.9rem; line-height: 1.45;">
+      <strong>Multi Sport Speed Radar Detector</strong><br />
+      <span style="color: var(--vp-c-text-2); font-size: 0.85rem;">Mesure instantanée de la vitesse de déplacement et de lancer sans contact par effet Doppler, adaptée aux sprints et aux gestes sportifs explosifs.</span><br />
+      <a href="https://www.youtube.com/watch?v=HVZUaZzGpzs" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 600;">Ouvrir sur YouTube ↗</a>
+    </div>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/HVZUaZzGpzs" 
+      title="Multi Sport Speed Radar Detector - Measure speed" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application terrain :</strong> Mise en œuvre d'un radar de vitesse Doppler sur le terrain pour mesurer la vitesse maximale de course, l'accélération et le retour immédiat à l'athlète lors des séances de vitesse.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=HVZUaZzGpzs" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+      • 🔬 Thématique : <em>Cinématique de sprint & vitesse de balle</em>
+    </span>
+  </p>
+</div>
 
 
 ## 2.10. Les wattmètres
