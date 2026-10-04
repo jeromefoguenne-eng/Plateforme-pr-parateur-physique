@@ -848,40 +848,6 @@ Le capteur mesure un signal physiologique → un algorithme identifie des évén
 
 Le préparateur physique ne doit donc pas confondre mesure directe et estimation algorithmique.
 
-
-À retenir pour les étudiants
-
-
-On peut regrouper les outils en 5 grandes familles :
-
-
-Tableau récapitulatif des principaux capteurs et outils numériques du préparateur physique
-
-
-Légende de la fiabilité :
-★★★★★ = très élevée · ★★★★☆ = élevée · ★★★☆☆ = moyenne à élevée · ★★☆☆☆ = limitée · ★☆☆☆☆ = faible pour une mesure individuelle précise.
-La fiabilité dépend toutefois du modèle, du protocole, du placement du capteur et de la variable étudiée.
-
-- Les applications de récolte de données :
-
-Strava
-
-
-Intervals
-
-
-Myfitnesspal
-
-
-My jumplab
-
-
-Mysprint
-
-
-Nolio
-
-
 </div>
 
 ## 🎯 Auto-évaluation formative
