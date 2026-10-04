@@ -848,6 +848,36 @@ Le capteur mesure un signal physiologique → un algorithme identifie des évén
 
 Le préparateur physique ne doit donc pas confondre mesure directe et estimation algorithmique.
 
+---
+
+## 📊 Tableau récapitulatif des principaux capteurs et outils numériques
+
+> [!NOTE] Légende de la fiabilité des données
+> **★★★★★** = Très élevée · **★★★★☆** = Élevée · **★★★☆☆** = Moyenne à élevée · **★★☆☆☆** = Limitée · **★☆☆☆☆** = Faible pour une mesure individuelle précise.  
+> *Remarque : La fiabilité dépend toutefois du modèle, du protocole, du placement du capteur et de la variable étudiée.*
+
+| Capteur / outil | Données mesurées | Quand l'utiliser principalement ? | Sports principaux | Fiabilité des données |
+| :--- | :--- | :--- | :--- | :--- |
+| **Ceinture cardio thoracique (électrique)** | FC, intervalles R-R, HRV | Suivi de l'intensité, récupération, charge interne | Tous sports d'endurance et sports collectifs | ★★★★★ Très élevée |
+| **Capteur cardio optique au bras (PPG)** | FC | Entraînement et suivi quotidien lorsque la ceinture est gênante | Course, cyclisme, fitness, sports collectifs | ★★★★☆ Élevée |
+| **Montre cardio optique au poignet (PPG)** | FC, parfois HRV | Suivi quotidien, entraînement général | Tous sports | ★★★☆☆ Moyenne à élevée ; plus sensible aux mouvements |
+| **GPS / GNSS 10–15 Hz** | Distance, vitesse, vitesse max., accélérations, décélérations, déplacements | Quantifier la charge externe et les déplacements | Football, rugby, hockey, sports collectifs, course, cyclisme | ★★★★☆ Élevée pour les déplacements ; moins fiable sur les très courtes distances et changements brusques |
+| **LPS (Local Positioning System)** | Position, distance, vitesse, accélérations, trajectoires | Suivi précis en intérieur ou sur terrain équipé | Football, rugby, basket, hockey, sports collectifs | ★★★★☆ à ★★★★★ Très élevée |
+| **Accéléromètre / IMU** | Accélérations 3D, impacts, mouvements | Quantifier les mouvements, impacts et charges mécaniques | Sports collectifs, sports de contact, athlétisme | ★★★☆☆ à ★★★★☆ selon le placement et l'algorithme |
+| **Gyroscope** | Vitesses et rotations angulaires | Analyse des rotations et mouvements corporels | Sports collectifs, gymnastique, sports de combat, rééducation | ★★★★☆ Élevée pour les mouvements rotatoires |
+| **Cellules photoélectriques** | Temps de passage, temps de sprint, vitesse moyenne | Tests de sprint et de vitesse | Athlétisme, football, rugby, sports collectifs | ★★★★★ Très élevée |
+| **Plateforme de force** | Force, impulsion, puissance, RFD, temps de contact, hauteur de saut, asymétries | Évaluation neuromusculaire et tests de saut | Tous sports, particulièrement sports de puissance | ★★★★★ Très élevée |
+| **Dynamomètre manuel** | Force isométrique | Tests de force et comparaison droite/gauche | Tous sports, réathlétisation | ★★★★☆ Élevée si protocole standardisé |
+| **Dynamomètre isocinétique** | Force, couple, puissance, travail, ratios musculaires | Évaluation approfondie de la force musculaire | Réathlétisation, sports de haut niveau | ★★★★★ Très élevée |
+| **LPT / capteur de vitesse de barre** | Vitesse, déplacement, puissance de la barre | Contrôle de l'intensité et de la fatigue en musculation (VBT) | Musculation, haltérophilie, sports de force | ★★★★☆ Élevée |
+| **Radar Doppler** | Vitesse instantanée et vitesse maximale | Sprint, course, déplacement d'un objet | Athlétisme, football, rugby, tennis, sports de balle | ★★★★☆ à ★★★★★ Très élevée |
+| **Wattmètre** | Puissance, travail, cadence | Mesure et contrôle de l'intensité externe | Cyclisme principalement, parfois aviron | ★★★★☆ Élevée à très élevée |
+| **Analyseur de lactate** | Lactatémie (mmol/L) | Tests d'effort, détermination des seuils, suivi métabolique | Cyclisme, course, triathlon, sports d'endurance | ★★★★☆ Élevée |
+| **BIA / impédancemètre** | Masse grasse, masse maigre, eau corporelle (estimations) | Suivi de composition corporelle | Tous sports | ★★☆☆☆ à ★★★☆☆ ; estimation indirecte |
+| **Caméra / smartphone** | Angles, trajectoires, temps de vol/contact, technique | Analyse technique et biomécanique | Tous sports | ★★★☆☆ à ★★★★☆ selon application et protocole |
+| **Montre/bracelet de sommeil** | Durée du sommeil, FC, HRV, sommeil estimé | Suivi de récupération et sommeil | Tous sports | ★★★☆☆ ; certaines données sont des estimations algorithmiques |
+| **Balance numérique** | Masse corporelle | Suivi du poids et évolution de la masse | Tous sports | ★★★★★ pour la masse corporelle, mais information physiologique limitée |
+
 </div>
 
 ## 🎯 Auto-évaluation formative
