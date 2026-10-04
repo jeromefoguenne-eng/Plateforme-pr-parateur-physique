@@ -601,6 +601,40 @@ du protocole de calibration.
 
 Une revue de 74 études souligne justement que l'exactitude, la répétabilité, la reproductibilité, la sensibilité et la robustesse sont des propriétés différentes à examiner.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Matériel & Pratique :</strong> <em>GCN en Français — Faut-il un capteur de puissance d'un ou deux côtés ?</em>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+    <a href="https://www.youtube.com/watch?v=Fy1t_djHC-g&t=48s" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; position: relative; display: block; border-radius: 6px; overflow: hidden; max-width: 180px;">
+      <img src="/images/videos/video-wattmetre.jpg" alt="Vignette GCN capteurs de puissance et wattmètres" style="width: 100%; height: auto; display: block; border-radius: 6px; object-fit: cover;" />
+      <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.5rem; transition: background 0.2s;">▶</span>
+    </a>
+    <div style="font-size: 0.9rem; line-height: 1.45;">
+      <strong>Capteurs de puissance unilatéraux vs bilatéraux</strong><br />
+      <span style="color: var(--vp-c-text-2); font-size: 0.85rem;">Explication claire des différences techniques entre mesure unilatérale (manivelle gauche x 2) et bilatérale (pédales/étoile), impact des asymétries de pédalage et fiabilité des watts.</span><br />
+      <a href="https://www.youtube.com/watch?v=Fy1t_djHC-g&t=48s" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 600;">Ouvrir sur YouTube (dès 48s) ↗</a>
+    </div>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/Fy1t_djHC-g?start=48" 
+      title="Faut-il un capteur de puissance d'un ou deux côtés ? - GCN en Français" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application terrain :</strong> Guide comparatif très pragmatique pour comprendre comment le choix d'un wattmètre (mesure gauche seule contre mesure indépendante gauche/droite) modifie la précision des indicateurs de charge (puissance normalisée, TSS) selon les profils d'asymétrie du cycliste.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=Fy1t_djHC-g&t=48s" target="_blank" rel="noopener noreferrer">Visionner sur YouTube (début à 48s) ↗</a>
+      • 🎙️ Chaîne : <em>GCN en Français</em>
+    </span>
+  </p>
+</div>
 
 ## 2.11. Les analyseurs de lactate
 
