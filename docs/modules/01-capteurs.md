@@ -751,6 +751,40 @@ Chez les sportifs, une méta-analyse montre que la BIA peut être fortement corr
 
 Une forte corrélation ne signifie donc pas nécessairement une bonne précision individuelle.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Précision & Validation :</strong> <em>Martin Turgeon Services Cyclistes — Les balances intelligentes sont-elles précises ? (Garmin Index vs DEXA Scan)</em>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+    <a href="https://www.youtube.com/watch?v=ufCcXdU_8jw" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; position: relative; display: block; border-radius: 6px; overflow: hidden; max-width: 180px;">
+      <img src="/images/videos/video-balance-impedancemetre.jpg" alt="Vignette comparaison balance intelligente Garmin Index vs DEXA Scan" style="width: 100%; height: auto; display: block; border-radius: 6px; object-fit: cover;" />
+      <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.5rem; transition: background 0.2s;">▶</span>
+    </a>
+    <div style="font-size: 0.9rem; line-height: 1.45;">
+      <strong>Bio-impédancemétrie vs DEXA Scan de laboratoire</strong><br />
+      <span style="color: var(--vp-c-text-2); font-size: 0.85rem;">Test comparatif de terrain d'une balance connectée à impédance (Garmin Index) face au standard de référence DEXA (absorptiométrie bi-photonique). Analyse des écarts réels sur la masse grasse et l'eau corporelle.</span><br />
+      <a href="https://www.youtube.com/watch?v=ufCcXdU_8jw" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 600;">Ouvrir sur YouTube ↗</a>
+    </div>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/ufCcXdU_8jw" 
+      title="Les balances intelligentes sont-elles précises? (Garmin Index vs DEXA Scan)" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application terrain :</strong> Confrontation concrète démontrant pourquoi une balance à bio-impédance grand public (BIA) doit être interprétée avec recul : si le suivi de tendance relative reste utile, l'estimation absolue de la masse grasse et musculaire est sujette à d'importants biais comparée au scanner DEXA de référence.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=ufCcXdU_8jw" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+      • 🎙️ Chaîne : <em>Martin Turgeon Services Cyclistes</em>
+    </span>
+  </p>
+</div>
 
 ## 2.13. Les smartphones et la vidéo
 
