@@ -301,6 +301,28 @@ Une cellule photoélectrique peut être excellente pour mesurer un sprint mais m
 
 La littérature montre que les cellules présentent une bonne concordance avec les plateformes de force dans certaines conditions, mais ne doivent pas être considérées comme interchangeables avec une plateforme de force pour toutes les mesures de saut.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Démonstration terrain :</strong> <em>Fonctionnement et chronométrage par cellules photoélectriques infrarouges</em>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/12uuli0UvS0" 
+      title="Démonstration du système de chronométrage par cellules photoélectriques" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Chronométrage électronique de précision :</strong> Démonstration pratique du franchissement de faisceau infrarouge par cellule photoélectrique et de la transmission instantanée du temps de passage au boîtier récepteur pour les tests de vitesse et d'accélération.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=12uuli0UvS0" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+    </span>
+  </p>
+</div>
 
 ## 2.6. Les plateformes de force
 

@@ -768,7 +768,7 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
 
   // 1. CRITÈRE 1 – COMPRÉHENSION ET RESPECT DE LA CONSIGNE (15 %)
   let c1_level = 4
-  let c1_score = 14.5
+  let c1_score = 14.2
   let c1_label = "Niveau 4 – Maîtrise excellente"
   let c1_comment = `Consigne parfaitement comprise et respectée : les situations athlétiques et livrables sont traités avec rigueur et contextualisation précise.`
 
@@ -777,22 +777,28 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
     c1_score = isEmptyOrTrivial ? 0.0 : 1.5
     c1_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante (Hors-Sujet)"
     c1_comment = `HORS-SUJET : Le document remis ne correspond absolument pas à la consigne de l'exercice (${rubric.title}). Aucun des livrables attendus n'a été produit.`
-  } else if (situationRatio < 0.3 || wordCount < 80) {
+  } else if (situationRatio < 0.35 || wordCount < 60) {
     c1_level = 1
-    c1_score = 4.0
+    c1_score = 5.0 + Math.min(2.0, situationRatio * 5)
     c1_label = "Niveau 1 – Maîtrise insuffisante"
-    c1_comment = `Consigne très partiellement comprise : seulement ${matchedSituations.length} situation(s) ou élément(s) ébauché(s). Production très incomplète par rapport aux attentes.`
-  } else if (situationRatio < 0.65 || wordCount < rubric.minExpectedWords * 0.7) {
+    c1_comment = `Consigne très partiellement comprise : seulement ${matchedSituations.length} situation(s) ou élément(s) abordé(s) sur ${rubric.keySituations.length} attendus. Volume rédactionnel (${wordCount} mots) insuffisant.`
+  } else if (situationRatio < 0.65 || wordCount < rubric.minExpectedWords * 0.6) {
     c1_level = 2
-    c1_score = 8.5
+    c1_score = 8.5 + (situationRatio - 0.35) * 6.0
     c1_label = "Niveau 2 – Maîtrise partielle"
-    c1_comment = `Consigne comprise mais partiellement traitée : plusieurs situations ou livrables sont manquants ou traités de façon trop synthétique.`
+    c1_comment = `Consigne comprise mais partiellement traitée : ${matchedSituations.length}/${rubric.keySituations.length} cas traités. Plusieurs livrables manquent de développement.`
   } else if (situationRatio < 0.85 || (rubric.requiresLimits && !hasLimits)) {
     c1_level = 3
-    c1_score = 11.5
+    c1_score = 11.0 + (situationRatio - 0.65) * 8.0
     c1_label = "Niveau 3 – Maîtrise satisfaisante"
-    c1_comment = `Consigne bien respectée dans l'ensemble. La majorité des cas professionnels sont traités avec pertinence.`
+    c1_comment = `Consigne bien respectée : la quasi-totalité des situations professionnelles (${matchedSituations.length}/${rubric.keySituations.length}) sont traitées avec cohérence.`
+  } else {
+    c1_level = 4
+    c1_score = Math.min(15.0, 13.5 + situationRatio * 1.5)
+    c1_label = "Niveau 4 – Maîtrise excellente"
+    c1_comment = `Excellente maîtrise de la consigne : l'ensemble des ${matchedSituations.length} situations professionnelles sont explorées et contextualisées.`
   }
+  c1_score = Number(c1_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 1 – Compréhension et respect de la consigne",
@@ -806,31 +812,37 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
 
   // 2. CRITÈRE 2 – EXACTITUDE DES CONTENUS (25 %)
   let c2_level = 4
-  let c2_score = 24.0
+  let c2_score = 23.5
   let c2_label = "Niveau 4 – Maîtrise excellente"
-  let c2_comment = `Excellente exactitude scientifique : distinction rigoureuse des signaux, métriques physiologiques parfaitement ciblées.`
+  let c2_comment = `Excellente exactitude scientifique : distinction rigoureuse des grandeurs physiques, métriques physiologiques parfaitement ciblées.`
 
   if (isOffTopic) {
     c2_level = isEmptyOrTrivial ? 0 : 1
     c2_score = isEmptyOrTrivial ? 0.0 : 2.5
     c2_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante"
-    c2_comment = `Contenus inadaptés : aucun concept scientifique ou technologique lié à la préparation physique ou aux données sportives n'est mobilisé.`
-  } else if (coreRatio < 0.25) {
+    c2_comment = `Contenus inadaptés : aucun concept scientifique ou technologique lié à la préparation physique n'est mobilisé.`
+  } else if (coreRatio < 0.30) {
     c2_level = 1
-    c2_score = 7.0
+    c2_score = 8.0 + coreRatio * 10
     c2_label = "Niveau 1 – Maîtrise insuffisante"
-    c2_comment = `Contenus très limités ou comportant des confusions conceptuelles majeures (ex : confusion entre mesure brute et indice calculé).`
-  } else if (coreRatio < 0.50) {
+    c2_comment = `Contenus très restreints (${matchedCore.length} concept(s) clé(s) identifié(s)). Risque important d'amalgames conceptuels.`
+  } else if (coreRatio < 0.55) {
     c2_level = 2
-    c2_score = 14.0
+    c2_score = 13.5 + (coreRatio - 0.30) * 14
     c2_label = "Niveau 2 – Maîtrise partielle"
-    c2_comment = `Exactitude satisfaisante sur les notions de base, mais manque de précision sur les principes physiologiques et biomécaniques.`
+    c2_comment = `Notions de base présentes (${matchedCore.length} concepts identifiés), mais plusieurs principes physiologiques ou métrologiques manquent de précision.`
   } else if (coreRatio < 0.80) {
     c2_level = 3
-    c2_score = 19.5
+    c2_score = 18.5 + (coreRatio - 0.55) * 16
     c2_label = "Niveau 3 – Maîtrise satisfaisante"
-    c2_comment = `Contenus scientifiquement justes et vocabulaire disciplinaire bien maîtrisé. Très peu d'inexactitudes.`
+    c2_comment = `Bonne exactitude scientifique (${matchedCore.length} concepts mobilisés avec justesse). Vocabulaire de préparation physique bien maîtrisé.`
+  } else {
+    c2_level = 4
+    c2_score = Math.min(25.0, 22.5 + (coreRatio - 0.80) * 10)
+    c2_label = "Niveau 4 – Maîtrise excellente"
+    c2_comment = `Richesse terminologique et exactitude remarquable : ${matchedCore.length} concepts clés mobilisés avec rigueur académique.`
   }
+  c2_score = Number(c2_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 2 – Exactitude des contenus",
@@ -844,31 +856,37 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
 
   // 3. CRITÈRE 3 – MAÎTRISE DE LA MÉTHODE (20 %)
   let c3_level = 4
-  let c3_score = 19.0
+  let c3_score = 18.5
   let c3_label = "Niveau 4 – Maîtrise excellente"
-  let c3_comment = `Démarche exemplaire : raisonnement méthodique complet (besoin athlétique -> variable -> capteur/outil -> protocole -> limites).`
+  let c3_comment = `Démarche exemplaire : raisonnement méthodique complet (besoin athlétique -> variable -> outil -> protocole -> limites).`
 
   if (isOffTopic) {
     c3_level = isEmptyOrTrivial ? 0 : 1
     c3_score = isEmptyOrTrivial ? 0.0 : 1.5
     c3_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante"
     c3_comment = `Démarche méthodologique absente ou non applicable à la problématique sportive demandée.`
-  } else if (!hasJustifications || wordCount < 100) {
+  } else if (!hasJustifications || wordCount < 80) {
     c3_level = 1
-    c3_score = 5.0
+    c3_score = 6.0 + (wordCount > 50 ? 2.0 : 0.5)
     c3_label = "Niveau 1 – Maîtrise insuffisante"
-    c3_comment = `Démarche embryonnaire : juxtaposition d'affirmations sans démarche de sélection argumentée.`
+    c3_comment = `Démarche embryonnaire : juxtaposition de réponses sans explicitation de la chaîne de décision méthodique.`
   } else if (rubric.requiresLimits && !hasLimits) {
     c3_level = 2
-    c3_score = 10.5
+    c3_score = 11.0 + (situationRatio > 0.5 ? 2.0 : 0.5)
     c3_label = "Niveau 2 – Maîtrise partielle"
-    c3_comment = `Démarche cohérente mais incomplète : les choix sont posés mais les étapes de validation méthodologique manquent d'approfondissement.`
+    c3_comment = `Démarche cohérente mais incomplète : les choix sont posés mais les étapes de validation et l'examen critique des limites font défaut.`
   } else if (situationRatio < 0.85) {
     c3_level = 3
-    c3_score = 15.5
+    c3_score = 14.5 + (situationRatio - 0.5) * 5.0
     c3_label = "Niveau 3 – Maîtrise satisfaisante"
-    c3_comment = `Bonne maîtrise de la démarche : étapes de sélection progressives et logiques sur la quasi-totalité des cas.`
+    c3_comment = `Bonne démarche de terrain : progression logique et structurée sur la quasi-totalité des situations analysées.`
+  } else {
+    c3_level = 4
+    c3_score = Math.min(20.0, 17.5 + (hasLimits ? 1.5 : 0.5))
+    c3_label = "Niveau 4 – Maîtrise excellente"
+    c3_comment = `Excellente maîtrise méthodologique : démarche scientifique éprouvée, justifications étayées et recul professionnel.`
   }
+  c3_score = Number(c3_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 3 – Maîtrise de la méthode",
@@ -884,29 +902,35 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   let c4_level = 4
   let c4_score = 18.5
   let c4_label = "Niveau 4 – Maîtrise excellente"
-  let c4_comment = `Maîtrise technique pointue : prise en compte des fréquences d'échantillonnage, protocoles de pose et automatisation logicielle.`
+  let c4_comment = `Maîtrise technique pointue : prise en compte des fréquences d'échantillonnage, protocoles de mesure et automatisation logicielle.`
 
   if (isOffTopic) {
     c4_level = isEmptyOrTrivial ? 0 : 1
     c4_score = isEmptyOrTrivial ? 0.0 : 1.0
     c4_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante"
     c4_comment = `Aucun outil numérique ni dispositif technique pertinent n'est exploité.`
-  } else if (coreRatio < 0.3) {
+  } else if (coreRatio < 0.35) {
     c4_level = 1
-    c4_score = 5.0
+    c4_score = 6.0 + coreRatio * 8.0
     c4_label = "Niveau 1 – Maîtrise insuffisante"
-    c4_comment = `Maîtrise technique insuffisante : outils inadaptés aux contraintes de terrain ou fonctionnalités non mobilisées.`
-  } else if (coreRatio < 0.6) {
+    c4_comment = `Maîtrise technique insuffisante : outils inadaptés aux contraintes de terrain ou fonctionnalités clés non exploitées.`
+  } else if (coreRatio < 0.65) {
     c4_level = 2
-    c4_score = 11.0
+    c4_score = 11.5 + (coreRatio - 0.35) * 10.0
     c4_label = "Niveau 2 – Maîtrise partielle"
-    c4_comment = `Outils techniques adéquats mais les fonctionnalités spécifiques (fréquence Hz, capteurs intégrés, formats, formules) ne sont pas exploitées.`
+    c4_comment = `Outils techniques adéquats mais les fonctionnalités avancées (fréquence Hz, capteurs intégrés, formats, formules) manquent d'exploitation.`
   } else if (rubric.requiresLimits && !hasLimits) {
     c4_level = 3
-    c4_score = 15.5
+    c4_score = 15.0 + (coreRatio > 0.7 ? 1.5 : 0.5)
     c4_label = "Niveau 3 – Maîtrise satisfaisante"
-    c4_comment = `Bonne appropriation des outils numériques et des logiciels de traitement sportif.`
+    c4_comment = `Bonne appropriation technique des capteurs et des logiciels de traitement sportif.`
+  } else {
+    c4_level = 4
+    c4_score = Math.min(20.0, 17.5 + (coreRatio - 0.65) * 5.0)
+    c4_label = "Niveau 4 – Maîtrise excellente"
+    c4_comment = `Maîtrise technologique remarquable : précision sur les fréquences d'acquisition, les protocoles et les outils de traitement.`
   }
+  c4_score = Number(c4_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 4 – Maîtrise technique et numérique",
@@ -920,9 +944,9 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
 
   // 5. CRITÈRE 5 – ANALYSE, INTERPRÉTATION ET JUSTIFICATION (15 %)
   let c5_level = 4
-  let c5_score = 14.5
+  let c5_score = 14.0
   let c5_label = "Niveau 4 – Maîtrise excellente"
-  let c5_comment = `Analyse critique remarquable : distinction nette entre corrélation et causalité, limites de terrain parfaitement identifiées.`
+  let c5_comment = `Analyse critique remarquable : distinction nette entre corrélation et causalité, limites de terrain et interprétation sans dérive déterministe.`
 
   if (isOffTopic) {
     c5_level = isEmptyOrTrivial ? 0 : 1
@@ -931,20 +955,26 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
     c5_comment = `Aucune analyse critique ni justification athlétique observable.`
   } else if (!hasJustifications) {
     c5_level = 1
-    c5_score = 3.5
+    c5_score = 4.5 + (wordCount > 60 ? 1.5 : 0.5)
     c5_label = "Niveau 1 – Maîtrise insuffisante"
-    c5_comment = `Absence d'argumentation : choix affirmés sans explication physiologique ni recul critique.`
+    c5_comment = `Absence d'argumentation : préconisations affirmées sans justification physiologique ni recul critique.`
   } else if (rubric.requiresLimits && !hasLimits) {
     c5_level = 2
-    c5_score = 8.0
+    c5_score = 8.5 + (hasJustifications ? 1.5 : 0.5)
     c5_label = "Niveau 2 – Maîtrise partielle"
-    c5_comment = `Justification présente mais unilatérale : les biais de mesure, contraintes écologiques et limites du matériel ne sont pas identifiés.`
+    c5_comment = `Justification présente mais unilatérale : les biais de mesure, contraintes écologiques et limites du matériel ne sont pas interrogés.`
   } else if (situationRatio < 0.85) {
     c5_level = 3
-    c5_score = 11.5
+    c5_score = 11.5 + (situationRatio - 0.5) * 4.0
     c5_label = "Niveau 3 – Maîtrise satisfaisante"
-    c5_comment = `Bonne capacité d'analyse et prise de recul critique sur la plupart des situations étudiées.`
+    c5_comment = `Bonne capacité d'analyse et recul critique manifeste sur la plupart des situations étudiées.`
+  } else {
+    c5_level = 4
+    c5_score = Math.min(15.0, 13.5 + (hasLimits ? 1.0 : 0.0))
+    c5_label = "Niveau 4 – Maîtrise excellente"
+    c5_comment = `Lucidité critique exemplaire : distinction claire entre mesure brute, estimation dérivée et décision humaine concertée.`
   }
+  c5_score = Number(c5_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 5 – Analyse, interprétation et justification",
@@ -958,7 +988,7 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
 
   // 6. CRITÈRE 6 – QUALITÉ ET CLARTÉ DE LA PRODUCTION (5 %)
   let c6_level = 4
-  let c6_score = 4.8
+  let c6_score = 4.7
   let c6_label = "Niveau 4 – Maîtrise excellente"
   let c6_comment = `Présentation exemplaire, structuration professionnelle, clarté optimale pour un staff technique.`
 
@@ -972,17 +1002,23 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
     c6_score = 1.0
     c6_label = "Niveau 1 – Maîtrise insuffisante"
     c6_comment = `Document structuré en soi mais totalement non avenu dans le cadre de ce cours.`
-  } else if (wordCount < 80) {
+  } else if (wordCount < 60) {
     c6_level = 2
-    c6_score = 2.5
+    c6_score = 2.2
     c6_label = "Niveau 2 – Maîtrise partielle"
-    c6_comment = `Présentation minimale, manque de structure et de mise en forme professionnelle.`
+    c6_comment = `Présentation minimale (${wordCount} mots), manque de mise en forme et de structuration visuelle.`
   } else if (wordCount < rubric.minExpectedWords) {
     c6_level = 3
     c6_score = 3.8
     c6_label = "Niveau 3 – Maîtrise satisfaisante"
-    c6_comment = `Bonne lisibilité globale, document clair et organisé.`
+    c6_comment = `Bonne lisibilité globale, document clair, soigné et bien organisé.`
+  } else {
+    c6_level = 4
+    c6_score = 4.8
+    c6_label = "Niveau 4 – Maîtrise excellente"
+    c6_comment = `Structure professionnelle soignée, hiérarchie visuelle irréprochable prête pour transmission au staff.`
   }
+  c6_score = Number(c6_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 6 – Qualité et clarté de la production",
@@ -1003,75 +1039,87 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   let nextSteps: string[] = []
 
   if (isOffTopic) {
-    summary = `⚠️ ALERTE HORS-SUJET : Le document déposé ("${file.originalFileName || 'fichier'}") ne correspond pas aux objectifs et consignes de ${rubric.title}. Aucun concept de préparation physique, de mesure ou de données sportives n'a pu être validé. La note attribuée (${suggestedScore}/20) reflète l'absence de production conforme.`
-    strengths = ["Aucun élément en rapport avec l'exercice n'est observable dans ce document."]
+    summary = `⚠️ ALERTE HORS-SUJET : Le document déposé ("${file.originalFileName || 'fichier'}") ne correspond pas aux objectifs de ${rubric.title}. Aucun concept de préparation physique, de mesure ou de données sportives n'a pu être validé. La note attribuée (${suggestedScore}/20) reflète l'absence de livrable conforme aux consignes de terrain.`
+    strengths = [
+      "Le fichier a été correctement transmis via la plateforme (aspect technique du dépôt validé)."
+    ]
     improvements = [
-      `Vérifier le fichier sélectionné avant le dépôt : le travail doit obligatoirement porter sur ${rubric.title}.`,
-      `Traiter le livrable attendu : ${rubric.expectedDeliverable}`,
-      "Consulter les consignes et le document modèle sur la plateforme de cours."
+      `Vérifier impérativement le sujet de l'exercice avant le dépôt : le travail doit porter sur ${rubric.title}.`,
+      `Produire le livrable attendu : ${rubric.expectedDeliverable}`,
+      "Consulter les consignes officielles et le document modèle sur la plateforme avant de déposer à nouveau."
     ]
     nextSteps = [
       "Télécharger le modèle de travail officiel (.docx ou Google Docs).",
-      "Compléter les cas d'application du cours.",
-      "Déposer à nouveau le fichier complété."
+      "Compléter les cas d'application du cours en mobilisant les notions du syllabus.",
+      "Déposer à nouveau le fichier complété pour une nouvelle analyse formative."
     ]
   } else if (suggestedScore < 10) {
-    summary = `Travail insuffisant pour ${rubric.title} (note indicative : ${suggestedScore}/20). La production est trop brève ou incomplète pour attester de la maîtrise des compétences requises. Des éléments clés manquent pour permettre une décision de terrain fiable.`
+    summary = `Production encore insuffisante pour ${rubric.title} (note indicative : ${suggestedScore}/20). Le travail déposé est trop succinct ou trop partiel pour attester des compétences professionnelles visées. Plusieurs situations majeures ou justifications font défaut.`
     strengths = [
-      `${matchedSituations.length} situation(s) identifiée(s).`,
-      "Ébauche de réflexion sur les outils numériques."
+      `${matchedSituations.length} situation(s) ou thématique(s) sportive(s) identifiée(s).`,
+      `Présence de ${matchedCore.length} notion(s) technique(s) liée(s) aux données sportives.`,
+      "Volonté d'aborder les outils informatiques de préparation physique."
     ]
     improvements = [
-      "Compléter l'ensemble des situations professionnelles demandées.",
-      "Développer les justifications scientifiques pour chaque choix d'outil.",
-      "Identifier systématiquement les limites métrologiques et contraintes de terrain."
+      `Compléter l'ensemble des ${rubric.keySituations.length} situations professionnelles demandées dans la consigne.`,
+      "Développer systématiquement une justification physiologique ou biomécanique pour chaque choix d'outil.",
+      "Expliciter les limites de mesure et les contraintes de terrain spécifiques."
     ]
     nextSteps = [
-      "Reprendre la consigne point par point.",
-      "Consulter le syllabus sur les caractéristiques de chaque capteur/logiciel.",
-      "Déposer une version révisée et étayée."
+      "Relire attentivement la consigne détaillée de l'exercice sur la page du cours.",
+      "Consulter le module théorique correspondant sur les capteurs et logiciels sportifs.",
+      "Compléter et ré-enrichir le livrable avant de le soumettre à nouveau."
     ]
-  } else if (suggestedScore < 14) {
-    summary = `Travail partiel et encourageant pour ${rubric.title} (note indicative : ${suggestedScore}/20). Les outils proposés sont globalement cohérents, mais l'analyse manque de recul critique et d'explicitation des limites de mesure.`
+  } else if (suggestedScore < 13.5) {
+    summary = `Travail encourageant mais perfectible pour ${rubric.title} (note indicative : ${suggestedScore}/20). Les outils et démarches proposés sont globalement cohérents, mais l'analyse manque d'approfondissement technique et de recul sur les limites métrologiques.`
     strengths = [
-      "Sélection des outils et capteurs majoritairement pertinente.",
-      "Bonne appréhension des contextes sportifs présentés."
+      `Sélection globalement cohérente des capteurs/logiciels sur ${matchedSituations.length} situation(s).`,
+      "Bonne contextualisation des exigences physiques et athlétiques des disciplines abordées.",
+      "Structure de document claire et lisible."
     ]
     improvements = [
-      "Approfondir la distinction entre mesure directe et variable algorithmique dérivée.",
-      "Préciser les limites de précision de chaque capteur (fréquence Hz, protocole de fixation)."
+      "Approfondir la distinction essentielle entre mesure directe brute et variable calculée par algorithme.",
+      "Préciser les fréquences d'échantillonnage (Hz) et les protocoles de placement indispensables à la fiabilité.",
+      "Développer les biais de mesure (dérive GPS, artefacts de mouvement, latence cardiaque)."
     ]
     nextSteps = [
-      "Intégrer les biais de mesure dans vos synthèses de décision.",
-      "Structurer les recommandations sous forme de fiches protocolaires pour les athlètes."
+      "Intégrer une section ou un paragraphe explicitant les limites opérationnelles de chaque outil.",
+      "Structurer vos recommandations sous forme de fiches protocolaires directement exploitables par le staff.",
+      "Prendre en compte les consignes de calibration avant test de terrain."
     ]
-  } else if (suggestedScore < 17.5) {
-    summary = `Bon devoir, solide et bien documenté pour ${rubric.title} (note indicative : ${suggestedScore}/20). La démarche professionnelle est maîtrisée et les choix technologiques sont pertinents pour la pratique de terrain.`
+  } else if (suggestedScore < 16.5) {
+    summary = `Bon devoir, solide et bien structuré pour ${rubric.title} (note indicative : ${suggestedScore}/20). La démarche professionnelle est maîtrisée, le vocabulaire scientifique est pertinent et les choix technologiques répondent aux besoins du terrain.`
     strengths = [
-      "Rigueur dans le choix des instruments en fonction de la variable athlétique ciblée.",
-      "Bonne qualité de l'argumentation scientifique et terminologie adaptée.",
-      "Prise en compte satisfaisante des contraintes logistiques."
+      `Rigueur dans la sélection des outils sur ${matchedSituations.length} cas professionnels.`,
+      `Maîtrise confirmée du vocabulaire technique et des concepts clés (${matchedCore.length} concepts mobilisés).`,
+      "Prise en compte pertinente des contraintes pratiques et logistiques de l'entraînement.",
+      "Clarté d'expression et mise en page professionnelle."
     ]
     improvements = [
-      "Affiner la précision sur certains protocoles de calibration avant test.",
-      "Nuancer davantage l'interprétation des indices de fatigue dérivés d'accéléromètres."
+      "Affiner la précision sur certains protocoles de calibration et conditions écologiques de passation.",
+      "Nuancer davantage l'interprétation des indices de fatigue dérivés d'accéléromètres ou GPS (éviter toute approche trop déterministe).",
+      "Approfondir le croisement entre charge externe mécanique et charge interne physiologique."
     ]
     nextSteps = [
-      "Consolider le transfert de ces choix vers le tableau de bord global de suivi."
+      "Consolider le transfert de ces choix vers le tableau de bord global de suivi longitudinal.",
+      "Formuler des préconisations d'ajustement encore plus opérationnelles pour l'entraîneur principal."
     ]
   } else {
     summary = `Devoir remarquable et d'une grande rigueur professionnelle pour ${rubric.title} (note indicative : ${suggestedScore}/20). L'analyse critique est d'un excellent niveau académique et opérationnel, digne d'un préparateur physique expert.`
     strengths = [
-      "Analyse exhaustive et contextualisée des situations sportives.",
-      "Distinction parfaite entre signaux bruts, calculs d'algorithmes et interprétation athlétique.",
-      "Lucidité critique exemplaire sur la validité et la fidélité des capteurs de terrain.",
-      "Présentation d'une clarté professionnelle irréprochable."
+      `Analyse exhaustive et contextualisée des ${matchedSituations.length} situations professionnelles demandées.`,
+      `Richesse conceptuelle exemplaire (${matchedCore.length} notions techniques mobilisées avec exactitude).`,
+      "Distinction parfaite entre signaux bruts, calculs algorithmiques et interprétation humaine.",
+      "Lucidité critique remarquable sur la validité, la fidélité et les limites de chaque instrument.",
+      "Présentation et structuration d'une clarté professionnelle irréprochable."
     ]
     improvements = [
-      "Poursuivre cette même rigueur méthodologique lors de l'intégration dans le projet final."
+      "Poursuivre cette même rigueur méthodologique lors de l'intégration dans le projet intégrateur final.",
+      "Enrichir éventuellement avec des retours d'expérience vécus ou des références bibliographiques récentes."
     ]
     nextSteps = [
-      "Partager cette méthodologie d'analyse avec le staff technique en situation réelle."
+      "Transférer cette démarche d'arbitrage dans votre boîte à outils décisionnelle personnelle.",
+      "Partager cette méthodologie d'analyse avec le staff technique en situation réelle de club."
     ]
   }
 
