@@ -666,6 +666,40 @@ réponse à différentes intensités.
 
 Une revue systématique récente rapporte pour plusieurs analyseurs portables des corrélations de 0,95 à 0,99, des ICC > 0,90 et des CV < 5 %, tout en soulignant l'existence de biais systématiques à certaines concentrations élevées.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Physiologie & Mesure :</strong> <em>PEP'S-SPORT — Comment expliquer le lactate et la lactatémie ?</em>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+    <a href="https://www.youtube.com/watch?v=xuLDDLBpECQ" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; position: relative; display: block; border-radius: 6px; overflow: hidden; max-width: 180px;">
+      <img src="/images/videos/video-lactate.jpg" alt="Vignette PEP'S-SPORT explication lactate et lactatémie" style="width: 100%; height: auto; display: block; border-radius: 6px; object-fit: cover;" />
+      <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.5rem; transition: background 0.2s;">▶</span>
+    </a>
+    <div style="font-size: 0.9rem; line-height: 1.45;">
+      <strong>Lactate et lactatémie à l'effort</strong><br />
+      <span style="color: var(--vp-c-text-2); font-size: 0.85rem;">Comprendre la production et la clairance du lactate, la démystification du rôle de « déchet métabolique », l'intérêt du prélèvement capillaire et la détermination des seuils ventilatoires et lactiques.</span><br />
+      <a href="https://www.youtube.com/watch?v=xuLDDLBpECQ" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 600;">Ouvrir sur YouTube ↗</a>
+    </div>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/xuLDDLBpECQ" 
+      title="COMMENT EXPLIQUER LE LACTATE ET LA LACTATEMIE - PEP'S-SPORT" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application terrain :</strong> Guide physiologique et méthodologique pour interpréter les concentrations sanguines de lactate (mmol/L) obtenues avec un analyseur portable (Lactate Pro, Lactate Scout), définir les intensités d'entraînement cibles et optimiser la cinétique de récupération.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=xuLDDLBpECQ" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+      • 🎙️ Chaîne : <em>PEP'S-SPORT</em>
+    </span>
+  </p>
+</div>
 
 ## 2.12. Les balances et systèmes d'analyse corporelle
 
