@@ -432,6 +432,13 @@ function getStudentProgress(email) {
   }
 }
 
+function handleAdminResetStudentPassword(email) {
+  if (confirm(`Voulez-vous réinitialiser le mot de passe de l'étudiant ${email} ?\nUn mot de passe temporaire 'hech2026' sera défini et l'étudiant pourra reconfigurer son mot de passe.`)) {
+    const res = userStore.adminResetStudentPassword(email, 'hech2026')
+    alert(res.message)
+  }
+}
+
 function handleDeleteStudent(user) {
   if (!user || !user.email) return
   const confirmMsg = `Êtes-vous sûr de vouloir supprimer définitivement l'étudiant :\n\n${user.firstName} ${user.lastName} (${user.email})\n\nCette action supprimera tous ses travaux, quiz et devoirs sur cet appareil et dans le Cloud.`
@@ -743,6 +750,13 @@ function handleResetAllStudents() {
                     title="Consulter le dossier complet et corriger"
                   >
                     Dossier
+                  </button>
+                  <button 
+                    @click="handleAdminResetStudentPassword(u.email)" 
+                    style="padding: 4px 8px; background: #8b5cf6; color: #fff; border: none; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-right: 6px;"
+                    title="Réinitialiser le mot de passe de cet étudiant (mot de passe temporaire hech2026)"
+                  >
+                    🔑 MDP
                   </button>
                   <button 
                     @click="handleDeleteStudent(u)" 
@@ -1210,6 +1224,9 @@ function handleResetAllStudents() {
           </select>
           <button @click="nextDossierStudent" style="padding: 6px 12px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; cursor: pointer; font-weight: 600;">
             Suivant ▶
+          </button>
+          <button @click="handleAdminResetStudentPassword(currentDossier.email)" style="padding: 6px 12px; background: #8b5cf6; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;" title="Réinitialiser le mot de passe à hech2026">
+            🔑 Réinitialiser MDP
           </button>
           <button @click="closeStudentDossier" style="margin-left: 12px; padding: 6px 12px; background: #ef4444; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;">
             ✕ Fermer (Échap)

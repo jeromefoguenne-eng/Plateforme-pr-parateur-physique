@@ -7,6 +7,9 @@ description: "Passer du ressenti à la mesure : comment la data transforme la pr
 
 <div class="course-content justified-text">
 
+::: tip 📽️ Diaporama Officiel du Cours (Séance 01)
+Le support de présentation PowerPoint officiel utilisé en séance est disponible au téléchargement direct : [**📥 Télécharger le Diaporama 01 (.pptx — 421 Mo)**](https://drive.google.com/uc?export=download&id=1LbWxVQbHyp3a2gpDus0j-m4ozCJ-iWth) ou via l'espace [**📁 Ressources**](/ressources/documents).
+:::
 
 ## Les données sont en train de révolutionner le monde du sport
 

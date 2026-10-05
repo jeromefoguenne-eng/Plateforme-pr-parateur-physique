@@ -82,7 +82,7 @@ export class CloudSync {
     return !!this.getUrl()
   }
 
-  private async postJson(payload: any, timeoutMs = 12000): Promise<any> {
+  private async postJson(payload: any, timeoutMs = 45000): Promise<any> {
     const url = this.getUrl()
     if (!url) return null
 
@@ -110,7 +110,7 @@ export class CloudSync {
     }
   }
 
-  private async getJson(params: Record<string, string>, timeoutMs = 10000): Promise<any> {
+  private async getJson(params: Record<string, string>, timeoutMs = 45000): Promise<any> {
     const baseUrl = this.getUrl()
     if (!baseUrl) return null
 

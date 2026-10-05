@@ -7,6 +7,9 @@ description: "Panorama complet des technologies de mesure sur le terrain : GNSS,
 
 <div class="course-content justified-text">
 
+::: tip 📽️ Diaporama Officiel du Cours (Séance 02)
+Le support de présentation PowerPoint officiel sur les capteurs de données et mesures de terrain est disponible au téléchargement direct : [**📥 Télécharger le Diaporama 02 (.pptx — 424 Mo)**](https://drive.google.com/uc?export=download&id=1PTVuM_ZlPCh2yqTmJEUUao_kiEh-MDAc) ou via l'espace [**📁 Ressources**](/ressources/documents).
+:::
 
 Le préparateur physique dispose aujourd’hui d’un ensemble d’outils permettant de transformer des phénomènes physiologiques, biomécaniques ou comportementaux en données numériques. Ces données peuvent ensuite être stockées, visualisées, comparées et utilisées pour suivre l’évolution d’un sportif. Cette utilisation des technologies correspond directement aux compétences visées dans le profil de la spécialisation : maîtriser les outils d’évaluation et d’analyse de la performance, utiliser des appareillages adaptés et mesurer des paramètres biométriques, biomécaniques et physiologiques.
 

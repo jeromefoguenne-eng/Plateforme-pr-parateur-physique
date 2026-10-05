@@ -537,6 +537,16 @@ function normalizeName(str: string): string {
     .replace(/^_|_$/g, '')
 }
 
+export function normalizeTextForAi(str: string): string {
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function formatFileName(lastName: string, firstName: string, exerciseTitle: string, originalName: string): string {
   const normLast = normalizeName(lastName).toUpperCase()
   const normFirst = normalizeName(firstName).charAt(0).toUpperCase() + normalizeName(firstName).slice(1).toLowerCase()
@@ -565,8 +575,117 @@ function setStorage<T>(key: string, value: T): void {
   }
 }
 
-// Liste initiale des étudiants pour le cours Préparateur Physique (vide pour la rentrée)
-const DEFAULT_USERS: User[] = []
+// Données réelles des préparateurs physiques inscrits pour la classe 2026
+export const INITIAL_REAL_USERS: User[] = [
+  {
+    id: 'user-prepa-01',
+    firstName: 'Maxim',
+    lastName: 'Legentil',
+    email: 'maxim.legentil@student.hech.be',
+    role: 'student',
+    registeredAt: '2026-09-15 09:00',
+    status: 'active',
+    passwordSet: false
+  },
+  {
+    id: 'user-prepa-02',
+    firstName: 'Emma',
+    lastName: 'Lemaire',
+    email: 'emma.lemaire@student.hech.be',
+    role: 'student',
+    registeredAt: '2026-09-15 09:00',
+    status: 'active',
+    passwordSet: false
+  },
+  {
+    id: 'user-prepa-03',
+    firstName: 'Antoine',
+    lastName: 'Daltin',
+    email: 'antoine.daltin@student.hech.be',
+    role: 'student',
+    registeredAt: '2026-09-15 09:00',
+    status: 'active',
+    passwordSet: false
+  },
+  {
+    id: 'user-prepa-04',
+    firstName: 'Matteo',
+    lastName: 'Manno',
+    email: 'matteo.manno@student.hech.be',
+    role: 'student',
+    registeredAt: '2026-09-15 09:00',
+    status: 'active',
+    passwordSet: false
+  },
+  {
+    id: 'user-prepa-05',
+    firstName: 'Achile',
+    lastName: 'Capitaine',
+    email: 'achile.capitaine@student.hech.be',
+    role: 'student',
+    registeredAt: '2026-09-15 09:00',
+    status: 'active',
+    passwordSet: false
+  }
+]
+
+const DEFAULT_USERS: User[] = INITIAL_REAL_USERS
+
+/**
+ * Recherche intelligente d'un étudiant par email, matricule, alias ou nom complet
+ */
+export function findUserByQuery(query: string, users: User[] = state.users): User | undefined {
+  if (!query || typeof query !== 'string') return undefined
+  const q = query.trim().toLowerCase()
+  if (!q) return undefined
+
+  // 1. Correspondance exacte par email
+  let found = users.find(u => (u?.email || '').trim().toLowerCase() === q)
+  if (found) return found
+
+  // 2. Recherche par alias d'email enregistrés
+  found = users.find(u => {
+    if ((u as any)?.aliases && Array.isArray((u as any).aliases)) {
+      return (u as any).aliases.some((a: string) => (a || '').trim().toLowerCase() === q)
+    }
+    return false
+  })
+  if (found) return found
+
+  // 3. Email au format prenom.nom@... ou nom.prenom@...
+  const emailPrefixMatch = q.match(/^([a-z0-9à-öø-ÿ\-]+)\.([a-z0-9à-öø-ÿ\-]+)@/)
+  if (emailPrefixMatch) {
+    const p1 = normalizeTextForAi(emailPrefixMatch[1])
+    const p2 = normalizeTextForAi(emailPrefixMatch[2])
+    found = users.find(u => {
+      const fn = normalizeTextForAi(u.firstName || '')
+      const ln = normalizeTextForAi(u.lastName || '')
+      return (fn === p1 && ln === p2) || (fn === p2 && ln === p1)
+    })
+    if (found) return found
+  }
+
+  // 4. Matricule étudiant (ex: e161029 ou 161029)
+  const matClean = q.replace(/^e/, '').replace(/@.*$/, '')
+  if (matClean.length >= 5 && /^\d+$/.test(matClean)) {
+    found = users.find(u => {
+      const uEmail = (u?.email || '').toLowerCase()
+      return uEmail.includes(matClean)
+    })
+    if (found) return found
+  }
+
+  // 5. Nom complet "Prénom Nom" ou "Nom Prénom"
+  const qNorm = normalizeTextForAi(q)
+  found = users.find(u => {
+    const fn = normalizeTextForAi(u.firstName || '')
+    const ln = normalizeTextForAi(u.lastName || '')
+    return `${fn} ${ln}` === qNorm || `${ln} ${fn}` === qNorm
+  })
+  if (found) return found
+
+  return undefined
+}
 
 const state = reactive({
   users: [] as User[],
@@ -1183,6 +1302,16 @@ export const userStore = {
       !demoEmails.includes(u.email.toLowerCase().trim()) &&
       !state.deletedUsers.includes(u.email.toLowerCase().trim())
     )
+
+    // Fusion automatique des 5 étudiants officiels s'ils ne sont pas encore présents et non supprimés
+    INITIAL_REAL_USERS.forEach(ru => {
+      const em = (ru.email || '').trim().toLowerCase()
+      if (state.deletedUsers.includes(em)) return
+      const existing = state.users.find(u => (u?.email || '').trim().toLowerCase() === em)
+      if (!existing) {
+        state.users.push({ ...ru })
+      }
+    })
     setStorage(STORAGE_KEY_USERS, state.users)
 
     state.currentUser = getStorage(STORAGE_KEY_CURRENT, null)
@@ -1238,14 +1367,15 @@ export const userStore = {
     return { success: true, message: "La liste des préparateurs physiques a été réinitialisée à 0." }
   },
 
-  checkStudentStatus(email: string): { exists: boolean; passwordSet: boolean; user?: User } {
+  checkStudentStatus(email: string): { exists: boolean; passwordSet: boolean; user?: User; name?: string } {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const u = state.users.find(x => (x?.email || '').toLowerCase().trim() === cleanEmail)
+    const u = findUserByQuery(cleanEmail)
     if (!u) return { exists: false, passwordSet: false }
     return {
       exists: true,
       passwordSet: !!(u.passwordSet && u.password),
-      user: u
+      user: u,
+      name: `${u.firstName} ${u.lastName}`
     }
   },
 
@@ -1271,7 +1401,7 @@ export const userStore = {
     const cleanEmail = (email || '').toLowerCase().trim()
     if (!cleanEmail) return null
     if (!forceRemote) {
-      const local = state.users.find(u => (u?.email || '').toLowerCase().trim() === cleanEmail)
+      const local = findUserByQuery(cleanEmail)
       if (local && local.passwordSet) return local
     }
 
@@ -1281,7 +1411,7 @@ export const userStore = {
       this.importSingleStudent(remote)
       return remote
     }
-    const fallbackLocal = state.users.find(u => (u?.email || '').toLowerCase().trim() === cleanEmail)
+    const fallbackLocal = findUserByQuery(cleanEmail)
     return fallbackLocal || null
   },
 
@@ -1327,7 +1457,7 @@ export const userStore = {
 
   loginStudentWithPassword(email: string, password?: string) {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    const user = findUserByQuery(cleanEmail)
     if (!user) {
       return { success: false, message: "Adresse email non reconnue." }
     }
@@ -1366,7 +1496,7 @@ export const userStore = {
 
   setInitialPassword(email: string, newPass: string, confirmPass: string) {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    const user = findUserByQuery(cleanEmail)
     if (!user) return { success: false, message: "Étudiant non trouvé." }
 
     const p = (newPass || '').trim()
@@ -1391,7 +1521,7 @@ export const userStore = {
 
   changeStudentPassword(email: string, oldPass: string, newPass: string, confirmPass: string) {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    const user = findUserByQuery(cleanEmail)
     if (!user) return { success: false, message: "Étudiant non trouvé." }
 
     const oldClean = (oldPass || '').trim()
@@ -1422,7 +1552,7 @@ export const userStore = {
 
   requestPasswordRecovery(email: string) {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    const user = findUserByQuery(cleanEmail)
     if (!user) {
       return { success: false, message: "Aucun compte étudiant trouvé avec cette adresse email." }
     }
@@ -1441,7 +1571,7 @@ export const userStore = {
 
   resetStudentPasswordWithCode(email: string, code: string, newPass: string, confirmPass: string) {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const user = state.users.find(u => (u?.email || '').trim().toLowerCase() === cleanEmail)
+    const user = findUserByQuery(cleanEmail)
     if (!user) return { success: false, message: "Étudiant non trouvé." }
 
     const cleanCode = (code || '').trim()
@@ -1468,6 +1598,26 @@ export const userStore = {
 
   resetPasswordWithCode(email: string, code: string, newPass: string, confirmPass: string) {
     return this.resetStudentPasswordWithCode(email, code, newPass, confirmPass)
+  },
+
+  adminResetStudentPassword(email: string, newTempPass?: string) {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const user = findUserByQuery(cleanEmail)
+    if (!user) return { success: false, message: "Étudiant non trouvé." }
+
+    const temp = newTempPass?.trim() || 'hech2026'
+    user.password = temp
+    user.passwordSet = false // Oblige l'étudiant à reconfigurer son mot de passe
+    user.recoveryCode = undefined
+
+    setStorage(STORAGE_KEY_USERS, state.users)
+    try { cloudSync.pushUpdateStudent(user) } catch (e) {}
+    try { this.syncWithCloud().catch(() => {}) } catch (e) {}
+    return {
+      success: true,
+      temporaryPassword: temp,
+      message: `Le mot de passe de ${user.firstName} ${user.lastName} a été réinitialisé à '${temp}' (en attente de reconfiguration par l'étudiant).`
+    }
   },
 
   logout() {
@@ -1681,9 +1831,15 @@ export const userStore = {
   },
 
   getUserFiles(email?: string): SubmittedFile[] {
-    const userEmail = email || state.currentUser?.email
-    if (!userEmail) return []
-    return state.submittedFiles.filter(f => (f?.userEmail || '').toLowerCase() === userEmail.toLowerCase())
+    const rawEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
+    if (!rawEmail) return []
+    const user = findUserByQuery(rawEmail)
+    const allowed = new Set<string>([rawEmail])
+    if (user?.email) allowed.add(user.email.toLowerCase())
+    if ((user as any)?.aliases && Array.isArray((user as any).aliases)) {
+      for (const a of (user as any).aliases) if (a) allowed.add(a.toLowerCase())
+    }
+    return state.submittedFiles.filter(f => f && f.userEmail && allowed.has(f.userEmail.toLowerCase()))
   },
 
   // Synchronisation directe vers le dossier Google Drive local via l'API File System Access
@@ -1748,21 +1904,57 @@ export const userStore = {
   },
 
   isCompleted(itemId: string, email?: string): boolean {
-    const userEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
-    if (!userEmail) return false
-    if (itemId === 'quiz') {
-      return state.quizAttempts.some(q => (q?.userEmail || '').toLowerCase().trim() === userEmail)
+    const rawEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
+    if (!rawEmail) return false
+    const user = findUserByQuery(rawEmail)
+    const allowed = new Set<string>([rawEmail])
+    if (user?.email) allowed.add(user.email.toLowerCase())
+    if ((user as any)?.aliases && Array.isArray((user as any).aliases)) {
+      for (const a of (user as any).aliases) if (a) allowed.add(a.toLowerCase())
     }
-    const hasFile = state.submittedFiles.some(f => (f?.userEmail || '').toLowerCase().trim() === userEmail && f.exerciseId === itemId)
-    const hasSub = state.submissions.some(s => (s?.userEmail || '').toLowerCase().trim() === userEmail && s.exerciseId === itemId && (s.answer || '').trim().length > 10)
-    const inProg = (state.progress[userEmail] || []).includes(itemId)
+
+    if (itemId === 'quiz') {
+      return state.quizAttempts.some(q => q && q.userEmail && allowed.has(q.userEmail.toLowerCase().trim()))
+    }
+    const hasFile = state.submittedFiles.some(f => f && f.userEmail && allowed.has(f.userEmail.toLowerCase().trim()) && f.exerciseId === itemId)
+    const hasSub = state.submissions.some(s => s && s.userEmail && allowed.has(s.userEmail.toLowerCase().trim()) && s.exerciseId === itemId && (s.answer || '').trim().length > 10)
+    const inProg = Array.from(allowed).some(em => (state.progress[em] || []).includes(itemId))
     return hasFile || hasSub || inProg
   },
 
   getExerciseFeedback(exerciseId: string, email?: string): ExerciseTeacherFeedback | undefined {
-    const userEmail = email || state.currentUser?.email
-    if (!userEmail) return undefined
-    return state.exerciseFeedbacks.find(f => (f?.userEmail || '').toLowerCase() === userEmail.toLowerCase() && f.exerciseId === exerciseId)
+    const rawEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
+    if (!rawEmail) return undefined
+    const user = findUserByQuery(rawEmail)
+    const allowed = [rawEmail]
+    if (user?.email && !allowed.includes(user.email.toLowerCase())) allowed.push(user.email.toLowerCase())
+    if ((user as any)?.aliases && Array.isArray((user as any).aliases)) {
+      for (const a of (user as any).aliases) if (a && !allowed.includes(a.toLowerCase())) allowed.push(a.toLowerCase())
+    }
+
+    // Recherche dans exerciseFeedbacks
+    const foundFb = state.exerciseFeedbacks.find(f => f && f.userEmail && allowed.includes(f.userEmail.toLowerCase()) && f.exerciseId === exerciseId)
+    if (foundFb) return foundFb
+
+    // Repli vers teacherGrade du fichier déposé si existant
+    const file = state.submittedFiles.find(
+      f => f && f.exerciseId === exerciseId && allowed.includes((f.userEmail || '').toLowerCase())
+    )
+    if (file?.teacherGrade && (file.teacherGrade.feedback || file.teacherGrade.status === 'graded')) {
+      return {
+        userEmail: file.userEmail,
+        userName: file.userName,
+        exerciseId,
+        exerciseTitle: file.exerciseTitle,
+        score: file.teacherGrade.score,
+        maxScore: file.teacherGrade.maxScore || 20,
+        feedback: file.teacherGrade.feedback,
+        gradedAt: file.teacherGrade.gradedAt,
+        status: file.teacherGrade.status
+      }
+    }
+
+    return undefined
   },
 
   saveTeacherGrade(fileId: string, score: number, feedback: string = '') {
@@ -1926,16 +2118,28 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
 
   getStudentEvaluation(email?: string) {
     const targetEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
-    const user = state.users.find(u => (u?.email || '').toLowerCase().trim() === targetEmail)
-    const evalRec: EvaluationRecord = (state.evaluations && state.evaluations[targetEmail]) || {
+    const user = findUserByQuery(targetEmail)
+    const allowed = [targetEmail]
+    if (user?.email && !allowed.includes(user.email.toLowerCase())) allowed.push(user.email.toLowerCase())
+    if ((user as any)?.aliases && Array.isArray((user as any).aliases)) {
+      for (const a of (user as any).aliases) if (a && !allowed.includes(a.toLowerCase())) allowed.push(a.toLowerCase())
+    }
+
+    let evalRec: EvaluationRecord = {
       userEmail: targetEmail,
       itemsScores: {},
       itemsFeedbacks: {},
       teacherFeedback: ''
     }
+    for (const em of allowed) {
+      if (state.evaluations && state.evaluations[em]) {
+        evalRec = state.evaluations[em]
+        break
+      }
+    }
 
     // 1. Quizzes (Moyenne des 7 quiz du cours, convertie sur 10 points)
-    const userQuizzes = state.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() === targetEmail)
+    const userQuizzes = state.quizAttempts.filter(q => q && q.userEmail && allowed.includes(q.userEmail.toLowerCase().trim()))
     const bestQuizzes: Record<string, number> = {}
     userQuizzes.forEach(q => {
       const current = bestQuizzes[q.moduleId] || 0
@@ -1994,9 +2198,9 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       }
 
       // Exercices 01 à 07
-      const file = state.submittedFiles.find(f => (f?.userEmail || '').toLowerCase().trim() === targetEmail && f?.exerciseId === def.id)
-      const submission = state.submissions.find(s => (s?.userEmail || '').toLowerCase().trim() === targetEmail && s?.exerciseId === def.id)
-      const feedback = state.exerciseFeedbacks.find(fb => (fb?.userEmail || '').toLowerCase().trim() === targetEmail && fb?.exerciseId === def.id)
+      const file = state.submittedFiles.find(f => f && f.userEmail && allowed.includes(f.userEmail.toLowerCase().trim()) && f?.exerciseId === def.id)
+      const submission = state.submissions.find(s => s && s.userEmail && allowed.includes(s.userEmail.toLowerCase().trim()) && s?.exerciseId === def.id)
+      const feedback = state.exerciseFeedbacks.find(fb => fb && fb.userEmail && allowed.includes(fb.userEmail.toLowerCase().trim()) && fb?.exerciseId === def.id)
       const isDone = !!file || !!(submission && submission.answer && submission.answer.trim().length > 10)
 
       const effDeadline = this.getExerciseDeadline(def.id)
@@ -2163,11 +2367,17 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
 
   getStudentFullDossier(email?: string) {
     const targetEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
-    const user = state.users.find(u => u && u.email && u.email.toLowerCase().trim() === targetEmail)
+    const user = findUserByQuery(targetEmail)
+    const allowed = [targetEmail]
+    if (user?.email && !allowed.includes(user.email.toLowerCase())) allowed.push(user.email.toLowerCase())
+    if ((user as any)?.aliases && Array.isArray((user as any).aliases)) {
+      for (const a of (user as any).aliases) if (a && !allowed.includes(a.toLowerCase())) allowed.push(a.toLowerCase())
+    }
+
     const evaluation = this.getStudentEvaluation(targetEmail)
-    const userFiles = state.submittedFiles.filter(f => (f?.userEmail || '').toLowerCase().trim() === targetEmail)
-    const userSubs = state.submissions.filter(s => (s?.userEmail || '').toLowerCase().trim() === targetEmail)
-    const userQuizzes = state.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() === targetEmail)
+    const userFiles = state.submittedFiles.filter(f => f && f.userEmail && allowed.includes(f.userEmail.toLowerCase().trim()))
+    const userSubs = state.submissions.filter(s => s && s.userEmail && allowed.includes(s.userEmail.toLowerCase().trim()))
+    const userQuizzes = state.quizAttempts.filter(q => q && q.userEmail && allowed.includes(q.userEmail.toLowerCase().trim()))
 
     return {
       user,
@@ -2479,3 +2689,26 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
     }
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY_DEADLINES && event.newValue) {
+      try {
+        state.deadlines = JSON.parse(event.newValue)
+        deadlinesTrigger.value++
+      } catch (e) {}
+    }
+    if (event.key === STORAGE_KEY_DELETED_USERS && event.newValue) {
+      try {
+        state.deletedUsers = JSON.parse(event.newValue)
+      } catch (e) {}
+    }
+    if (event.key === STORAGE_KEY_USERS || event.key === STORAGE_KEY_FILES || event.key === STORAGE_KEY_SUBMISSIONS) {
+      userStore.syncFromStorage()
+    }
+  })
+  window.addEventListener('focus', () => {
+    userStore.syncFromStorage()
+  })
+}
+
