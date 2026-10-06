@@ -98,10 +98,12 @@ async function handleLogin() {
   isAuthenticating.value = true
   authFeedbackMessage.value = 'Vérification du compte...'
 
-  // Vérifier d'abord le statut du compte localement
+  // 1. Vérifier le statut du compte localement d'abord
   let status = userStore.checkStudentStatus(clean)
-  if (!status.exists || !status.passwordSet) {
-    authFeedbackMessage.value = 'Recherche en ligne de votre profil (synchronisation multi-appareils)...'
+  
+  // Si le compte est totalement inconnu localement, chercher en ligne (pour un compte créé sur un autre appareil)
+  if (!status.exists) {
+    authFeedbackMessage.value = 'Recherche de votre compte en ligne...'
     const fetched = await userStore.findOrFetchStudent(clean, true)
     if (fetched) {
       status = userStore.checkStudentStatus(clean)
@@ -116,7 +118,7 @@ async function handleLogin() {
     return
   }
 
-  // Première connexion sans mot de passe encore défini
+  // Première connexion sans mot de passe encore défini -> Accès immédiat à la configuration du mot de passe
   if (!status.passwordSet) {
     authPendingUser.value = status.user
     authViewMode.value = 'first-login'
@@ -130,9 +132,9 @@ async function handleLogin() {
 
   let res = userStore.loginStudentWithPassword(clean, loginPassword.value)
   if (!res.success) {
-    // Si échec local, interroger le Cloud pour s'assurer que le mot de passe n'a pas été changé sur un autre appareil
+    // Si échec local, interroger le Cloud avec court délai au cas où le mot de passe aurait été changé ailleurs
     isAuthenticating.value = true
-    authFeedbackMessage.value = 'Vérification distante auprès du serveur...'
+    authFeedbackMessage.value = 'Vérification du mot de passe auprès du serveur...'
     const refreshed = await userStore.findOrFetchStudent(clean, true)
     isAuthenticating.value = false
     authFeedbackMessage.value = ''

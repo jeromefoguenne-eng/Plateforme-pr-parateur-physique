@@ -602,7 +602,8 @@ export const INITIAL_REAL_USERS: User[] = [
     role: 'student',
     registeredAt: '2026-09-15 09:00',
     status: 'active',
-    passwordSet: false
+    passwordSet: false,
+    aliases: ['maxim.legentil@hech.be']
   },
   {
     id: 'user-prepa-02',
@@ -612,7 +613,8 @@ export const INITIAL_REAL_USERS: User[] = [
     role: 'student',
     registeredAt: '2026-09-15 09:00',
     status: 'active',
-    passwordSet: false
+    passwordSet: false,
+    aliases: ['emma.lemaire@hech.be']
   },
   {
     id: 'user-prepa-03',
@@ -622,7 +624,8 @@ export const INITIAL_REAL_USERS: User[] = [
     role: 'student',
     registeredAt: '2026-09-15 09:00',
     status: 'active',
-    passwordSet: false
+    passwordSet: false,
+    aliases: ['antoine.daltin@hech.be']
   },
   {
     id: 'user-prepa-04',
@@ -632,7 +635,8 @@ export const INITIAL_REAL_USERS: User[] = [
     role: 'student',
     registeredAt: '2026-09-15 09:00',
     status: 'active',
-    passwordSet: false
+    passwordSet: false,
+    aliases: ['matteo.manno@hech.be']
   },
   {
     id: 'user-prepa-05',
@@ -642,7 +646,8 @@ export const INITIAL_REAL_USERS: User[] = [
     role: 'student',
     registeredAt: '2026-09-15 09:00',
     status: 'active',
-    passwordSet: false
+    passwordSet: false,
+    aliases: ['achile.capitaine@hech.be']
   }
 ]
 
@@ -2728,7 +2733,7 @@ if (typeof window !== 'undefined') {
         state.deletedUsers = JSON.parse(event.newValue)
       } catch (e) {}
     }
-    if (event.key === STORAGE_KEY_USERS || event.key === STORAGE_KEY_FILES || event.key === STORAGE_KEY_SUBMISSIONS) {
+    if (event.key === STORAGE_KEY_USERS || event.key === STORAGE_KEY_FILES || event.key === STORAGE_KEY_SUBMISSIONS || event.key === STORAGE_KEY_QUIZZES || event.key === STORAGE_KEY_EVALUATIONS) {
       userStore.syncFromStorage()
     }
   })

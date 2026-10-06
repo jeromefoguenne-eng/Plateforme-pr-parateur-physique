@@ -82,7 +82,7 @@ export class CloudSync {
     return !!this.getUrl()
   }
 
-  private async postJson(payload: any, timeoutMs = 45000): Promise<any> {
+  private async postJson(payload: any, timeoutMs = 6000): Promise<any> {
     const url = this.getUrl()
     if (!url) return null
 
@@ -110,7 +110,7 @@ export class CloudSync {
     }
   }
 
-  private async getJson(params: Record<string, string>, timeoutMs = 45000): Promise<any> {
+  private async getJson(params: Record<string, string>, timeoutMs = 6000): Promise<any> {
     const baseUrl = this.getUrl()
     if (!baseUrl) return null
 
@@ -198,14 +198,14 @@ export class CloudSync {
 
     try {
       const cleanEmail = email.trim().toLowerCase()
-      // Tenter d'abord par GET
-      const res = await this.getJson({ action: 'getStudent', email: cleanEmail })
+      // Tenter d'abord par GET avec un court timeout de 3.5s
+      const res = await this.getJson({ action: 'getStudent', email: cleanEmail }, 3500)
       if (res && res.status === 'success' && res.user) {
         return res.user
       }
 
-      // Sinon tenter via POST
-      const postRes = await this.postJson({ action: 'getStudent', email: cleanEmail })
+      // Sinon tenter via POST (3.5s)
+      const postRes = await this.postJson({ action: 'getStudent', email: cleanEmail }, 3500)
       if (postRes && postRes.status === 'success' && postRes.user) {
         return postRes.user
       }

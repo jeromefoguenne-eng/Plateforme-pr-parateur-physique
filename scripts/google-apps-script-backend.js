@@ -392,6 +392,23 @@ function saveQuizToSheet(quiz) {
     sheet = ss.getSheetByName("Quiz");
   }
 
+  var data = sheet.getDataRange().getValues();
+  var cleanEmail = (quiz.userEmail || '').toString().trim().toLowerCase();
+  var qId = (quiz.id || '').toString().trim();
+  var mId = (quiz.moduleId || '').toString().trim();
+  var subAt = (quiz.submittedAt || '').toString().trim();
+
+  // Éviter les doublons lors des synchronisations répétées
+  for (var i = 1; i < data.length; i++) {
+    var rowId = (data[i][0] || '').toString().trim();
+    var rowEmail = (data[i][1] || '').toString().trim().toLowerCase();
+    var rowMod = (data[i][3] || '').toString().trim();
+    var rowAt = (data[i][8] || '').toString().trim();
+    if ((qId && rowId === qId) || (rowEmail === cleanEmail && rowMod === mId && rowAt === subAt)) {
+      return; // Déjà enregistré
+    }
+  }
+
   sheet.appendRow([
     quiz.id || ('quiz_' + Date.now()),
     quiz.userEmail,
