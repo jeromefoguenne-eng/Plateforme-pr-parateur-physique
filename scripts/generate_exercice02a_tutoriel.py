@@ -87,12 +87,11 @@ def create_tutorial_02a_docx():
     )
 
     # 3. Sommaire des étapes
-    add_p("Les 5 grandes étapes de réalisation :", bold=True, space_after=Pt(4))
+    add_p("Les 4 grandes étapes de réalisation :", bold=True, space_after=Pt(4))
     add_bullet("Connexion à la source externe et ouverture de l'Éditeur Power Query", "Étape 1 : ")
     add_bullet("Contrôle qualité, nettoyage et typage rigoureux des colonnes métrologiques", "Étape 2 : ")
     add_bullet("Calcul des ratios physiologiques relatifs au poids corporel (g/kg/j)", "Étape 3 : ")
-    add_bullet("Programmation de la règle d'alerte conditionnelle de déficit énergétique", "Étape 4 : ")
-    add_bullet("Chargement dans Excel, vérification de la dynamicité et analyse décisionnelle pour le staff", "Étape 5 : ", space_after=Pt(12))
+    add_bullet("Rédigez vos conclusions", "Étape 4 : ", space_after=Pt(12))
 
     # --- ÉTAPE 1 ---
     add_heading_1("Étape 1 : Connexion au fichier source et ouverture de Power Query")
@@ -137,60 +136,42 @@ def create_tutorial_02a_docx():
 
     add_step("3.3", "Calcul des Lipides relatifs", "Cliquez sur Colonne personnalisée. Nommez la colonne « Lipides_g_kg ». Saisissez la formule :")
     add_p("= [Lipides_g] / [Poids_kg]", italic=True)
-    add_p("Cliquez sur OK et attribuez le type Nombre décimal.", space_after=Pt(10))
+    add_p("Cliquez sur OK et attribuez le type Nombre décimal.")
+
+    add_p("Chargement dans Excel : Dans l'onglet Accueil de Power Query, cliquez sur Fermer et charger > Fermer et charger dans... Choisissez Tableau dans une Nouvelle feuille nommée « Extraction_PowerQuery ».", space_after=Pt(10))
 
     # --- ÉTAPE 4 ---
-    add_heading_1("Étape 4 : Programmation de l'Alerte Conditionnelle de Déficit Énergétique")
-    add_p(
-        "Pour automatiser la détection des journées à haut risque de déplétion glycogénique et de fatigue anormale, "
-        "nous créons une alerte visuelle automatique dès qu'une séance présente une charge RPE élevée (>= 600 UA) "
-        "associée à un apport glucidique inférieur à 6.0 g/kg."
-    )
-    add_p("1. Toujours dans l'onglet Ajouter une colonne, cliquez sur Colonne conditionnelle.")
-    add_p("2. Nommez la colonne « Alerte_Glucides ».")
-    add_p("3. Configurez la règle de test logique ainsi :")
-    add_bullet("Sélectionnez la colonne [Charge_RPE_UA] | Opérateur : « est supérieur ou égal à » | Valeur : 600", "Condition 1 : ")
-    add_bullet("Cliquez sur Ajouter une clause. Sélectionnez [Glucides_g_kg] | Opérateur : « est inférieur à » | Valeur : 6", "Condition 2 : ")
-    add_bullet("Dans la case « Sortie », écrivez : Alerte Déficit", "Résultat si VRAI : ")
-    add_bullet("Dans la case « Sinon » (en bas), écrivez : Conforme", "Résultat par défaut : ")
-    add_p("4. Cliquez sur OK. La colonne indique immédiatement « Alerte Déficit » pour les journées critiques (ex : Camille Bernard le Jeudi 09/10).", space_after=Pt(10))
+    add_heading_1("4. Rédigez vos conclusions")
+    add_p("À partir de votre tableau extrait sous Excel et en consultant l'onglet « Profils_Reperes_Staff », analysez les données et rédigez vos conclusions (sur une feuille dédiée ou dans un document Word) en répondant précisément aux 4 questions professionnelles suivantes :")
 
-    # --- ÉTAPE 5 ---
-    add_heading_1("Étape 5 : Chargement dans Excel et Guide d'Interprétation Staff")
-    add_p("1. Dans l'onglet Accueil de Power Query, cliquez sur la flèche sous le bouton Fermer et charger > Fermer et charger dans...")
-    add_p("2. Choisissez Tableau, puis Nouvelle feuille de calcul. Nommez l'onglet créé : « Extraction_PowerQuery ».")
-    add_p("3. Dans Excel, vérifiez la mise en forme des colonnes (sélectionnez les colonnes des ratios et appliquez le format Nombre à 1 décimale).")
-    add_p("4. Rédigez vos conclusions dans un second onglet ou un document Word en suivant la grille d'aide ci-dessous :")
-    
     add_bullet(
-        "Comparez les journées de Mardi et Jeudi (charge RPE > 600 UA, volume > 6 km). "
-        "Remarquez le profil de Camille Bernard (5.0 g/kg le jeudi avec une récupération 'Fatigué') et de Lucas Mercier (8.9 g/kg en demi-fond). "
-        "Expliquez pourquoi un apport < 6 g/kg réduit la resynthèse du glycogène musculaire, baisse l'intensité de pointe sur les répétitions lactiques et élève le risque de blessure tendineuse.",
-        "Aide Question 1 (Glucides & RED-S) : "
+        "Comparez les apports glucidiques journaliers rapportés au poids corporel (g/kg/j) lors des séances à haute charge (Mardi et Jeudi, charge RPE > 600 UA). "
+        "Identifiez les athlètes qui descendent sous le seuil critique (< 6.0 g/kg/j, comme Camille Bernard le jeudi à 5.0 g/kg avec une récupération 'Fatigué'). "
+        "Expliquez les conséquences physiologiques directes sur la resynthèse du glycogène intramusculaire et la perte de puissance lors des séries lactiques à haute intensité.",
+        "Question 1 — Disponibilité énergétique & Glucides : "
     )
     add_bullet(
-        "Analysez les apports protéiques d'Alexandre Faure et Maxime Laurent (souvent > 2.1 g/kg/j). "
-        "Validez que le total est optimal pour l'hypertrophie et la réparation myo-fibrillaire. "
-        "Soulignez la recommandation du timing : ingestion d'une collation de 20 à 30 g de protéines riches en leucine dans les 45 minutes suivant la musculation.",
-        "Aide Question 2 (Protéines & Musculation) : "
+        "Vérifiez si les cibles recommandées (1.6 à 2.2 g/kg/j) sont couvertes pour les athlètes ayant un profil de puissance et de renforcement musculaire (Maxime Laurent, Alexandre Faure, Emma Roux). "
+        "Justifiez l'importance stratégique du timing d'ingestion d'une collation riche en acides aminés essentiels / leucine (20 à 30 g) dans les 45 minutes suivant la séance de musculation.",
+        "Question 2 — Récupération protéique & Force : "
     )
     add_bullet(
-        "Comparez l'apport hydrique par rapport aux kilomètres nagés. En milieu aquatique, la sudation est invisible mais bien réelle (0.5 à 1.2 L/h). "
-        "Une déshydratation de 2 % de masse corporelle élève la fréquence cardiaque à l'effort et augmente artificiellement la perception de l'effort (RPE).",
-        "Aide Question 3 (Hydratation de terrain) : "
+        "Croisez les volumes hydriques déclarés (L/j) avec les kilométrages nagés en bassin (souvent > 10 km/j pour les demi-fondistes comme Lucas Mercier et Sarah Lefebvre). "
+        "Rappelez pourquoi la déshydratation est sous-estimée en milieu aquatique (sudation masquée par l'eau) et démontrez son impact sur la dérive cardiovasculaire et l'élévation anormale de la perception de l'effort (RPE).",
+        "Question 3 — Hydratation & Thermorégulation : "
     )
     add_bullet(
-        "Formulez des consignes pragmatiques : ajuster les collations glucidiques liquides d'intra-séance (boisson d'effort isotonique), "
-        "surveiller le poids matinal post-miction, et individualiser les rations lors des jours de biquotidiens.",
-        "Aide Question 4 (Ajustements staff) : ",
+        "Formulez 3 recommandations nutritionnelles concrètes, individualisées et opérationnelles destinées à l'entraîneur principal et aux nageurs pour la semaine suivante : "
+        "mise en place d'une boisson d'effort isotonique d'intra-séance, ajustement des collations de récupération post-bassin et protocole de pesée matinale pour surveiller l'état d'hydratation.",
+        "Question 4 — Recommandations pour le staff : ",
         space_after=Pt(14)
     )
 
-    add_p("Fin du tutoriel — Vous disposez d'une chaîne automatisée reproductible tout au long de la saison sportive.", bold=True, italic=True)
+    add_p("Fin du tutoriel — Vous disposez d'un flux automatisé et d'une analyse d'aide à la décision rigoureuse pour le staff.", bold=True, italic=True)
 
     target_path = "docs/public/documents/Exercice-02a-Tutoriel.docx"
     doc.save(target_path)
-    print(f"Exercice-02a-Tutoriel.docx créé avec succès : {target_path}")
+    print(f"Exercice-02a-Tutoriel.docx mis à jour avec '4. Rédigez vos conclusions' : {target_path}")
 
 if __name__ == "__main__":
     create_tutorial_02a_docx()
