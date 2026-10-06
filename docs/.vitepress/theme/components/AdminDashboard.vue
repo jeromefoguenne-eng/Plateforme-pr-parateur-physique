@@ -512,7 +512,7 @@ function exportAllResultsToExcel() {
   }
 
   // En-têtes CSV avec point-virgule (compatible avec toutes les versions d'Excel en français)
-  let csv = `"Nom";"Prénom";"Email";"Statut Retard";"Quiz (Moyenne 7 quiz /10)";"Ex 01 - Capteurs (/10)";"Ex 02 - Formats/Logiciels (/10)";"Ex 03 - Excel Tidy Data (/10)";"Ex 04 - Outils de suivi (/10)";"Ex 05 - Recherche & Décision (/10)";"Ex 06 - IA & Agents (/10)";"Ex 07 - Mission Finale (/30)";"Total Points (/100)";"Note Finale Officielle (/20)";"Pourcentage";"Statut Académique";"Mention";"Commentaire Général Enseignant"\n`
+  let csv = `"Nom";"Prénom";"Email";"Statut Retard";"Quiz (Moyenne 7 quiz /10)";"Ex 01 - Capteurs (/10)";"Ex 02.a - Power Query (/5)";"Ex 02.b - Logiciels & Cas (/5)";"Ex 03 - Excel Tidy Data (/10)";"Ex 04 - Outils de suivi (/10)";"Ex 05 - Recherche & Décision (/10)";"Ex 06 - IA & Agents (/10)";"Ex 07 - Mission Finale (/30)";"Total Points (/100)";"Note Finale Officielle (/20)";"Pourcentage";"Statut Académique";"Mention";"Commentaire Général Enseignant"\n`
 
   activeStudents.forEach(u => {
     const ev = userStore.getStudentEvaluation(u.email)
@@ -521,7 +521,8 @@ function exportAllResultsToExcel() {
 
     const q = items.find(i => i.id === 'quiz')?.teacherScore ?? 0
     const ex1 = items.find(i => i.id === 'exercice-01')?.teacherScore ?? 0
-    const ex2 = items.find(i => i.id === 'exercice-02')?.teacherScore ?? 0
+    const ex2a = items.find(i => i.id === 'exercice-02a')?.teacherScore ?? 0
+    const ex2b = items.find(i => i.id === 'exercice-02')?.teacherScore ?? 0
     const ex3 = items.find(i => i.id === 'exercice-03')?.teacherScore ?? 0
     const ex4 = items.find(i => i.id === 'exercice-04')?.teacherScore ?? 0
     const ex5 = items.find(i => i.id === 'exercice-05')?.teacherScore ?? 0
@@ -531,7 +532,7 @@ function exportAllResultsToExcel() {
     const status = ev.isPassing ? 'Admis' : 'Ajourné'
     const cleanFb = (ev.feedback || '').replace(/"/g, '""').replace(/\r?\n/g, ' ')
 
-    csv += `"${u.lastName || ''}";"${u.firstName || ''}";"${u.email}";"${late}";"${q}";"${ex1}";"${ex2}";"${ex3}";"${ex4}";"${ex5}";"${ex6}";"${ex7}";"${ev.totalScore}";"${ev.totalOutOf20}";"${ev.percentage}%";"${status}";"${ev.mention}";"${cleanFb}"\n`
+    csv += `"${u.lastName || ''}";"${u.firstName || ''}";"${u.email}";"${late}";"${q}";"${ex1}";"${ex2a}";"${ex2b}";"${ex3}";"${ex4}";"${ex5}";"${ex6}";"${ex7}";"${ev.totalScore}";"${ev.totalOutOf20}";"${ev.percentage}%";"${status}";"${ev.mention}";"${cleanFb}"\n`
   })
 
   // Encodage UTF-8 BOM pour ouverture directe parfaite dans Microsoft Excel
@@ -784,7 +785,7 @@ function handleResetAllStudents() {
           <div>
             <h3 style="margin: 0; font-size: 1.3rem;">🏆 Grille d'Évaluation & Relevé Officiel des Notes (100 Pts / 20)</h3>
             <p class="eval-toolbar-sub">
-              8 composantes pondérées • Évaluation formative indicative de l'IA dès le dépôt • <strong>Seule la note de l'enseignant est prise en compte</strong> • Note finale sur /20
+              9 composantes pondérées (7 quiz + 8 devoirs pratiques) • Évaluation formative indicative de l'IA dès le dépôt • <strong>Seule la note de l'enseignant est prise en compte</strong> • Note finale sur /20
             </p>
           </div>
           <button @click="exportAllResultsToExcel" class="btn-export-excel-highlight" title="Télécharger le fichier Excel officiel avec les notes sur 20 de toute la classe">
@@ -1264,9 +1265,9 @@ function handleResetAllStudents() {
       <div style="background: var(--vp-c-bg); border-bottom: 1px solid var(--vp-c-divider); padding: 0.5rem 1.5rem; display: flex; gap: 8px;">
         <button 
           v-for="f in [
-            { id: 'all', label: 'Tous les éléments (14)' },
+            { id: 'all', label: 'Tous les éléments (15)' },
             { id: 'quiz', label: 'Quiz en ligne (7)' },
-            { id: 'exercises', label: 'Exercices & Mission (7)' },
+            { id: 'exercises', label: 'Exercices & Mission (8)' },
             { id: 'submitted_only', label: 'Remis uniquement' }
           ]" 
           :key="f.id"

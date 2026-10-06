@@ -598,7 +598,7 @@ function getWordDownloadUrl(fileBase) {
       <div style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 2px solid var(--vp-c-divider); padding-bottom: 4px; overflow-x: auto;">
         <button 
           v-for="t in [
-            { id: 'exercises', label: '📋 Exercices & Devoirs (7)' },
+            { id: 'exercises', label: '📋 Exercices & Devoirs (8)' },
             { id: 'quizzes', label: '🧠 Quiz en ligne (7)' },
             { id: 'evaluation', label: '🏆 Relevé Officiel & Notes (/20)' },
             { id: 'files', label: '📁 Mes documents déposés' }
@@ -816,7 +816,7 @@ function getWordDownloadUrl(fileBase) {
         <div style="background: var(--vp-c-bg-soft); border-radius: 12px; border: 1px solid var(--vp-c-divider); padding: 1.5rem; margin-bottom: 1.5rem;">
           <h3 style="margin-top: 0; color: var(--vp-c-brand-1);">🏆 Synthèse Officielle des Évaluations (Barème sur 100 Points / 20)</h3>
           <p style="font-size: 0.95rem; color: var(--vp-c-text-2); margin-bottom: 1rem;">
-            L'évaluation du cours s'articule autour de 8 composantes pondérées représentant 100 points, automatiquement ramenées à une note finale sur 20.
+            L'évaluation du cours s'articule autour de 9 composantes pondérées (les 7 quiz en ligne + 8 devoirs pratiques) représentant 100 points, automatiquement ramenées à une note finale sur 20.
           </p>
 
           <div style="padding: 12px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.9rem; color: #1e40af;">
