@@ -844,7 +844,15 @@ Pour choisir l'outil adapté aux besoins du préparateur physique et de ses athl
   <QuizBox moduleId="02-importation-logiciels" moduleTitle="Formats & Logiciels Dédiés" />
 </ClientOnly>
 
-## 🏋️‍♂️ Travail pratique associé
+## 🏋️‍♂️ Travaux pratiques associés
+
+<ClientOnly>
+  <ExerciseBox 
+    exerciseId="exercice-02a" 
+    exerciseTitle="Exercice 02.a — Extraction Power Query & Monitoring Nutritionnel (Natation)" 
+    description="Importer et nettoyer un export hebdomadaire de suivi nutritionnel d'une équipe de 8 nageurs avec l'outil Power Query d'Excel : typage des colonnes, calcul des ratios relatifs au poids corporel (g/kg/j), alertes conditionnelles et diagnostic décisionnel pour le staff d'entraînement (prévention RED-S, glycogène, hydratation)." 
+  />
+</ClientOnly>
 
 <ClientOnly>
   <ExerciseBox 

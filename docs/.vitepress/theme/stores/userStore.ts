@@ -198,6 +198,21 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     points: 10,
     category: 'exercice'
   },
+  'exercice-02a': {
+    id: 'exercice-02a',
+    docId: '',
+    fileBase: 'Exercice-02a.docx',
+    title: 'Exercice 02.a — Extraction Power Query & Monitoring Nutritionnel (Natation)',
+    shortTitle: 'Ex 02.a (Power Query)',
+    description: "Importer et nettoyer un export hebdomadaire de suivi nutritionnel d'une équipe de 8 nageurs de haut niveau avec l'outil Power Query d'Excel : typage des colonnes, calcul des ratios relatifs au poids corporel (g/kg/j), règles d'alertes conditionnelles et diagnostic décisionnel pour le staff d'entraînement (prévention RED-S, glycogène, hydratation).",
+    weightPct: 0,
+    points: 10,
+    category: 'exercice',
+    companionFiles: [
+      { name: 'Données brutes de nutrition (.xlsx)', fileBase: 'Exercice 02a - Donnees brutes nutrition natation.xlsx', icon: '🏊‍♂️', downloadName: 'Exercice-02a-Donnees-Brutes-Nutrition-Natation.xlsx' },
+      { name: 'Consignes de l\'exercice (.docx)', fileBase: 'Exercice-02a.docx', icon: '📄', downloadName: 'Exercice-02a-Consignes.docx' }
+    ]
+  },
   'exercice-02': {
     id: 'exercice-02',
     docId: '1BjJKttNRbCntatiEF2yeM7G01dt0_aAq',
@@ -719,6 +734,14 @@ export const EXERCISE_RUBRICS: Record<string, ExerciseRubricConfig> = {
     keySituations: ['football', 'sprint', 'rugby', 'basket', 'musculation', 'cyclisme', 'nutrition', 'sommeil', 'recuperation', 'demi-fond'],
     requiresLimits: true,
     minExpectedWords: 250
+  },
+  'exercice-02a': {
+    title: "Exercice 02.a — Extraction Power Query & Monitoring Nutritionnel (Natation)",
+    expectedDeliverable: "Requête Power Query active avec typage, colonnes relatives (Glucides_g_kg, Proteines_g_kg), règle d'alerte et analyse décisionnelle des risques (RED-S, glycogène, hydratation).",
+    coreTopics: ['power query', 'requete', 'excel', 'nutrition', 'natation', 'glucides', 'proteines', 'lipides', 'g/kg', 'calories', 'hydratation', 'rpe', 'red-s', 'glycogene', 'recuperation', 'staff'],
+    keySituations: ['power query', 'nutrition', 'glucides', 'proteines', 'hydratation', 'natation'],
+    requiresLimits: false,
+    minExpectedWords: 150
   },
   'exercice-02': {
     title: "Exercice 02 — Quel outil pour quelle situation ?",
