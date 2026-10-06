@@ -210,7 +210,8 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     category: 'exercice',
     companionFiles: [
       { name: 'Données brutes de nutrition (.xlsx)', fileBase: 'Exercice 02a - Donnees brutes nutrition natation.xlsx', icon: '🏊‍♂️', downloadName: 'Exercice-02a-Donnees-Brutes-Nutrition-Natation.xlsx' },
-      { name: 'Consignes de l\'exercice (.docx)', fileBase: 'Exercice-02a.docx', icon: '📄', downloadName: 'Exercice-02a-Consignes.docx' }
+      { name: 'Consignes de l\'exercice (.docx)', fileBase: 'Exercice-02a.docx', icon: '📄', downloadName: 'Exercice-02a-Consignes.docx' },
+      { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-02a-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-02a-Tutoriel.docx' }
     ]
   },
   'exercice-02': {
