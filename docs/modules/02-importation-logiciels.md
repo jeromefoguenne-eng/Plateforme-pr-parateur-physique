@@ -170,6 +170,40 @@ construire des tableaux de bord.
 
 Excel dispose également de Power Query, qui permet d'importer des données externes, de les transformer et de les actualiser. Il accepte notamment les fichiers CSV, Excel, XML, JSON et plusieurs autres sources.
 
+<div class="video-tutorial-box" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+  <div class="video-tutorial-header">
+    <span class="video-icon">🎬</span>
+    <strong>Vidéo explicative — Traitement de données :</strong> <em>Dataseito — Power Query : C'est Quoi et Pourquoi l'utiliser ?!</em>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px solid var(--vp-c-divider);">
+    <a href="https://www.youtube.com/watch?v=NknyPRzER4k" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; position: relative; display: block; border-radius: 6px; overflow: hidden; max-width: 180px;">
+      <img src="/images/videos/video-power-query.jpg" alt="Vignette Power Query Dataseito" style="width: 100%; height: auto; display: block; border-radius: 6px; object-fit: cover;" />
+      <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.5rem; transition: background 0.2s;">▶</span>
+    </a>
+    <div style="font-size: 0.9rem; line-height: 1.45;">
+      <strong>Automatiser l'importation et le nettoyage de données</strong><br />
+      <span style="color: var(--vp-c-text-2); font-size: 0.85rem;">Découvrez le fonctionnement du moteur ETL (Extract, Transform, Load) intégré à Microsoft Excel : fusionner des fichiers d'entraînement, corriger les types de données et automatiser les actualisations en un clic.</span><br />
+      <a href="https://www.youtube.com/watch?v=NknyPRzER4k" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 600;">Ouvrir sur YouTube ↗</a>
+    </div>
+  </div>
+  <div class="video-responsive-wrapper">
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/NknyPRzER4k" 
+      title="Power Query : C'est Quoi et Pourquoi l'utiliser ?! - Dataseito" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-caption">
+    💡 <strong>Application pour le préparateur physique :</strong> Power Query évite les copier-coller manuels fastidieux lors de la collecte hebdomadaire des fichiers GPS, cardio ou questionnaires athlètes. Chaque étape de transformation est enregistrée pour s'exécuter automatiquement à chaque nouvelle séance.
+    <br />
+    <span style="display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--vp-c-text-2);">
+      📺 <a href="https://www.youtube.com/watch?v=NknyPRzER4k" target="_blank" rel="noopener noreferrer">Visionner sur YouTube ↗</a>
+      • 🎙️ Chaîne : <em>Dataseito</em>
+    </span>
+  </p>
+</div>
 
 ## Comment importer les données ?
 
@@ -250,6 +284,16 @@ Suivre plusieurs mois ou plusieurs sportifs demande une bonne organisation.
 
 C'est précisément là que les applications spécialisées deviennent intéressantes.
 
+<div style="margin-top: 2rem; margin-bottom: 2rem;">
+  <h3 style="margin-bottom: 0.5rem; color: var(--vp-c-brand-1);">🏋️‍♂️ Atelier pratique d'étape — Power Query</h3>
+  <ClientOnly>
+    <ExerciseBox 
+      exerciseId="exercice-02a" 
+      exerciseTitle="Exercice 02.a — Extraction Power Query & Monitoring Nutritionnel (Natation)" 
+      description="Importer et nettoyer un export hebdomadaire de suivi nutritionnel d'une équipe de 8 nageurs de haut niveau avec l'outil Power Query d'Excel : typage des colonnes, calcul des ratios relatifs au poids corporel (g/kg/j), alertes conditionnelles et diagnostic décisionnel pour le staff d'entraînement (prévention RED-S, glycogène, hydratation)." 
+    />
+  </ClientOnly>
+</div>
 
 ## 5. Pourquoi utiliser des applications dédiées ?
 
@@ -844,20 +888,12 @@ Pour choisir l'outil adapté aux besoins du préparateur physique et de ses athl
   <QuizBox moduleId="02-importation-logiciels" moduleTitle="Formats & Logiciels Dédiés" />
 </ClientOnly>
 
-## 🏋️‍♂️ Travaux pratiques associés
-
-<ClientOnly>
-  <ExerciseBox 
-    exerciseId="exercice-02a" 
-    exerciseTitle="Exercice 02.a — Extraction Power Query & Monitoring Nutritionnel (Natation)" 
-    description="Importer et nettoyer un export hebdomadaire de suivi nutritionnel d'une équipe de 8 nageurs avec l'outil Power Query d'Excel : typage des colonnes, calcul des ratios relatifs au poids corporel (g/kg/j), alertes conditionnelles et diagnostic décisionnel pour le staff d'entraînement (prévention RED-S, glycogène, hydratation)." 
-  />
-</ClientOnly>
+## 🏋️‍♂️ Travail pratique associé
 
 <ClientOnly>
   <ExerciseBox 
     exerciseId="exercice-02" 
-    exerciseTitle="Exercice 02 — Quel outil pour quelle situation ?" 
+    exerciseTitle="Exercice 02.b — Quel outil pour quelle situation ?" 
     googleDriveLink="https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex2" 
     description="Pour chacun des 10 cas décisionnels proposés, identifiez les données requises, sélectionnez l'application la plus adaptée (Nolio, WKO5, Kinovea, TrainingPeaks...), proposez une alternative et justifiez les limites de votre choix." 
   />

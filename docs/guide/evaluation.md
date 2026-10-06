@@ -35,13 +35,14 @@ Afin de soutenir votre progression tout au long du quadrimestre :
 
 ## 📊 Tableau Officiel de Pondération (100 Points / 100%)
 
-Le barème officiel s'articule autour de **8 composantes complémentaires** intégrant la maîtrise théorique, les travaux pratiques de terrain et une mission professionnelle d'expertise finale :
+Le barème officiel s'articule autour de **9 composantes complémentaires** intégrant la maîtrise théorique, les travaux pratiques de terrain et une mission professionnelle d'expertise finale :
 
 | Composante d'Évaluation | Pondération (%) | Barème (/100) | Contribution sur 20 | Modalité & Consignes |
 | :--- | :---: | :---: | :---: | :--- |
 | **🧠 Quiz de la plateforme** *(Moyenne des 7 quiz)* | **10 %** | **10 pts** | 2,0 pts | QCM interactifs et questions de synthèse à la fin de chaque module (00 à 06) |
 | **🏋️ Exercice 1** : Quel capteur choisir ? *(10 situations)* | **10 %** | **10 pts** | 2,0 pts | Étude de cas instrumentale (GNSS, LPS, IMU, cellules photoélectriques, encodeurs VBT) |
-| **💾 Exercice 2** : Quel outil pour quelle situation ? *(10 cas)* | **10 %** | **10 pts** | 2,0 pts | Analyse logicielle et manipulation des formats de fichiers sportifs (.csv, .fit, .gpx, .json) |
+| **🏊 Exercice 2.a** : Extraction Power Query & Nutrition *(Natation)* | **5 %** | **5 pts** | 1,0 pt | Automatisation de flux Power Query, calculs de ratios relatifs et détection d'alertes |
+| **💾 Exercice 2.b** : Quel outil pour quelle situation ? *(10 cas)* | **5 %** | **5 pts** | 1,0 pt | Analyse logicielle et manipulation des formats de fichiers sportifs (.csv, .fit, .gpx, .json) |
 | **📊 Exercice 3** : Excel - Structuration de données de terrain | **10 %** | **10 pts** | 2,0 pts | Principes de Tidy Data, nettoyage de données brutes et formules de calculs physiologiques |
 | **📱 Exercice 4** : Excel - Créer ses propres outils de suivi | **10 %** | **10 pts** | 2,0 pts | Automatisation de questionnaires (Hooper, Session-RPE de Foster) et Dashboards TCD |
 | **🔬 Exercice 5** : De la donnée à la décision *(Veille & Science)* | **10 %** | **10 pts** | 2,0 pts | Veille scientifique avec NotebookLM, esprit critique et refus des dérives déterministes |
@@ -57,9 +58,10 @@ Le barème officiel s'articule autour de **8 composantes complémentaires** int�
 À la fin de chaque module d'apprentissage, un quiz interactif permet de vérifier l'assimilation des concepts clés (métrologie, formats de fichiers, architecture de données, biomécanique numérique). La moyenne de vos résultats obtenus aux quiz du cours constitue cette composante sur 10 points (soit une contribution de 2 points sur votre note finale sur 20).
 
 ### 2. Ateliers Pratiques de Terrain (Exercices 01 à 06 — 60% — 60 points)
-Chaque atelier professionnel est noté sur une pondération de **10 points** (soit 6 × 10 = 60 points au total) :
+Chaque atelier professionnel contribue au total de **60 points** des travaux pratiques :
 * **Exercice 1 (10 pts)** : Sélection des capteurs et instruments adaptés aux contraintes du sport, des surfaces et de la métrologie.
-* **Exercice 2 (10 pts)** : Choix de logiciels spécialisés et conversion de flux de données brutes.
+* **Exercice 2.a (5 pts)** : Extraction, transformation et modélisation de données nutritionnelles sous Excel Power Query (cas d'une équipe de natation).
+* **Exercice 2.b (5 pts)** : Choix de logiciels spécialisés et conversion de flux de données brutes selon 10 contextes professionnels.
 * **Exercice 3 (10 pts)** : Modélisation sous Microsoft Excel / Power Query selon les standards de la donnée propre (*Tidy Data*).
 * **Exercice 4 (10 pts)** : Élaboration d'outils opérationnels de recueil de fatigue et de charge subjective perçue avec graphiques dynamiques.
 * **Exercice 5 (10 pts)** : Confrontation des données aux publications scientifiques récentes (PubMed, Sports Medicine) via NotebookLM.

@@ -205,8 +205,8 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     title: 'Exercice 02.a — Extraction Power Query & Monitoring Nutritionnel (Natation)',
     shortTitle: 'Ex 02.a (Power Query)',
     description: "Importer et nettoyer un export hebdomadaire de suivi nutritionnel d'une équipe de 8 nageurs de haut niveau avec l'outil Power Query d'Excel : typage des colonnes, calcul des ratios relatifs au poids corporel (g/kg/j), règles d'alertes conditionnelles et diagnostic décisionnel pour le staff d'entraînement (prévention RED-S, glycogène, hydratation).",
-    weightPct: 0,
-    points: 10,
+    weightPct: 5,
+    points: 5,
     category: 'exercice',
     companionFiles: [
       { name: 'Données brutes de nutrition (.xlsx)', fileBase: 'Exercice 02a - Donnees brutes nutrition natation.xlsx', icon: '🏊‍♂️', downloadName: 'Exercice-02a-Donnees-Brutes-Nutrition-Natation.xlsx' },
@@ -217,11 +217,11 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     id: 'exercice-02',
     docId: '1BjJKttNRbCntatiEF2yeM7G01dt0_aAq',
     fileBase: 'Exercice-02.docx',
-    title: 'Exercice 02 — Quel outil pour quelle situation ?',
-    shortTitle: 'Ex 02 (Logiciels)',
+    title: 'Exercice 02.b — Quel outil pour quelle situation ?',
+    shortTitle: 'Ex 02.b (Logiciels)',
     description: "Pour chacun des 10 cas décisionnels proposés, identifiez les données requises, sélectionnez l'application spécialisée la plus adaptée (Nolio, WKO5, Kinovea, TrainingPeaks, Excel, Intervals.icu, MyJumpLab, MySprint...), proposez une alternative et justifiez les limites de votre choix.",
-    weightPct: 10,
-    points: 10,
+    weightPct: 5,
+    points: 5,
     category: 'exercice'
   },
   'exercice-03': {
@@ -302,7 +302,8 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
 export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
   { id: 'quiz', title: "Quiz de la plateforme (Moyenne des 7 quiz)", shortTitle: "Quiz (10%)", maxPoints: 10, weightPct: 10, category: 'quiz' },
   { id: 'exercice-01', title: "Exercice 01 : Quel capteur choisir ? (10 situations)", shortTitle: "Ex 01 (Capteurs)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1VoW7J4Yh-NfICyTeCALni0_bgQG0ITes/preview" },
-  { id: 'exercice-02', title: "Exercice 02 : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02 (Logiciels)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1BjJKttNRbCntatiEF2yeM7G01dt0_aAq/preview" },
+  { id: 'exercice-02a', title: "Exercice 02.a : Extraction Power Query & Nutrition (Natation)", shortTitle: "Ex 02.a (Power Query)", maxPoints: 5, weightPct: 5, category: 'exercice' },
+  { id: 'exercice-02', title: "Exercice 02.b : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02.b (Logiciels)", maxPoints: 5, weightPct: 5, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1BjJKttNRbCntatiEF2yeM7G01dt0_aAq/preview" },
   { id: 'exercice-03', title: "Exercice 03 : Excel - Collecte et structuration de données", shortTitle: "Ex 03 (Structuration)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1XPGvFM1bagfFYJdGzwa062F5yGtYIHW0/preview" },
   { id: 'exercice-04', title: "Exercice 04 : Excel - Créer ses propres outils de suivi", shortTitle: "Ex 04 (Outils Excel)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/142nATrt_U63k22rUvviCtAM-6lDGzwP7/preview" },
   { id: 'exercice-05', title: "Exercice 05 : De la donnée à la décision (analyse & ajustement)", shortTitle: "Ex 05 (Décision)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1gZaNazzuep1Y965zZ9PJRTD13DGU1W5S/preview" },
@@ -744,7 +745,7 @@ export const EXERCISE_RUBRICS: Record<string, ExerciseRubricConfig> = {
     minExpectedWords: 150
   },
   'exercice-02': {
-    title: "Exercice 02 — Quel outil pour quelle situation ?",
+    title: "Exercice 02.b — Quel outil pour quelle situation ?",
     expectedDeliverable: "10 cas décisionnels avec sélection de logiciel adapté (Nolio, WKO5, Kinovea, TrainingPeaks...), alternative et limites.",
     coreTopics: ['excel', 'strava', 'garmin', 'nolio', 'trainingpeaks', 'intervals', 'wko5', 'kinovea', 'myjumplab', 'mysprint', 'myfitnesspal', 'csv', 'fit', 'tcx', 'gpx', 'charge', 'puissance', 'video', 'force-vitesse'],
     keySituations: ['puissance', 'cinematique', 'video', 'detente', 'force-vitesse', 'endurance', 'planification', 'charge', 'nutrition'],
