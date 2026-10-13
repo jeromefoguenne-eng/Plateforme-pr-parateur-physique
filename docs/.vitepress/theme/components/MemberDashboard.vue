@@ -80,7 +80,15 @@ const studentEvaluation = computed(() => {
 
 const studentQuizAttempts = computed(() => {
   if (!currentUser.value) return []
-  return userStore.quizAttempts.filter(q => (q?.userEmail || '').toLowerCase().trim() === currentUser.value.email.toLowerCase().trim())
+  const user = userStore.findUserByQuery(currentUser.value.email)
+  const allowed = new Set([currentUser.value.email.toLowerCase().trim()])
+  if (user && user.email) allowed.add(user.email.toLowerCase().trim())
+  if (user && user.aliases && Array.isArray(user.aliases)) {
+    for (const a of user.aliases) {
+      if (a) allowed.add(a.toLowerCase().trim())
+    }
+  }
+  return userStore.quizAttempts.filter(q => q && q.userEmail && allowed.has(q.userEmail.toLowerCase().trim()))
 })
 
 // ==========================================

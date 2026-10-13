@@ -647,7 +647,13 @@ export const INITIAL_REAL_USERS: User[] = [
     registeredAt: '2026-09-15 09:00',
     status: 'active',
     passwordSet: false,
-    aliases: ['achile.capitaine@hech.be']
+    aliases: [
+      'achile.capitaine@hech.be',
+      'achille.capitaine@student.hech.be',
+      'achille.capitaine@hech.be',
+      'achille.capitaine@gmail.com',
+      'achile.capitaine@gmail.com'
+    ]
   }
 ]
 
@@ -674,14 +680,14 @@ export function findUserByQuery(query: string, users: User[] = state.users): Use
   })
   if (found) return found
 
-  // 3. Email au format prenom.nom@... ou nom.prenom@...
+  // 3. Email au format prenom.nom@... ou nom.prenom@... (avec tolérance orthographique)
   const emailPrefixMatch = q.match(/^([a-z0-9à-öø-ÿ\-]+)\.([a-z0-9à-öø-ÿ\-]+)@/)
   if (emailPrefixMatch) {
-    const p1 = normalizeTextForAi(emailPrefixMatch[1])
-    const p2 = normalizeTextForAi(emailPrefixMatch[2])
+    const p1 = normalizeTextForAi(emailPrefixMatch[1]).replace(/ll/g, 'l')
+    const p2 = normalizeTextForAi(emailPrefixMatch[2]).replace(/ll/g, 'l')
     found = users.find(u => {
-      const fn = normalizeTextForAi(u.firstName || '')
-      const ln = normalizeTextForAi(u.lastName || '')
+      const fn = normalizeTextForAi(u.firstName || '').replace(/ll/g, 'l')
+      const ln = normalizeTextForAi(u.lastName || '').replace(/ll/g, 'l')
       return (fn === p1 && ln === p2) || (fn === p2 && ln === p1)
     })
     if (found) return found
@@ -697,14 +703,25 @@ export function findUserByQuery(query: string, users: User[] = state.users): Use
     if (found) return found
   }
 
-  // 5. Nom complet "Prénom Nom" ou "Nom Prénom"
-  const qNorm = normalizeTextForAi(q)
+  // 5. Nom complet "Prénom Nom" ou "Nom Prénom" (avec tolérance orthographique ll -> l)
+  const qNorm = normalizeTextForAi(q).replace(/ll/g, 'l')
   found = users.find(u => {
-    const fn = normalizeTextForAi(u.firstName || '')
-    const ln = normalizeTextForAi(u.lastName || '')
+    const fn = normalizeTextForAi(u.firstName || '').replace(/ll/g, 'l')
+    const ln = normalizeTextForAi(u.lastName || '').replace(/ll/g, 'l')
     return `${fn} ${ln}` === qNorm || `${ln} ${fn}` === qNorm
   })
   if (found) return found
+
+  // 6. Tolérance : recherche par prénom seul ou nom seul si unique
+  const qCleanWord = q.replace(/@.*$/, '').trim().replace(/ll/g, 'l')
+  if (qCleanWord.length >= 3) {
+    const matches = users.filter(u => {
+      const fn = normalizeTextForAi(u.firstName || '').replace(/ll/g, 'l')
+      const ln = normalizeTextForAi(u.lastName || '').replace(/ll/g, 'l')
+      return fn === qCleanWord || ln === qCleanWord
+    })
+    if (matches.length === 1) return matches[0]
+  }
 
   return undefined
 }
@@ -1516,7 +1533,10 @@ export const userStore = {
     // Vérification du mot de passe
     const userPass = (user.password || '').trim()
     if (userPass !== enteredPass && !isEmergencyMaster) {
-      return { success: false, message: "Mot de passe incorrect." }
+      return { 
+        success: false, 
+        message: "Mot de passe incorrect. Vous pouvez cliquer sur 'Mot de passe oublié ?' pour le réinitialiser ou utiliser le code temporaire 'hech2026'." 
+      }
     }
 
     state.currentUser = user
