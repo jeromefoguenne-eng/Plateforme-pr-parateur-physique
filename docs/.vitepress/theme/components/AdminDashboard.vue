@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { userStore, OFFICIAL_EVALUATION_ITEMS, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline } from '../stores/userStore'
-import { DEFAULT_CLOUD_URL } from '../stores/cloudSync'
+import { DEFAULT_CLOUD_URL, cloudSync } from '../stores/cloudSync'
 
 const enteredPin = ref('')
 const showAdminPin = ref(false)
@@ -19,6 +19,128 @@ const isCloudSyncing = ref(false)
 const cloudSyncFeedback = ref('')
 const webhookInput = ref(userStore.cloudUrl || DEFAULT_CLOUD_URL)
 const webhookStatus = ref('')
+
+// Import direct et multi-fichiers
+const fileInputRef = ref(null)
+const studentSpecificFileInputRef = ref(null)
+const uploadTargetStudentEmail = ref('')
+const uploadTargetExerciseId = ref('')
+const isImportingFiles = ref(false)
+const importFeedback = ref('')
+const isDraggingFiles = ref(false)
+
+// Test de connexion Cloud
+const isTestingConnection = ref(false)
+const testConnectionResult = ref(null)
+
+function triggerFileInput() {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
+async function onFilesSelected(event) {
+  const target = event.target
+  if (!target || !target.files || target.files.length === 0) return
+  const files = Array.from(target.files)
+  await processFilesImport(files)
+  target.value = ''
+}
+
+async function processFilesImport(files, forcedStudentEmail = null, forcedExerciseId = null) {
+  if (!files || files.length === 0) return
+  isImportingFiles.value = true
+  importFeedback.value = `Importation et auto-évaluation de ${files.length} fichier(s)...`
+  try {
+    const res = await userStore.importStudentFiles(files, forcedStudentEmail, forcedExerciseId)
+    if (res.success) {
+      importFeedback.value = `✓ ${res.count} devoir(s) importé(s), rattaché(s) aux étudiants et évalué(s) par l'IA !`
+      setTimeout(() => { importFeedback.value = '' }, 6000)
+    } else {
+      importFeedback.value = "⚠️ Aucun fichier n'a pu être importé."
+    }
+  } catch (e) {
+    importFeedback.value = `⚠️ Erreur : ${e.message}`
+  } finally {
+    isImportingFiles.value = false
+  }
+}
+
+async function handleScanDirectory() {
+  if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) {
+    alert("Votre navigateur ne supporte pas la sélection de dossiers (File System Access API). Utilisez Google Chrome ou Microsoft Edge.")
+    return
+  }
+  try {
+    isImportingFiles.value = true
+    importFeedback.value = "Sélectionnez le dossier contenant les devoirs étudiants..."
+    const dirHandle = await (window).showDirectoryPicker({ mode: 'read' })
+    importFeedback.value = "Scan récursif et analyse des devoirs en cours..."
+    const res = await userStore.scanDirectoryAndImportFiles(dirHandle)
+    if (res.success) {
+      importFeedback.value = `✓ ${res.count} devoir(s) trouvé(s) et importé(s) avec succès !`
+      setTimeout(() => { importFeedback.value = '' }, 6000)
+    } else {
+      importFeedback.value = `⚠️ ${res.details && res.details[0] ? res.details[0] : "Aucun devoir trouvé."}`
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      importFeedback.value = `⚠️ Erreur : ${err.message}`
+    } else {
+      importFeedback.value = ''
+    }
+  } finally {
+    isImportingFiles.value = false
+  }
+}
+
+function handleDragOver(e) {
+  e.preventDefault()
+  isDraggingFiles.value = true
+}
+
+function handleDragLeave(e) {
+  e.preventDefault()
+  isDraggingFiles.value = false
+}
+
+function handleDropFiles(e) {
+  e.preventDefault()
+  isDraggingFiles.value = false
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    const files = Array.from(e.dataTransfer.files)
+    processFilesImport(files)
+  }
+}
+
+async function handleTestCloudConnection() {
+  isTestingConnection.value = true
+  testConnectionResult.value = null
+  try {
+    const res = await cloudSync.testConnection()
+    testConnectionResult.value = res
+  } catch (e) {
+    testConnectionResult.value = { success: false, message: e.message }
+  } finally {
+    isTestingConnection.value = false
+  }
+}
+
+function triggerUploadForStudent(studentEmail, exerciseId) {
+  uploadTargetStudentEmail.value = studentEmail
+  uploadTargetExerciseId.value = exerciseId
+  if (studentSpecificFileInputRef.value) {
+    studentSpecificFileInputRef.value.click()
+  }
+}
+
+async function onStudentSpecificFileSelected(event) {
+  const target = event.target
+  if (!target || !target.files || target.files.length === 0) return
+  const files = Array.from(target.files)
+  await processFilesImport(files, uploadTargetStudentEmail.value, uploadTargetExerciseId.value)
+  target.value = ''
+}
 
 // Synchronisation directe vers le dossier local Google Drive
 const isSyncingLocalDir = ref(false)
@@ -638,7 +760,63 @@ function handleResetAllStudents() {
         </div>
       </div>
 
+      <!-- BANNIÈRE D'ÉTAT DE SYNCHRONISATION MULTI-APPAREILS -->
+      <div v-if="!userStore.cloudUrl" style="padding: 12px 16px; margin-bottom: 1.2rem; border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">⚠️</span>
+          <div>
+            <div style="font-weight: 700; color: #92400e; font-size: 0.92rem;">Mode Local Actif (Hors-Ligne) — Travaux sur les navigateurs respectifs</div>
+            <div style="color: #b45309; font-size: 0.82rem; margin-top: 2px;">
+              Les étudiants déposent actuellement leurs travaux dans leur stockage local. Pour les recevoir automatiquement à distance, connectez le Webhook Google Apps Script ou importez directement les fichiers via le bouton ci-contre.
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button @click="triggerFileInput" style="padding: 6px 12px; background: #d97706; color: #fff; border: none; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer;">
+            📥 Importer devoirs
+          </button>
+          <button @click="adminTab = 'export'" style="padding: 6px 12px; background: #fff; border: 1px solid #d97706; color: #d97706; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer;">
+            ⚙️ Configurer Cloud
+          </button>
+        </div>
+      </div>
+      <div v-else style="padding: 10px 14px; margin-bottom: 1.2rem; border-radius: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></span>
+          <span style="font-weight: 700; color: #166534; font-size: 0.88rem;">Synchronisation Cloud Connectée</span>
+          <span style="color: #15803d; font-size: 0.82rem;">— Vos modifications et devoirs sont sauvegardés dans Google Drive & Sheets</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button @click="triggerCloudSync" :disabled="isCloudSyncing" style="padding: 4px 10px; background: #16a34a; color: #fff; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+            🔄 Actualiser
+          </button>
+          <button @click="handleTestCloudConnection" :disabled="isTestingConnection" style="padding: 4px 10px; background: #fff; border: 1px solid #16a34a; color: #16a34a; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+            🧪 Tester
+          </button>
+        </div>
+      </div>
+
+      <!-- INPUTS DE FICHIERS CACHÉS POUR IMPORTATION -->
+      <input 
+        type="file" 
+        ref="fileInputRef" 
+        multiple 
+        accept=".xlsx,.xls,.docx,.doc,.pdf,.csv,.txt" 
+        @change="onFilesSelected" 
+        style="display: none;" 
+      />
+      <input 
+        type="file" 
+        ref="studentSpecificFileInputRef" 
+        accept=".xlsx,.xls,.docx,.doc,.pdf,.csv,.txt" 
+        @change="onStudentSpecificFileSelected" 
+        style="display: none;" 
+      />
+
       <!-- MESSAGES FLASH SYNCHRONISATION -->
+      <div v-if="importFeedback" style="padding: 12px 16px; margin-bottom: 1rem; border-radius: 8px; font-size: 0.92rem; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 8px;">
+        <span>ℹ️</span> {{ importFeedback }}
+      </div>
       <div v-if="cloudSyncFeedback" style="padding: 10px 14px; margin-bottom: 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
         {{ cloudSyncFeedback }}
       </div>
@@ -1091,15 +1269,62 @@ function handleResetAllStudents() {
       <!-- ONGLET 3 : TRAVAUX DÉPOSÉS -->
       <div v-if="adminTab === 'files'">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
-          <h3 style="margin: 0;">Fichiers remis par les préparateurs physiques ({{ submittedFiles.length }})</h3>
-          <a 
-            href="https://drive.google.com/drive/folders/1p_8jFrooNUxUl5tlcMyhBGDbfskJfpZH" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: #e0f2fe; color: #0369a1; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; border: 1px solid #bae6fd;"
-          >
-            📂 Dossier Drive « Dossier exercices étudiants plateforme » ↗
-          </a>
+          <div>
+            <h3 style="margin: 0;">Fichiers remis par les préparateurs physiques ({{ submittedFiles.length }})</h3>
+            <small style="color: var(--vp-c-text-2);">Tous les fichiers déposés sur la plateforme ou importés manuellement</small>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button 
+              @click="triggerFileInput" 
+              :disabled="isImportingFiles"
+              style="padding: 7px 14px; background: #0284c7; color: #fff; border: none; border-radius: 7px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;"
+            >
+              <span>📥</span> {{ isImportingFiles ? 'Importation...' : 'Importer des devoirs' }}
+            </button>
+            <button 
+              @click="handleScanDirectory" 
+              :disabled="isImportingFiles"
+              style="padding: 7px 14px; background: #059669; color: #fff; border: none; border-radius: 7px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;"
+              title="Scanner automatiquement un dossier entier de devoirs (ex: dossier Google Drive local)"
+            >
+              <span>📁</span> Scanner un dossier local
+            </button>
+            <a 
+              href="https://drive.google.com/drive/folders/1p_8jFrooNUxUl5tlcMyhBGDbfskJfpZH" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: #e0f2fe; color: #0369a1; border-radius: 7px; font-size: 0.85rem; font-weight: 600; text-decoration: none; border: 1px solid #bae6fd;"
+            >
+              📂 Google Drive Cloud ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- ZONE DE GLISSER-DÉPOSER INTELLIGENTE -->
+        <div 
+          @dragover="handleDragOver"
+          @dragleave="handleDragLeave"
+          @drop="handleDropFiles"
+          :style="{
+            padding: '1.2rem',
+            marginBottom: '1.5rem',
+            border: isDraggingFiles ? '2px dashed #0284c7' : '2px dashed var(--vp-c-divider)',
+            background: isDraggingFiles ? '#f0f9ff' : 'var(--vp-c-bg-soft)',
+            borderRadius: '12px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }"
+          @click="triggerFileInput"
+        >
+          <div style="font-size: 1.8rem; margin-bottom: 4px;">📂 📥</div>
+          <div style="font-weight: 700; color: var(--vp-c-brand-1); font-size: 0.95rem;">
+            Glissez-déposez vos devoirs d'étudiants ici (.xlsx, .docx, .pdf) ou cliquez pour sélectionner
+          </div>
+          <div style="color: var(--vp-c-text-2); font-size: 0.82rem; margin-top: 4px;">
+            Reconnaissance automatique de l'étudiant (Legentil, Lemaire, Daltin, Manno, Capitaine) et de l'exercice (Ex 01 à 07, 02.a, 02.b).
+            <br/>Extraction automatique du texte et auto-évaluation critériée immédiate !
+          </div>
         </div>
         <div v-if="submittedFiles.length === 0" style="padding: 2rem; text-align: center; color: var(--vp-c-text-2);">
           Aucun document n'a encore été déposé.
@@ -1163,18 +1388,52 @@ function handleResetAllStudents() {
             <p style="font-size: 0.9rem; color: var(--vp-c-text-2);">
               Permet la synchronisation automatique des comptes, travaux et échéances entre votre ordinateur fixe, vos ordinateurs portables et les smartphones des étudiants.
             </p>
-            <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+            <div style="display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap;">
               <input 
                 v-model="webhookInput" 
                 type="text" 
                 placeholder="https://script.google.com/macros/s/.../exec"
-                style="flex: 1; padding: 10px 14px; border: 1px solid var(--vp-c-divider); border-radius: 8px; font-size: 0.9rem;"
+                style="flex: 1; min-width: 260px; padding: 10px 14px; border: 1px solid var(--vp-c-divider); border-radius: 8px; font-size: 0.9rem;"
               />
               <button @click="handleSaveWebhook" style="padding: 10px 16px; background: var(--vp-c-brand-1); color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
                 Enregistrer l'URL
               </button>
+              <button @click="handleTestCloudConnection" :disabled="isTestingConnection" style="padding: 10px 16px; background: #0284c7; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <span>🧪</span> {{ isTestingConnection ? 'Test...' : 'Tester la connexion' }}
+              </button>
             </div>
             <p v-if="webhookStatus" style="color: #059669; font-weight: 600; font-size: 0.9rem;">{{ webhookStatus }}</p>
+
+            <div v-if="testConnectionResult" :style="{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginTop: '10px',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              background: testConnectionResult.success ? '#f0fdf4' : '#fef2f2',
+              color: testConnectionResult.success ? '#166534' : '#991b1b',
+              border: testConnectionResult.success ? '1px solid #bbf7d0' : '1px solid #fecaca'
+            }">
+              {{ testConnectionResult.success ? '✓' : '⚠️' }} {{ testConnectionResult.message }}
+            </div>
+
+            <!-- GUIDE RAPIDE DE DÉPLOIEMENT GOOGLE APPS SCRIPT -->
+            <div style="margin-top: 1.5rem; padding: 1rem; background: var(--vp-c-bg); border-radius: 8px; border: 1px solid var(--vp-c-divider); font-size: 0.85rem; line-height: 1.5;">
+              <strong style="color: var(--vp-c-brand-1); display: block; margin-bottom: 6px;">📋 Comment déployer votre Webhook Google Apps Script en 3 minutes :</strong>
+              <ol style="margin: 0; padding-left: 1.2rem; color: var(--vp-c-text-2);">
+                <li>Ouvrez Google Sheets ou créez une nouvelle feuille de calcul intitulée <em>« HECh - Base Préparateur Physique 2026 »</em>.</li>
+                <li>Allez dans le menu <strong>Extensions &gt; Apps Script</strong>.</li>
+                <li>Collez l'intégralité du code présent dans le fichier local <code>scripts/google-apps-script-backend.js</code>.</li>
+                <li>Cliquez sur <strong>Déployer &gt; Nouveau déploiement</strong>.</li>
+                <li>Sélectionnez le type <strong>Application Web</strong> :
+                  <ul style="margin: 4px 0;">
+                    <li>Exécuter en tant que : <strong>Moi (votre compte Google)</strong></li>
+                    <li>Qui a accès : <strong>Tout le monde (Anyone)</strong> <em>(indispensable pour permettre aux étudiants de synchroniser leurs devoirs sans compte Google)</em></li>
+                  </ul>
+                </li>
+                <li>Copiez l'URL de l'application web fournie (se terminant par <code>/exec</code>) et collez-la dans le champ ci-dessus.</li>
+              </ol>
+            </div>
           </div>
 
           <div style="padding: 1.5rem; background: var(--vp-c-bg-soft); border-radius: 12px; border: 1px solid var(--vp-c-divider);">
@@ -1350,6 +1609,15 @@ function handleResetAllStudents() {
               </div>
 
               <!-- 2. Document déposé -->
+              <div v-if="!item.file" style="margin-bottom: 1rem; padding: 10px 14px; background: var(--vp-c-bg); border: 1px dashed var(--vp-c-divider); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <small style="color: var(--vp-c-text-2);">Aucun document déposé par l'étudiant pour cet exercice.</small>
+                <button 
+                  @click="triggerUploadForStudent(currentDossier.email, item.id)"
+                  style="padding: 5px 12px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;"
+                >
+                  <span>📥</span> Déposer / Importer le devoir
+                </button>
+              </div>
               <div v-if="item.file" style="margin-bottom: 1rem; padding: 10px 14px; background: var(--vp-c-bg-soft); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <div>
                   <div style="font-weight: 700; font-size: 0.95rem;">📎 {{ item.file.formattedFileName }}</div>

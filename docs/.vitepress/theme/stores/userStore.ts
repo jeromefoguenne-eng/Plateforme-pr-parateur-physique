@@ -1870,6 +1870,217 @@ export const userStore = {
     })
   },
 
+  /**
+   * Détecte l'identifiant de l'exercice à partir du nom de fichier ou d'un titre
+   */
+  guessExerciseId(titleOrText: string, fileName: string): string {
+    const combined = `${titleOrText} ${fileName}`.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // sans accents
+
+    if (combined.includes('02a') || combined.includes('2a') || combined.includes('2.a') || combined.includes('power query') || combined.includes('nutrition') || combined.includes('natation')) {
+      return 'exercice-02a'
+    }
+    if (combined.includes('02b') || combined.includes('2b') || combined.includes('2.b') || combined.includes('logiciel') || combined.includes('outil pour quelle situation') || combined.includes('logiciels')) {
+      return 'exercice-02'
+    }
+    if (combined.includes('01') || combined.includes('capteur') || combined.includes('ex1') || combined.includes('ex01') || combined.includes('exercice 1')) {
+      return 'exercice-01'
+    }
+    if (combined.includes('03') || combined.includes('structuration') || combined.includes('collecte') || combined.includes('u18') || combined.includes('ex3') || combined.includes('ex03')) {
+      return 'exercice-03'
+    }
+    if (combined.includes('04') || combined.includes('hooper') || combined.includes('rpe') || combined.includes('outils de suivi') || combined.includes('ex4') || combined.includes('ex04')) {
+      return 'exercice-04'
+    }
+    if (combined.includes('05') || combined.includes('decision') || combined.includes('thomas') || combined.includes('ajustement') || combined.includes('ex5') || combined.includes('ex05')) {
+      return 'exercice-05'
+    }
+    if (combined.includes('06') || combined.includes('ia') || combined.includes('agent') || combined.includes('application ia') || combined.includes('ex6') || combined.includes('ex06')) {
+      return 'exercice-06'
+    }
+    if (combined.includes('07') || combined.includes('football') || combined.includes('surentrainement') || combined.includes('mission finale') || combined.includes('ex7') || combined.includes('ex07')) {
+      return 'exercice-07'
+    }
+    // Si mention de 02 sans spécification
+    if (combined.includes('02') || combined.includes('ex2') || combined.includes('exercice 2')) {
+      return 'exercice-02'
+    }
+    return 'exercice-01'
+  },
+
+  /**
+   * Associe un fichier à un étudiant de la liste en analysant le nom de fichier
+   */
+  guessStudentFromFilename(fileName: string): User | undefined {
+    const raw = fileName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    // Recherche par nom de famille, prénom ou email
+    for (const u of state.users) {
+      if (!u || !u.email) continue
+      const fn = (u.firstName || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      const ln = (u.lastName || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      const emailPrefix = (u.email.split('@')[0] || '').toLowerCase()
+
+      if (ln && ln.length > 2 && raw.includes(ln)) return u
+      if (fn && fn.length > 2 && raw.includes(fn)) return u
+      if (emailPrefix && raw.includes(emailPrefix)) return u
+      // Alias
+      if ((u as any).aliases && Array.isArray((u as any).aliases)) {
+        for (const al of (u as any).aliases) {
+          const cleanAl = String(al).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+          if (cleanAl && cleanAl.length > 2 && raw.includes(cleanAl)) return u
+        }
+      }
+    }
+    return undefined
+  },
+
+  /**
+   * Importation de devoirs d'étudiants (multi-fichiers) avec reconnaissance automatique,
+   * extraction textuelle, auto-évaluation critériée et injection locale + cloud.
+   */
+  async importStudentFiles(files: File[], forcedStudentEmail?: string, forcedExerciseId?: string): Promise<{ success: boolean; count: number; details: string[] }> {
+    let count = 0
+    const details: string[] = []
+
+    for (const file of files) {
+      try {
+        // Détermination de l'étudiant
+        let targetUser: User | undefined
+        if (forcedStudentEmail) {
+          targetUser = state.users.find(u => (u?.email || '').toLowerCase().trim() === forcedStudentEmail.toLowerCase().trim())
+        }
+        if (!targetUser) {
+          targetUser = this.guessStudentFromFilename(file.name)
+        }
+        // Si toujours introuvable, chercher dans le premier segment avant _ ou -
+        if (!targetUser) {
+          const parts = file.name.split(/[_\-\s]+/)
+          for (const p of parts) {
+            targetUser = this.guessStudentFromFilename(p)
+            if (targetUser) break
+          }
+        }
+        // Fallback ultime : premier étudiant de la liste ou admin courant
+        if (!targetUser) {
+          targetUser = state.users[0]
+        }
+
+        const studentEmail = targetUser?.email || 'etudiant@student.hech.be'
+        const studentName = targetUser ? `${targetUser.firstName} ${targetUser.lastName}` : (file.name.split('.')[0] || 'Étudiant')
+
+        // Détermination de l'exercice
+        const exId = forcedExerciseId || this.guessExerciseId(file.name, file.name)
+        const exItem = OFFICIAL_EVALUATION_ITEMS.find(it => it.id === exId)
+        const exerciseTitle = exItem?.title || `Exercice ${exId}`
+
+        // Lecture base64
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = (e) => resolve(e.target?.result as string || '')
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+
+        // Extraction texte
+        const extractedText = await extractTextFromFile(file)
+
+        const formattedName = `${(targetUser?.lastName || 'Etudiant').toUpperCase()}_${targetUser?.firstName || 'Devoir'}_${exId}.${file.name.split('.').pop() || 'dat'}`
+
+        const newFile: SubmittedFile = {
+          id: 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+          userId: targetUser?.id || '',
+          userName: studentName,
+          userEmail: studentEmail,
+          exerciseId: exId,
+          exerciseTitle: exerciseTitle,
+          originalFileName: file.name,
+          formattedFileName: formattedName,
+          fileType: file.type || 'application/octet-stream',
+          fileSize: file.size,
+          dataUrl,
+          extractedText,
+          submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          driveSynced: false
+        }
+
+        const userSub = state.submissions.find(s => (s?.userEmail || '').toLowerCase() === studentEmail.toLowerCase() && s.exerciseId === exId)
+        newFile.aiCorrection = generateCriteriaBasedAiCorrection(newFile, extractedText, userSub?.answer || '')
+
+        // Remplacement ou ajout dans state.submittedFiles
+        const existingIdx = state.submittedFiles.findIndex(
+          f => (f?.userEmail || '').toLowerCase().trim() === studentEmail.toLowerCase().trim() && f.exerciseId === exId
+        )
+        if (existingIdx >= 0) {
+          state.submittedFiles[existingIdx] = newFile
+        } else {
+          state.submittedFiles.push(newFile)
+        }
+
+        // Marquer la progression de l'étudiant
+        if (!state.progress[studentEmail]) state.progress[studentEmail] = {}
+        state.progress[studentEmail][exId] = true
+
+        count++
+        details.push(`${file.name} -> ${studentName} (${exItem?.shortTitle || exId})`)
+
+        // Envoi asynchrone Google Drive si connecté
+        if (cloudSync.hasConfiguredUrl()) {
+          cloudSync.uploadFile({
+            studentName,
+            studentEmail,
+            exerciseTitle,
+            fileName: formattedName,
+            base64Data: dataUrl,
+            mimeType: file.type || 'application/octet-stream'
+          }).then(res => {
+            if (res && res.success) {
+              newFile.driveSynced = true
+              newFile.driveUrl = res.fileUrl
+              setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+            }
+          }).catch(() => {})
+        }
+      } catch (err: any) {
+        console.warn('[userStore] Erreur import fichier:', file.name, err)
+      }
+    }
+
+    setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+    setStorage(STORAGE_KEY_PROGRESS, state.progress)
+    return { success: count > 0, count, details }
+  },
+
+  /**
+   * Scanne récursivement un dossier sélectionné via l'API File System Access
+   * et importe automatiquement tous les fichiers de devoirs détectés (.xlsx, .docx, .pdf, .csv, .txt)
+   */
+  async scanDirectoryAndImportFiles(directoryHandle: any): Promise<{ success: boolean; count: number; details: string[] }> {
+    const collectedFiles: File[] = []
+
+    async function walk(dir: any) {
+      for await (const entry of dir.values()) {
+        if (entry.kind === 'file') {
+          const ext = entry.name.split('.').pop()?.toLowerCase() || ''
+          if (['xlsx', 'xls', 'docx', 'doc', 'pdf', 'csv', 'txt'].includes(ext)) {
+            try {
+              const file = await entry.getFile()
+              collectedFiles.push(file)
+            } catch (e) {}
+          }
+        } else if (entry.kind === 'directory') {
+          await walk(entry)
+        }
+      }
+    }
+
+    await walk(directoryHandle)
+    if (collectedFiles.length === 0) {
+      return { success: false, count: 0, details: ["Aucun fichier compatible (.xlsx, .docx, .pdf) trouvé dans ce dossier."] }
+    }
+
+    return await this.importStudentFiles(collectedFiles)
+  },
+
   deleteStudentFile(fileId: string) {
     const idx = state.submittedFiles.findIndex(f => f.id === fileId)
     if (idx >= 0) {
@@ -2736,6 +2947,60 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
         }
       })
       setStorage(STORAGE_KEY_EVALUATIONS, state.evaluations)
+    }
+
+    // 6. Fusion des devoirs/fichiers déposés (Cloud & Drive)
+    if (Array.isArray(data.files)) {
+      let filesChanged = false
+      data.files.forEach((remFile: any) => {
+        if (!remFile || !remFile.userEmail) return
+        const cleanEmail = remFile.userEmail.toLowerCase().trim()
+        if (state.deletedUsers && state.deletedUsers.includes(cleanEmail)) return
+
+        const exId = remFile.exerciseId || this.guessExerciseId(remFile.exerciseTitle || '', remFile.formattedFileName || remFile.fileName || '')
+        const existingIdx = state.submittedFiles.findIndex(
+          f => f.id === remFile.id || (
+            (f?.userEmail || '').toLowerCase().trim() === cleanEmail &&
+            f.exerciseId === exId &&
+            f.submittedAt === remFile.submittedAt
+          )
+        )
+
+        const fileRecord: SubmittedFile = {
+          id: remFile.id || 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+          exerciseId: exId,
+          exerciseTitle: remFile.exerciseTitle || (OFFICIAL_EVALUATION_ITEMS.find(it => it.id === exId)?.title || 'Exercice'),
+          userId: remFile.userId || '',
+          userName: remFile.userName || cleanEmail,
+          userEmail: cleanEmail,
+          fileName: remFile.formattedFileName || remFile.fileName || 'devoir',
+          formattedFileName: remFile.formattedFileName || remFile.fileName || 'devoir',
+          fileSize: remFile.fileSize || 0,
+          fileType: remFile.fileType || '',
+          submittedAt: remFile.submittedAt || new Date().toISOString().replace('T', ' ').substring(0, 16),
+          driveUrl: remFile.driveUrl || '',
+          driveId: remFile.driveId || '',
+          driveSynced: remFile.driveSynced !== false && !!remFile.driveUrl,
+          evaluation: remFile.evaluation,
+          dataUrl: remFile.dataUrl
+        }
+
+        if (existingIdx >= 0) {
+          state.submittedFiles[existingIdx] = { ...state.submittedFiles[existingIdx], ...fileRecord }
+        } else {
+          state.submittedFiles.push(fileRecord)
+        }
+        filesChanged = true
+
+        if (exId) {
+          if (!state.progress[cleanEmail]) state.progress[cleanEmail] = {}
+          state.progress[cleanEmail][exId] = true
+        }
+      })
+      if (filesChanged) {
+        setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+        setStorage(STORAGE_KEY_PROGRESS, state.progress)
+      }
     }
   }
 }

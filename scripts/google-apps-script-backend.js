@@ -38,6 +38,10 @@ function doGet(e) {
     var params = e ? e.parameter : {};
     var action = params.action || 'syncAll';
 
+    if (action === 'ping') {
+      return createJsonResponse({ status: "success", message: "API Préparation Physique HECh en ligne et opérationnelle." });
+    }
+
     if (action === 'getStudent') {
       var email = (params.email || '').trim().toLowerCase();
       var student = getStudentByEmail(email);
@@ -574,7 +578,8 @@ function getFullDataFromSheet() {
     submissions: [],
     quizAttempts: [],
     deadlines: {},
-    evaluations: {}
+    evaluations: {},
+    files: []
   };
 
   // 1. Étudiants
@@ -670,7 +675,68 @@ function getFullDataFromSheet() {
     }
   }
 
+  // 6. Fichiers déposés par les étudiants (Google Drive)
+  var fileSheet = ss.getSheetByName("Fichiers");
+  if (fileSheet) {
+    var fData = fileSheet.getDataRange().getValues();
+    for (var n = 1; n < fData.length; n++) {
+      var fRow = fData[n];
+      if (fRow[2] && fRow[4]) {
+        result.files.push({
+          id: fRow[6] ? ('file_' + fRow[6]) : ('file_idx_' + n),
+          submittedAt: fRow[0] || new Date().toISOString(),
+          userName: fRow[1] || '',
+          userEmail: fRow[2].toString().toLowerCase().trim(),
+          exerciseTitle: fRow[3] || '',
+          formattedFileName: fRow[4] || '',
+          originalFileName: fRow[4] || '',
+          driveUrl: fRow[5] || '',
+          driveId: fRow[6] || '',
+          driveSynced: !!fRow[5]
+        });
+      }
+    }
+  }
+
   return result;
+}
+
+function saveFileMetadataToSheet(f) {
+  if (!f || !f.userEmail || !f.formattedFileName) return;
+  var ss = getOrCreateSpreadsheet();
+  var sheet = ss.getSheetByName("Fichiers");
+  if (!sheet) {
+    initSheetTabs(ss);
+    sheet = ss.getSheetByName("Fichiers");
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var cleanEmail = (f.userEmail || '').toString().trim().toLowerCase();
+  var cleanFile = (f.formattedFileName || f.originalFileName || '').toString().trim();
+
+  for (var i = 1; i < data.length; i++) {
+    var rowEmail = (data[i][2] || '').toString().trim().toLowerCase();
+    var rowFile = (data[i][4] || '').toString().trim();
+    if (rowEmail === cleanEmail && rowFile === cleanFile) {
+      if (f.driveUrl && !data[i][5]) {
+        sheet.getRange(i + 1, 6).setValue(f.driveUrl);
+      }
+      if (f.driveId && !data[i][6]) {
+        sheet.getRange(i + 1, 7).setValue(f.driveId);
+      }
+      return;
+    }
+  }
+
+  sheet.appendRow([
+    f.submittedAt || new Date().toISOString(),
+    f.userName || '',
+    cleanEmail,
+    f.exerciseTitle || '',
+    cleanFile,
+    f.driveUrl || '',
+    f.driveId || f.id || ''
+  ]);
 }
 
 function mergeAndSyncAll(incomingState) {
@@ -709,6 +775,15 @@ function mergeAndSyncAll(incomingState) {
   if (incomingState.evaluations && typeof incomingState.evaluations === 'object') {
     Object.keys(incomingState.evaluations).forEach(function(email) {
       saveEvaluationToSheet(email, incomingState.evaluations[email]);
+    });
+  }
+
+  // 6. Fusionner les métadonnées de fichiers entrants
+  if (Array.isArray(incomingState.submittedFiles)) {
+    incomingState.submittedFiles.forEach(function(f) {
+      if (f && f.userEmail && (f.formattedFileName || f.originalFileName)) {
+        saveFileMetadataToSheet(f);
+      }
     });
   }
 

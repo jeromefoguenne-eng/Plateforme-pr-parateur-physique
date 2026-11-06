@@ -151,6 +151,18 @@ export class CloudSync {
 
     try {
       // On tente d'abord un POST avec l'état local pour effectuer un merge bidirectionnel sur le serveur
+      const sanitizedFiles = (localState.submittedFiles || []).map((f: any) => ({
+        id: f.id,
+        submittedAt: f.submittedAt,
+        userName: f.userName,
+        userEmail: f.userEmail,
+        exerciseTitle: f.exerciseTitle,
+        formattedFileName: f.formattedFileName || f.fileName,
+        driveUrl: f.driveUrl || '',
+        driveId: f.driveId || '',
+        driveSynced: f.driveSynced || false
+      }))
+
       const response = await this.postJson({
         action: 'syncAll',
         state: {
@@ -158,7 +170,8 @@ export class CloudSync {
           submissions: localState.submissions || [],
           deadlines: localState.deadlines || {},
           quizAttempts: localState.quizAttempts || [],
-          evaluations: localState.evaluations || {}
+          evaluations: localState.evaluations || {},
+          files: sanitizedFiles
         }
       })
 
@@ -336,6 +349,44 @@ export class CloudSync {
       return { success: false, message: res?.message || 'Échec du dépôt Google Drive.' }
     } catch (err: any) {
       return { success: false, message: err.message }
+    }
+  }
+  /**
+   * Teste la connexion avec le Webhook Google Apps Script
+   */
+  async testConnection(): Promise<{ success: boolean; message: string; details?: any }> {
+    const url = this.getUrl()
+    if (!url) {
+      return { success: false, message: "Aucune URL de Web App Google Apps Script n'est configurée." }
+    }
+    try {
+      // 1. Tenter avec l'action ping
+      const pingRes = await this.getJson({ action: 'ping' }, 5000)
+      if (pingRes && (pingRes.status === 'ok' || pingRes.status === 'success')) {
+        return {
+          success: true,
+          message: 'Connexion établie avec succès ! Le backend Google Apps Script répond parfaitement.',
+          details: pingRes
+        }
+      }
+      // 2. Tenter avec syncAll minimal
+      const syncRes = await this.getJson({ action: 'syncAll' }, 6000)
+      if (syncRes && syncRes.status === 'success') {
+        return {
+          success: true,
+          message: 'Connexion établie avec succès (syncAll opérationnel) !',
+          details: syncRes
+        }
+      }
+      return {
+        success: false,
+        message: "Le serveur a répondu mais la réponse n'est pas au format attendu. Vérifiez les autorisations du déploiement ('Tout le monde')."
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        message: `Erreur de connexion : ${err.message}. Vérifiez l'URL et l'accès 'Tout le monde' sur Google Apps Script.`
+      }
     }
   }
 }
