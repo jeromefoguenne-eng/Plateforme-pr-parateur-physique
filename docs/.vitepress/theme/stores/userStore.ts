@@ -848,62 +848,162 @@ export async function extractTextFromDataUrl(dataUrl: string, fileName: string):
 }
 
 export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extractedText: string = '', userNotes: string = ''): AiCorrection {
-  const rubric = EXERCISE_RUBRICS[file.exerciseId] || EXERCISE_RUBRICS['exercice-01']
-  const fullText = `${file.originalFileName || ''} ${file.formattedFileName || ''} ${userNotes || ''} ${extractedText || ''}`.toLowerCase()
+  const rubric = EXERCISE_RUBRICS[file?.exerciseId] || EXERCISE_RUBRICS['exercice-01']
   
-  const words = fullText.match(/[a-zà-ÿ0-9_-]+/g) || []
-  const wordCount = words.length
+  // Extraire le texte réel rédigé par l'étudiant (notes + contenu extrait du document)
+  const studentNotes = (userNotes || '').trim()
+  const studentExtracted = (extractedText || '').trim()
+  const studentContent = `${studentNotes} ${studentExtracted}`.trim().toLowerCase()
+  
+  const contentWords = studentContent.match(/[a-zà-ÿ0-9_-]+/g) || []
+  const contentWordCount = contentWords.length
 
+  // Texte global incluant le nom de fichier pour contextes additionnels (ex: tags de nommage)
+  const fullText = `${file?.originalFileName || ''} ${file?.formattedFileName || ''} ${studentContent}`.toLowerCase()
+
+  // 1. RÈGLE STRICTE : AUCUN POINT SI TRAVAIL NON RENDU OU DOCUMENT VIDE
+  // Un document est considéré vide s'il compte moins de 15 mots rédigés et aucun fichier exploitable
+  const isDocumentEmpty = contentWordCount < 15 || (!file && contentWordCount < 15) || ((file?.fileSize || 0) < 50 && contentWordCount < 15)
+
+  if (isDocumentEmpty) {
+    const zeroCriteria: AiCriterion[] = [
+      {
+        name: "Critère 1 – Compréhension et respect de la consigne",
+        weightPct: 15,
+        level: 0,
+        levelLabel: "Niveau 0 – Non rendu / Document vide",
+        score: 0.0,
+        maxScore: 15,
+        comment: "Document vide ou inexploitable : aucun contenu rédigé significatif extrait. Aucun point n'est attribué."
+      },
+      {
+        name: "Critère 2 – Exactitude des contenus",
+        weightPct: 25,
+        level: 0,
+        levelLabel: "Niveau 0 – Non rendu / Document vide",
+        score: 0.0,
+        maxScore: 25,
+        comment: "Aucun concept scientifique ou physiologique mobilisé dans le document remis."
+      },
+      {
+        name: "Critère 3 – Maîtrise de la méthode",
+        weightPct: 20,
+        level: 0,
+        levelLabel: "Niveau 0 – Non rendu / Document vide",
+        score: 0.0,
+        maxScore: 20,
+        comment: "Démarche méthodologique absente ou non évaluable."
+      },
+      {
+        name: "Critère 4 – Maîtrise technique et numérique",
+        weightPct: 20,
+        level: 0,
+        levelLabel: "Niveau 0 – Non rendu / Document vide",
+        score: 0.0,
+        maxScore: 20,
+        comment: "Aucun outil technologique, capteur ni traitement numérique exploité."
+      },
+      {
+        name: "Critère 5 – Analyse, interprétation et justification",
+        weightPct: 15,
+        level: 0,
+        levelLabel: "Niveau 0 – Non rendu / Document vide",
+        score: 0.0,
+        maxScore: 15,
+        comment: "Aucune analyse critique, justification physiologique ni recul observable."
+      },
+      {
+        name: "Critère 6 – Qualité et clarté de la production",
+        weightPct: 5,
+        level: 0,
+        levelLabel: "Niveau 0 – Non rendu / Document vide",
+        score: 0.0,
+        maxScore: 5,
+        comment: "Fichier vide ou inexploitable (volume textuel inférieur au seuil minimal)."
+      }
+    ]
+
+    const emptySummary = `❌ AUCUN POINT ATTRIBUÉ (0.0/20) : Le document remis ("${file?.originalFileName || 'fichier'}") est vide ou inexploitable (${contentWordCount} mot(s) rédigé(s)). Conformément aux critères d'évaluation, un travail vide ou non rendu reçoit strictement 0/20.`
+
+    return {
+      status: 'analyzed',
+      suggestedScore: 0.0,
+      maxScore: 20,
+      totalPoints100: 0.0,
+      criteriaTable: zeroCriteria,
+      summary: emptySummary,
+      strengths: [],
+      improvements: [
+        `Déposer un document complété contenant l'intégralité du travail rédigé pour ${rubric.title}.`,
+        "Vérifier le contenu effectif du fichier (.docx ou .xlsx) avant soumission.",
+        "Consulter les consignes et le document modèle sur la plateforme."
+      ],
+      nextSteps: [
+        "Télécharger le modèle de travail officiel (.docx ou Google Docs).",
+        "Rédiger les réponses aux questions et études de cas.",
+        "Déposer à nouveau le livrable complété pour analyse formative."
+      ],
+      detailedFeedback: emptySummary,
+      correctedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      modelUsed: 'Évaluateur Pédagogique IA (HECh Sport Sciences — Grille 6 Critères — Barème Strict Non Rendu)'
+    }
+  }
+
+  // 2. ÉVALUATION FORMANTE CONTINUE, NUANCÉE ET NON POLARISÉE
   const matchedCore = rubric.coreTopics.filter(t => fullText.includes(t))
   const matchedSituations = rubric.keySituations.filter(s => fullText.includes(s))
   const matchedGeneric = GENERIC_SPORT_TERMS.filter(g => fullText.includes(g))
 
-  const coreRatio = matchedCore.length / Math.max(1, rubric.coreTopics.length)
-  const situationRatio = matchedSituations.length / Math.max(1, rubric.keySituations.length)
+  const sitRatio = Math.min(1.0, matchedSituations.length / Math.max(1, rubric.keySituations.length))
+  const coreRatio = Math.min(1.0, matchedCore.length / Math.max(1, rubric.coreTopics.length * 0.85))
+  const genericRatio = Math.min(1.0, matchedGeneric.length / 10.0)
 
-  const hasLimits = /limite|biais|inconvenient|imprecision|derivation|estimation|fiabilite|validite|artefact|deriver/i.test(fullText)
-  const hasJustifications = /parce que|justification|permet de|en raison|car|objectif|protocole|afin de|pour mesurer/i.test(fullText)
+  // Objectif de mots pondéré selon la consigne
+  const wordTarget = Math.max(90, rubric.minExpectedWords * 0.75)
+  const lengthRatio = Math.min(1.0, contentWordCount / wordTarget)
 
-  const isEmptyOrTrivial = (file.fileSize < 80 && wordCount < 15) || wordCount < 10
-  // DÉTECTION OBJECTIVE DE HORS-SUJET :
-  // Si le document ne contient aucun des concepts techniques de l'exercice et quasiment aucun terme du champ sportif
-  const isOffTopic = (matchedCore.length <= 1 && matchedSituations.length === 0 && matchedGeneric.length <= 2) || isEmptyOrTrivial
+  const hasLimits = /limite|biais|inconvenient|imprecision|derivation|estimation|fiabilite|validite|artefact|deriver|recul|bruit|perte|decrochage|derive/i.test(fullText)
+  const hasJustifications = /parce que|justification|permet de|en raison|car|objectif|protocole|afin de|pour mesurer|choisi|pertinent|justifie|argument/i.test(fullText)
+  const hasHzOrMath = /hz|hertz|ms|milliseconde|km\/h|m\/s|w\/kg|watt|joule|echantillonnage|formule|ratio|ecart-type|moyenne|z-score|acwr|rpe/i.test(fullText)
+
+  // Hors-sujet : si le document contient des mots mais 0 concept sportif et 0 concept du cours
+  const isOffTopic = matchedCore.length === 0 && matchedSituations.length === 0 && matchedGeneric.length <= 1
 
   const criteriaTable: AiCriterion[] = []
 
   // 1. CRITÈRE 1 – COMPRÉHENSION ET RESPECT DE LA CONSIGNE (15 %)
-  let c1_level = 4
-  let c1_score = 14.2
-  let c1_label = "Niveau 4 – Maîtrise excellente"
-  let c1_comment = `Consigne parfaitement comprise et respectée : les situations athlétiques et livrables sont traités avec rigueur et contextualisation précise.`
+  let c1_score: number
+  let c1_level: number
+  let c1_label: string
+  let c1_comment: string
 
   if (isOffTopic) {
-    c1_level = isEmptyOrTrivial ? 0 : 1
-    c1_score = isEmptyOrTrivial ? 0.0 : 1.5
-    c1_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante (Hors-Sujet)"
-    c1_comment = `HORS-SUJET : Le document remis ne correspond absolument pas à la consigne de l'exercice (${rubric.title}). Aucun des livrables attendus n'a été produit.`
-  } else if (situationRatio < 0.35 || wordCount < 60) {
+    c1_score = 2.5
     c1_level = 1
-    c1_score = 5.0 + Math.min(2.0, situationRatio * 5)
-    c1_label = "Niveau 1 – Maîtrise insuffisante"
-    c1_comment = `Consigne très partiellement comprise : seulement ${matchedSituations.length} situation(s) ou élément(s) abordé(s) sur ${rubric.keySituations.length} attendus. Volume rédactionnel (${wordCount} mots) insuffisant.`
-  } else if (situationRatio < 0.65 || wordCount < rubric.minExpectedWords * 0.6) {
-    c1_level = 2
-    c1_score = 8.5 + (situationRatio - 0.35) * 6.0
-    c1_label = "Niveau 2 – Maîtrise partielle"
-    c1_comment = `Consigne comprise mais partiellement traitée : ${matchedSituations.length}/${rubric.keySituations.length} cas traités. Plusieurs livrables manquent de développement.`
-  } else if (situationRatio < 0.85 || (rubric.requiresLimits && !hasLimits)) {
-    c1_level = 3
-    c1_score = 11.0 + (situationRatio - 0.65) * 8.0
-    c1_label = "Niveau 3 – Maîtrise satisfaisante"
-    c1_comment = `Consigne bien respectée : la quasi-totalité des situations professionnelles (${matchedSituations.length}/${rubric.keySituations.length}) sont traitées avec cohérence.`
+    c1_label = "Niveau 1 – Maîtrise insuffisante (Hors-Sujet)"
+    c1_comment = `Hors-sujet : Le document ne traite pas de la thématique demandée (${rubric.title}).`
   } else {
-    c1_level = 4
-    c1_score = Math.min(15.0, 13.5 + situationRatio * 1.5)
-    c1_label = "Niveau 4 – Maîtrise excellente"
-    c1_comment = `Excellente maîtrise de la consigne : l'ensemble des ${matchedSituations.length} situations professionnelles sont explorées et contextualisées.`
+    const c1_comp = 0.55 * sitRatio + 0.35 * lengthRatio + 0.10 * genericRatio
+    c1_score = Math.min(14.8, Number((3.0 + c1_comp * 11.5).toFixed(1)))
+    const ratio = c1_score / 15.0
+    if (ratio < 0.50) {
+      c1_level = 1
+      c1_label = "Niveau 1 – Maîtrise insuffisante (Amorcée)"
+      c1_comment = `Consigne partiellement abordée : ${matchedSituations.length}/${rubric.keySituations.length} situation(s) identifiée(s), volume rédigé (${contentWordCount} mots) encore succinct.`
+    } else if (ratio < 0.65) {
+      c1_level = 2
+      c1_label = "Niveau 2 – Maîtrise partielle (En cours)"
+      c1_comment = `Consigne globalement comprise : ${matchedSituations.length}/${rubric.keySituations.length} situation(s) traitée(s). Le périmètre attendu commence à être couvert mais demande à être approfondi.`
+    } else if (ratio < 0.85) {
+      c1_level = 3
+      c1_label = "Niveau 3 – Maîtrise satisfaisante"
+      c1_comment = `Consigne bien respectée : la quasi-totalité des situations professionnelles (${matchedSituations.length}/${rubric.keySituations.length}) sont traitées avec cohérence et structure.`
+    } else {
+      c1_level = 4
+      c1_label = "Niveau 4 – Maîtrise excellente"
+      c1_comment = `Excellente maîtrise de la consigne : l'ensemble des ${matchedSituations.length} situations professionnelles sont explorées et contextualisées.`
+    }
   }
-  c1_score = Number(c1_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 1 – Compréhension et respect de la consigne",
@@ -916,38 +1016,38 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   })
 
   // 2. CRITÈRE 2 – EXACTITUDE DES CONTENUS (25 %)
-  let c2_level = 4
-  let c2_score = 23.5
-  let c2_label = "Niveau 4 – Maîtrise excellente"
-  let c2_comment = `Excellente exactitude scientifique : distinction rigoureuse des grandeurs physiques, métriques physiologiques parfaitement ciblées.`
+  let c2_score: number
+  let c2_level: number
+  let c2_label: string
+  let c2_comment: string
 
   if (isOffTopic) {
-    c2_level = isEmptyOrTrivial ? 0 : 1
-    c2_score = isEmptyOrTrivial ? 0.0 : 2.5
-    c2_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante"
-    c2_comment = `Contenus inadaptés : aucun concept scientifique ou technologique lié à la préparation physique n'est mobilisé.`
-  } else if (coreRatio < 0.30) {
+    c2_score = 3.5
     c2_level = 1
-    c2_score = 8.0 + coreRatio * 10
     c2_label = "Niveau 1 – Maîtrise insuffisante"
-    c2_comment = `Contenus très restreints (${matchedCore.length} concept(s) clé(s) identifié(s)). Risque important d'amalgames conceptuels.`
-  } else if (coreRatio < 0.55) {
-    c2_level = 2
-    c2_score = 13.5 + (coreRatio - 0.30) * 14
-    c2_label = "Niveau 2 – Maîtrise partielle"
-    c2_comment = `Notions de base présentes (${matchedCore.length} concepts identifiés), mais plusieurs principes physiologiques ou métrologiques manquent de précision.`
-  } else if (coreRatio < 0.80) {
-    c2_level = 3
-    c2_score = 18.5 + (coreRatio - 0.55) * 16
-    c2_label = "Niveau 3 – Maîtrise satisfaisante"
-    c2_comment = `Bonne exactitude scientifique (${matchedCore.length} concepts mobilisés avec justesse). Vocabulaire de préparation physique bien maîtrisé.`
+    c2_comment = "Aucun concept scientifique ou technologique lié à la préparation physique n'est mobilisé."
   } else {
-    c2_level = 4
-    c2_score = Math.min(25.0, 22.5 + (coreRatio - 0.80) * 10)
-    c2_label = "Niveau 4 – Maîtrise excellente"
-    c2_comment = `Richesse terminologique et exactitude remarquable : ${matchedCore.length} concepts clés mobilisés avec rigueur académique.`
+    const c2_comp = 0.55 * coreRatio + 0.25 * genericRatio + 0.20 * lengthRatio
+    c2_score = Math.min(24.5, Number((5.0 + c2_comp * 18.5).toFixed(1)))
+    const ratio = c2_score / 25.0
+    if (ratio < 0.50) {
+      c2_level = 1
+      c2_label = "Niveau 1 – Maîtrise insuffisante (Amorcée)"
+      c2_comment = `Vocabulaire scientifique encore restreint (${matchedCore.length} concept(s) clé(s)). Approfondir les grandeurs physiques et physiologiques du cours.`
+    } else if (ratio < 0.65) {
+      c2_level = 2
+      c2_label = "Niveau 2 – Maîtrise partielle (En cours)"
+      c2_comment = `Notions de base présentes (${matchedCore.length} concepts identifiés), exactitude correcte mais plusieurs principes physiologiques ou métrologiques méritent d'être précisés.`
+    } else if (ratio < 0.85) {
+      c2_level = 3
+      c2_label = "Niveau 3 – Maîtrise satisfaisante"
+      c2_comment = `Bonne exactitude scientifique (${matchedCore.length} concepts mobilisés avec justesse). Vocabulaire de préparation physique bien maîtrisé.`
+    } else {
+      c2_level = 4
+      c2_label = "Niveau 4 – Maîtrise excellente"
+      c2_comment = `Richesse terminologique et exactitude remarquable : ${matchedCore.length} concepts clés mobilisés avec rigueur académique.`
+    }
   }
-  c2_score = Number(c2_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 2 – Exactitude des contenus",
@@ -960,38 +1060,40 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   })
 
   // 3. CRITÈRE 3 – MAÎTRISE DE LA MÉTHODE (20 %)
-  let c3_level = 4
-  let c3_score = 18.5
-  let c3_label = "Niveau 4 – Maîtrise excellente"
-  let c3_comment = `Démarche exemplaire : raisonnement méthodique complet (besoin athlétique -> variable -> outil -> protocole -> limites).`
+  let c3_score: number
+  let c3_level: number
+  let c3_label: string
+  let c3_comment: string
 
   if (isOffTopic) {
-    c3_level = isEmptyOrTrivial ? 0 : 1
-    c3_score = isEmptyOrTrivial ? 0.0 : 1.5
-    c3_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante"
-    c3_comment = `Démarche méthodologique absente ou non applicable à la problématique sportive demandée.`
-  } else if (!hasJustifications || wordCount < 80) {
+    c3_score = 2.5
     c3_level = 1
-    c3_score = 6.0 + (wordCount > 50 ? 2.0 : 0.5)
     c3_label = "Niveau 1 – Maîtrise insuffisante"
-    c3_comment = `Démarche embryonnaire : juxtaposition de réponses sans explicitation de la chaîne de décision méthodique.`
-  } else if (rubric.requiresLimits && !hasLimits) {
-    c3_level = 2
-    c3_score = 11.0 + (situationRatio > 0.5 ? 2.0 : 0.5)
-    c3_label = "Niveau 2 – Maîtrise partielle"
-    c3_comment = `Démarche cohérente mais incomplète : les choix sont posés mais les étapes de validation et l'examen critique des limites font défaut.`
-  } else if (situationRatio < 0.85) {
-    c3_level = 3
-    c3_score = 14.5 + (situationRatio - 0.5) * 5.0
-    c3_label = "Niveau 3 – Maîtrise satisfaisante"
-    c3_comment = `Bonne démarche de terrain : progression logique et structurée sur la quasi-totalité des situations analysées.`
+    c3_comment = "Démarche méthodologique absente ou non applicable à la problématique sportive demandée."
   } else {
-    c3_level = 4
-    c3_score = Math.min(20.0, 17.5 + (hasLimits ? 1.5 : 0.5))
-    c3_label = "Niveau 4 – Maîtrise excellente"
-    c3_comment = `Excellente maîtrise méthodologique : démarche scientifique éprouvée, justifications étayées et recul professionnel.`
+    const justifScore = hasJustifications ? 1.0 : 0.25
+    const limitsScore = hasLimits ? 1.0 : (rubric.requiresLimits ? 0.20 : 0.60)
+    const c3_comp = 0.45 * sitRatio + 0.30 * justifScore + 0.25 * limitsScore
+    c3_score = Math.min(19.5, Number((4.0 + c3_comp * 14.5).toFixed(1)))
+    const ratio = c3_score / 20.0
+    if (ratio < 0.50) {
+      c3_level = 1
+      c3_label = "Niveau 1 – Maîtrise insuffisante (Amorcée)"
+      c3_comment = "Démarche en amorce : choix formulés sans explicitation complète de la chaîne de décision méthodique (besoin athlétique -> variable -> outil -> protocole)."
+    } else if (ratio < 0.65) {
+      c3_level = 2
+      c3_label = "Niveau 2 – Maîtrise partielle (En cours)"
+      c3_comment = "Démarche cohérente mais perfectible : les étapes de validation et l'examen critique des protocoles méritent d'être approfondis."
+    } else if (ratio < 0.85) {
+      c3_level = 3
+      c3_label = "Niveau 3 – Maîtrise satisfaisante"
+      c3_comment = "Bonne démarche de terrain : progression logique et structurée sur la quasi-totalité des situations analysées."
+    } else {
+      c3_level = 4
+      c3_label = "Niveau 4 – Maîtrise excellente"
+      c3_comment = "Excellente maîtrise méthodologique : démarche scientifique éprouvée, justifications étayées et recul professionnel."
+    }
   }
-  c3_score = Number(c3_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 3 – Maîtrise de la méthode",
@@ -1004,38 +1106,39 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   })
 
   // 4. CRITÈRE 4 – MAÎTRISE TECHNIQUE ET NUMÉRIQUE (20 %)
-  let c4_level = 4
-  let c4_score = 18.5
-  let c4_label = "Niveau 4 – Maîtrise excellente"
-  let c4_comment = `Maîtrise technique pointue : prise en compte des fréquences d'échantillonnage, protocoles de mesure et automatisation logicielle.`
+  let c4_score: number
+  let c4_level: number
+  let c4_label: string
+  let c4_comment: string
 
   if (isOffTopic) {
-    c4_level = isEmptyOrTrivial ? 0 : 1
-    c4_score = isEmptyOrTrivial ? 0.0 : 1.0
-    c4_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante"
-    c4_comment = `Aucun outil numérique ni dispositif technique pertinent n'est exploité.`
-  } else if (coreRatio < 0.35) {
+    c4_score = 2.5
     c4_level = 1
-    c4_score = 6.0 + coreRatio * 8.0
     c4_label = "Niveau 1 – Maîtrise insuffisante"
-    c4_comment = `Maîtrise technique insuffisante : outils inadaptés aux contraintes de terrain ou fonctionnalités clés non exploitées.`
-  } else if (coreRatio < 0.65) {
-    c4_level = 2
-    c4_score = 11.5 + (coreRatio - 0.35) * 10.0
-    c4_label = "Niveau 2 – Maîtrise partielle"
-    c4_comment = `Outils techniques adéquats mais les fonctionnalités avancées (fréquence Hz, capteurs intégrés, formats, formules) manquent d'exploitation.`
-  } else if (rubric.requiresLimits && !hasLimits) {
-    c4_level = 3
-    c4_score = 15.0 + (coreRatio > 0.7 ? 1.5 : 0.5)
-    c4_label = "Niveau 3 – Maîtrise satisfaisante"
-    c4_comment = `Bonne appropriation technique des capteurs et des logiciels de traitement sportif.`
+    c4_comment = "Aucun outil numérique ni dispositif technique pertinent n'est exploité."
   } else {
-    c4_level = 4
-    c4_score = Math.min(20.0, 17.5 + (coreRatio - 0.65) * 5.0)
-    c4_label = "Niveau 4 – Maîtrise excellente"
-    c4_comment = `Maîtrise technologique remarquable : précision sur les fréquences d'acquisition, les protocoles et les outils de traitement.`
+    const hzScore = hasHzOrMath ? 1.0 : 0.35
+    const c4_comp = 0.45 * coreRatio + 0.30 * hzScore + 0.25 * lengthRatio
+    c4_score = Math.min(19.5, Number((4.0 + c4_comp * 14.5).toFixed(1)))
+    const ratio = c4_score / 20.0
+    if (ratio < 0.50) {
+      c4_level = 1
+      c4_label = "Niveau 1 – Maîtrise insuffisante (Amorcée)"
+      c4_comment = "Maîtrise technique initiale : outils nommés sans précision sur les paramètres de mesure ou d'acquisition."
+    } else if (ratio < 0.65) {
+      c4_level = 2
+      c4_label = "Niveau 2 – Maîtrise partielle (En cours)"
+      c4_comment = "Outils techniques adéquats mais les fonctionnalités avancées (fréquence Hz, capteurs intégrés, formats, formules) manquent d'exploitation."
+    } else if (ratio < 0.85) {
+      c4_level = 3
+      c4_label = "Niveau 3 – Maîtrise satisfaisante"
+      c4_comment = "Bonne appropriation technique des capteurs, logiciels et outils de traitement sportif."
+    } else {
+      c4_level = 4
+      c4_label = "Niveau 4 – Maîtrise excellente"
+      c4_comment = "Maîtrise technologique remarquable : précision sur les fréquences d'acquisition, protocoles d'étalonnage et formats d'export."
+    }
   }
-  c4_score = Number(c4_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 4 – Maîtrise technique et numérique",
@@ -1048,38 +1151,40 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   })
 
   // 5. CRITÈRE 5 – ANALYSE, INTERPRÉTATION ET JUSTIFICATION (15 %)
-  let c5_level = 4
-  let c5_score = 14.0
-  let c5_label = "Niveau 4 – Maîtrise excellente"
-  let c5_comment = `Analyse critique remarquable : distinction nette entre corrélation et causalité, limites de terrain et interprétation sans dérive déterministe.`
+  let c5_score: number
+  let c5_level: number
+  let c5_label: string
+  let c5_comment: string
 
   if (isOffTopic) {
-    c5_level = isEmptyOrTrivial ? 0 : 1
-    c5_score = isEmptyOrTrivial ? 0.0 : 1.0
-    c5_label = isEmptyOrTrivial ? "Niveau 0 – Non évaluable / Absent" : "Niveau 1 – Maîtrise insuffisante"
-    c5_comment = `Aucune analyse critique ni justification athlétique observable.`
-  } else if (!hasJustifications) {
+    c5_score = 2.0
     c5_level = 1
-    c5_score = 4.5 + (wordCount > 60 ? 1.5 : 0.5)
     c5_label = "Niveau 1 – Maîtrise insuffisante"
-    c5_comment = `Absence d'argumentation : préconisations affirmées sans justification physiologique ni recul critique.`
-  } else if (rubric.requiresLimits && !hasLimits) {
-    c5_level = 2
-    c5_score = 8.5 + (hasJustifications ? 1.5 : 0.5)
-    c5_label = "Niveau 2 – Maîtrise partielle"
-    c5_comment = `Justification présente mais unilatérale : les biais de mesure, contraintes écologiques et limites du matériel ne sont pas interrogés.`
-  } else if (situationRatio < 0.85) {
-    c5_level = 3
-    c5_score = 11.5 + (situationRatio - 0.5) * 4.0
-    c5_label = "Niveau 3 – Maîtrise satisfaisante"
-    c5_comment = `Bonne capacité d'analyse et recul critique manifeste sur la plupart des situations étudiées.`
+    c5_comment = "Aucune analyse critique ni justification athlétique observable."
   } else {
-    c5_level = 4
-    c5_score = Math.min(15.0, 13.5 + (hasLimits ? 1.0 : 0.0))
-    c5_label = "Niveau 4 – Maîtrise excellente"
-    c5_comment = `Lucidité critique exemplaire : distinction claire entre mesure brute, estimation dérivée et décision humaine concertée.`
+    const justifScore = hasJustifications ? 1.0 : 0.25
+    const limitsScore = hasLimits ? 1.0 : (rubric.requiresLimits ? 0.20 : 0.50)
+    const c5_comp = 0.40 * justifScore + 0.40 * limitsScore + 0.20 * coreRatio
+    c5_score = Math.min(14.6, Number((2.5 + c5_comp * 11.5).toFixed(1)))
+    const ratio = c5_score / 15.0
+    if (ratio < 0.50) {
+      c5_level = 1
+      c5_label = "Niveau 1 – Maîtrise insuffisante (Amorcée)"
+      c5_comment = "Absence d'argumentation développée : préconisations affirmées sans justification physiologique suffisante ni recul critique."
+    } else if (ratio < 0.65) {
+      c5_level = 2
+      c5_label = "Niveau 2 – Maîtrise partielle (En cours)"
+      c5_comment = "Justification présente mais unilatérale : les biais métrologiques, dérives ou contraintes écologiques méritent d'être approfondis."
+    } else if (ratio < 0.85) {
+      c5_level = 3
+      c5_label = "Niveau 3 – Maîtrise satisfaisante"
+      c5_comment = "Bonne capacité d'analyse et recul critique manifeste sur la plupart des situations étudiées."
+    } else {
+      c5_level = 4
+      c5_label = "Niveau 4 – Maîtrise excellente"
+      c5_comment = "Lucidité critique exemplaire : distinction claire entre mesure brute, estimation dérivée et décision humaine concertée."
+    }
   }
-  c5_score = Number(c5_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 5 – Analyse, interprétation et justification",
@@ -1092,38 +1197,38 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   })
 
   // 6. CRITÈRE 6 – QUALITÉ ET CLARTÉ DE LA PRODUCTION (5 %)
-  let c6_level = 4
-  let c6_score = 4.7
-  let c6_label = "Niveau 4 – Maîtrise excellente"
-  let c6_comment = `Présentation exemplaire, structuration professionnelle, clarté optimale pour un staff technique.`
+  let c6_score: number
+  let c6_level: number
+  let c6_label: string
+  let c6_comment: string
 
-  if (isEmptyOrTrivial) {
-    c6_level = 0
-    c6_score = 0.0
-    c6_label = "Niveau 0 – Non évaluable / Absent"
-    c6_comment = `Fichier vide ou inexploitable.`
-  } else if (isOffTopic) {
+  if (isOffTopic) {
+    c6_score = 2.0
     c6_level = 1
-    c6_score = 1.0
     c6_label = "Niveau 1 – Maîtrise insuffisante"
-    c6_comment = `Document structuré en soi mais totalement non avenu dans le cadre de ce cours.`
-  } else if (wordCount < 60) {
-    c6_level = 2
-    c6_score = 2.2
-    c6_label = "Niveau 2 – Maîtrise partielle"
-    c6_comment = `Présentation minimale (${wordCount} mots), manque de mise en forme et de structuration visuelle.`
-  } else if (wordCount < rubric.minExpectedWords) {
-    c6_level = 3
-    c6_score = 3.8
-    c6_label = "Niveau 3 – Maîtrise satisfaisante"
-    c6_comment = `Bonne lisibilité globale, document clair, soigné et bien organisé.`
+    c6_comment = "Document structuré en soi mais totalement non avenu dans le cadre de ce cours."
   } else {
-    c6_level = 4
-    c6_score = 4.8
-    c6_label = "Niveau 4 – Maîtrise excellente"
-    c6_comment = `Structure professionnelle soignée, hiérarchie visuelle irréprochable prête pour transmission au staff.`
+    const c6_comp = 0.50 * lengthRatio + 0.30 * (contentWordCount >= 70 ? 1.0 : contentWordCount / 70.0) + 0.20 * genericRatio
+    c6_score = Math.min(4.9, Number((1.0 + c6_comp * 3.8).toFixed(1)))
+    const ratio = c6_score / 5.0
+    if (ratio < 0.50) {
+      c6_level = 1
+      c6_label = "Niveau 1 – Maîtrise insuffisante (Amorcée)"
+      c6_comment = `Présentation minimale (${contentWordCount} mots), manque de mise en forme et de structuration visuelle.`
+    } else if (ratio < 0.65) {
+      c6_level = 2
+      c6_label = "Niveau 2 – Maîtrise partielle (En cours)"
+      c6_comment = "Document lisible et compréhensible, structure générale correcte avec des axes de progression sur la clarté."
+    } else if (ratio < 0.85) {
+      c6_level = 3
+      c6_label = "Niveau 3 – Maîtrise satisfaisante"
+      c6_comment = "Bonne lisibilité globale, document clair, soigné et bien organisé."
+    } else {
+      c6_level = 4
+      c6_label = "Niveau 4 – Maîtrise excellente"
+      c6_comment = "Structure professionnelle soignée, hiérarchie visuelle irréprochable prête pour transmission au staff."
+    }
   }
-  c6_score = Number(c6_score.toFixed(1))
 
   criteriaTable.push({
     name: "Critère 6 – Qualité et clarté de la production",
@@ -1144,7 +1249,7 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
   let nextSteps: string[] = []
 
   if (isOffTopic) {
-    summary = `⚠️ ALERTE HORS-SUJET : Le document déposé ("${file.originalFileName || 'fichier'}") ne correspond pas aux objectifs de ${rubric.title}. Aucun concept de préparation physique, de mesure ou de données sportives n'a pu être validé. La note attribuée (${suggestedScore}/20) reflète l'absence de livrable conforme aux consignes de terrain.`
+    summary = `⚠️ ALERTE HORS-SUJET : Le document déposé ("${file?.originalFileName || 'fichier'}") ne correspond pas aux objectifs de ${rubric.title}. Aucun concept de préparation physique, de mesure ou de données sportives n'a pu être validé. La note formative attribuée (${suggestedScore}/20) reflète l'absence de livrable conforme aux consignes de terrain.`
     strengths = [
       "Le fichier a été correctement transmis via la plateforme (aspect technique du dépôt validé)."
     ]
@@ -1159,7 +1264,7 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
       "Déposer à nouveau le fichier complété pour une nouvelle analyse formative."
     ]
   } else if (suggestedScore < 10) {
-    summary = `Production encore insuffisante pour ${rubric.title} (note indicative : ${suggestedScore}/20). Le travail déposé est trop succinct ou trop partiel pour attester des compétences professionnelles visées. Plusieurs situations majeures ou justifications font défaut.`
+    summary = `Travail amorcé pour ${rubric.title} (note formative : ${suggestedScore}/20). Le travail déposé aborde le sujet mais reste trop succinct (${contentWordCount} mots) pour valider l'ensemble des compétences professionnelles visées.`
     strengths = [
       `${matchedSituations.length} situation(s) ou thématique(s) sportive(s) identifiée(s).`,
       `Présence de ${matchedCore.length} notion(s) technique(s) liée(s) aux données sportives.`,
@@ -1175,12 +1280,12 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
       "Consulter le module théorique correspondant sur les capteurs et logiciels sportifs.",
       "Compléter et ré-enrichir le livrable avant de le soumettre à nouveau."
     ]
-  } else if (suggestedScore < 13.5) {
-    summary = `Travail encourageant mais perfectible pour ${rubric.title} (note indicative : ${suggestedScore}/20). Les outils et démarches proposés sont globalement cohérents, mais l'analyse manque d'approfondissement technique et de recul sur les limites métrologiques.`
+  } else if (suggestedScore < 13.0) {
+    summary = `Travail en cours d'acquisition pour ${rubric.title} (note formative : ${suggestedScore}/20). Les démarches et outils proposés sont cohérents, mais l'analyse technique et le recul critique sur les protocoles de mesure méritent d'être approfondis.`
     strengths = [
       `Sélection globalement cohérente des capteurs/logiciels sur ${matchedSituations.length} situation(s).`,
       "Bonne contextualisation des exigences physiques et athlétiques des disciplines abordées.",
-      "Structure de document claire et lisible."
+      "Structure de document lisible."
     ]
     improvements = [
       "Approfondir la distinction essentielle entre mesure directe brute et variable calculée par algorithme.",
@@ -1192,8 +1297,8 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
       "Structurer vos recommandations sous forme de fiches protocolaires directement exploitables par le staff.",
       "Prendre en compte les consignes de calibration avant test de terrain."
     ]
-  } else if (suggestedScore < 16.5) {
-    summary = `Bon devoir, solide et bien structuré pour ${rubric.title} (note indicative : ${suggestedScore}/20). La démarche professionnelle est maîtrisée, le vocabulaire scientifique est pertinent et les choix technologiques répondent aux besoins du terrain.`
+  } else if (suggestedScore < 16.0) {
+    summary = `Travail satisfaisant et opérationnel pour ${rubric.title} (note formative : ${suggestedScore}/20). La démarche professionnelle est maîtrisée, le vocabulaire scientifique est pertinent et les choix technologiques répondent aux besoins du terrain.`
     strengths = [
       `Rigueur dans la sélection des outils sur ${matchedSituations.length} cas professionnels.`,
       `Maîtrise confirmée du vocabulaire technique et des concepts clés (${matchedCore.length} concepts mobilisés).`,
@@ -1210,11 +1315,11 @@ export function generateCriteriaBasedAiCorrection(file: SubmittedFile, extracted
       "Formuler des préconisations d'ajustement encore plus opérationnelles pour l'entraîneur principal."
     ]
   } else {
-    summary = `Devoir remarquable et d'une grande rigueur professionnelle pour ${rubric.title} (note indicative : ${suggestedScore}/20). L'analyse critique est d'un excellent niveau académique et opérationnel, digne d'un préparateur physique expert.`
+    summary = `Devoir remarquable et d'une grande rigueur professionnelle pour ${rubric.title} (note formative : ${suggestedScore}/20). L'analyse critique est d'un excellent niveau académique et opérationnel, digne d'un préparateur physique de haut niveau.`
     strengths = [
       `Analyse exhaustive et contextualisée des ${matchedSituations.length} situations professionnelles demandées.`,
       `Richesse conceptuelle exemplaire (${matchedCore.length} notions techniques mobilisées avec exactitude).`,
-      "Distinction parfaite entre signaux bruts, calculs algorithmiques et interprétation humaine.",
+      "Distinction rigoureuse entre signaux bruts, calculs algorithmiques et interprétation humaine.",
       "Lucidité critique remarquable sur la validité, la fidélité et les limites de chaque instrument.",
       "Présentation et structuration d'une clarté professionnelle irréprochable."
     ]
@@ -2642,7 +2747,12 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       const file = state.submittedFiles.find(f => f && f.userEmail && allowed.includes(f.userEmail.toLowerCase().trim()) && f?.exerciseId === def.id)
       const submission = state.submissions.find(s => s && s.userEmail && allowed.includes(s.userEmail.toLowerCase().trim()) && s?.exerciseId === def.id)
       const feedback = state.exerciseFeedbacks.find(fb => fb && fb.userEmail && allowed.includes(fb.userEmail.toLowerCase().trim()) && fb?.exerciseId === def.id)
-      const isDone = !!file || !!(submission && submission.answer && submission.answer.trim().length > 10)
+      
+      const fileText = `${file?.extractedText || ''} ${submission?.answer || ''}`.trim()
+      const fileWords = fileText.toLowerCase().match(/[a-zà-ÿ0-9_-]+/g) || []
+      const hasRealFile = !!file && (fileWords.length >= 15 || (file.aiCorrection && file.aiCorrection.suggestedScore > 0))
+      const hasRealSubmission = !!submission && !!submission.answer && submission.answer.trim().length > 15
+      const isDone = hasRealFile || hasRealSubmission
 
       const effDeadline = this.getExerciseDeadline(def.id)
       const deadlineDate = parseDeadline(effDeadline.deadline)
@@ -2650,23 +2760,33 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       const daysOverdue = isOverdue && deadlineDate ? Math.max(1, Math.floor((new Date().getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24))) : 0
       const alarmInfo = isOverdue ? getAlarmLevelInfo(daysOverdue) : getAlarmLevelInfo(-1)
 
-      // Calcul de la cote IA suggérée
+      // Calcul de la cote IA suggérée : Barème strict 0 pt si non rendu ou document vide
       let aiScore = 0
       let aiSummary = ''
       if (!isDone) {
         aiScore = 0
-        aiSummary = 'Exercice non rendu (0 pt)'
+        aiSummary = (!file && !submission) ? 'Exercice non rendu (0 pt)' : 'Document déposé vide ou inexploitable (0 pt)'
       } else if (file?.aiCorrection?.suggestedScore !== undefined) {
         const rawOutOf20 = Number(file.aiCorrection.suggestedScore) || 0
         aiScore = Math.round(((rawOutOf20 / 20) * def.maxPoints) * 10) / 10
         aiSummary = file.aiCorrection.summary || 'Devoir analysé par l\'IA'
+      } else if (file) {
+        const directCorrection = generateCriteriaBasedAiCorrection(file, file.extractedText || '', '')
+        file.aiCorrection = directCorrection
+        const rawOutOf20 = Number(directCorrection.suggestedScore) || 0
+        aiScore = Math.round(((rawOutOf20 / 20) * def.maxPoints) * 10) / 10
+        aiSummary = directCorrection.summary || 'Devoir analysé par l\'IA'
+      } else if (submission) {
+        const directCorrection = generateCriteriaBasedAiCorrection({ exerciseId: def.id, userEmail: targetEmail, fileName: 'submission' } as any, submission.answer || '', '')
+        const rawOutOf20 = Number(directCorrection.suggestedScore) || 0
+        aiScore = Math.round(((rawOutOf20 / 20) * def.maxPoints) * 10) / 10
+        aiSummary = directCorrection.summary || 'Réponse analysée par l\'IA'
       } else {
-        // Travail déposé en attente : cote indicative par défaut à 80% du max
-        aiScore = Math.round((def.maxPoints * 0.8) * 10) / 10
-        aiSummary = 'Travail déposé en attente de validation'
+        aiScore = 0
+        aiSummary = 'Exercice non rendu (0 pt)'
       }
 
-      // Cote enseignant enregistrée
+      // Cote enseignant enregistrée (0 si non rendu ou vide sauf saisie manuelle)
       let teacherScore: number
       if (evalRec.itemsScores && evalRec.itemsScores[def.id] !== undefined) {
         teacherScore = evalRec.itemsScores[def.id]
@@ -2675,14 +2795,14 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
         teacherScore = Math.round(((feedback.score / 20) * def.maxPoints) * 10) / 10
       } else if (file?.teacherGrade && typeof file.teacherGrade.score === 'number') {
         teacherScore = Math.round(((file.teacherGrade.score / 20) * def.maxPoints) * 10) / 10
-      } else if (!isDone) {
+      } else if (!isDone || aiScore === 0) {
         teacherScore = 0
       } else {
         teacherScore = aiScore
       }
       teacherScore = Math.min(def.maxPoints, Math.max(0, Number(teacherScore || 0)))
 
-      const teacherComment = evalRec.itemsFeedbacks?.[def.id] || feedback?.feedback || file?.teacherGrade?.feedback || ''
+      const teacherComment = evalRec.itemsFeedbacks?.[def.id] || feedback?.feedback || file?.teacherGrade?.feedback || (!isDone ? aiSummary : '')
 
       return {
         id: def.id,

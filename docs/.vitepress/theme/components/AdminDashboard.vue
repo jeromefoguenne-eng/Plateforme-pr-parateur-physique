@@ -291,12 +291,12 @@ function onSelectGridStudent() {
 }
 
 function adoptAiScoreForItem(item) {
-  item.teacherScore = item.aiScore
+  item.teacherScore = item.aiScore !== undefined && item.aiScore !== null ? Number(item.aiScore) : 0
 }
 
 function adoptAllAiScoresForActiveStudent() {
   activeGridItems.value.forEach(item => {
-    item.teacherScore = item.aiScore
+    item.teacherScore = item.aiScore !== undefined && item.aiScore !== null ? Number(item.aiScore) : 0
   })
 }
 
@@ -588,12 +588,16 @@ async function toggleDocumentPreview(file) {
 
 function adoptAiFeedbackInDossier(item) {
   if (item.aiScore !== null && item.aiScore !== undefined) {
-    item.teacherScore = item.aiScore
+    item.teacherScore = Number(item.aiScore)
+  } else {
+    item.teacherScore = 0
   }
   if (item.file?.aiCorrection?.summary) {
     item.teacherFeedback = item.file.aiCorrection.summary
   } else if (item.aiSummary) {
     item.teacherFeedback = item.aiSummary
+  } else if (item.teacherScore === 0) {
+    item.teacherFeedback = 'Exercice non rendu ou document vide (0 pt)'
   }
 }
 
