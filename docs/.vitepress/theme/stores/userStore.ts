@@ -1379,12 +1379,18 @@ export const userStore = {
       setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
     }
 
-    // Mise à jour de la progression des étudiants
+    // Mise à jour de la progression des étudiants (support tableau ou objet)
     state.submittedFiles.forEach(f => {
       if (f && f.userEmail && f.exerciseId) {
         const em = f.userEmail.trim().toLowerCase()
-        if (!state.progress[em]) state.progress[em] = {}
-        state.progress[em][f.exerciseId] = true
+        const p = state.progress[em]
+        if (!p) {
+          state.progress[em] = [f.exerciseId]
+        } else if (Array.isArray(p)) {
+          if (!p.includes(f.exerciseId)) p.push(f.exerciseId)
+        } else if (typeof p === 'object') {
+          (p as any)[f.exerciseId] = true
+        }
       }
     })
     setStorage(STORAGE_KEY_PROGRESS, state.progress)
@@ -2022,8 +2028,14 @@ export const userStore = {
         }
 
         // Marquer la progression de l'étudiant
-        if (!state.progress[studentEmail]) state.progress[studentEmail] = {}
-        state.progress[studentEmail][exId] = true
+        const curP = state.progress[studentEmail]
+        if (!curP) {
+          state.progress[studentEmail] = [exId]
+        } else if (Array.isArray(curP)) {
+          if (!curP.includes(exId)) curP.push(exId)
+        } else if (typeof curP === 'object') {
+          (curP as any)[exId] = true
+        }
 
         count++
         details.push(`${file.name} -> ${studentName} (${exItem?.shortTitle || exId})`)
@@ -2132,8 +2144,14 @@ export const userStore = {
     state.submittedFiles.forEach(f => {
       if (f && f.userEmail && f.exerciseId) {
         const em = f.userEmail.trim().toLowerCase()
-        if (!state.progress[em]) state.progress[em] = {}
-        state.progress[em][f.exerciseId] = true
+        const p = state.progress[em]
+        if (!p) {
+          state.progress[em] = [f.exerciseId]
+        } else if (Array.isArray(p)) {
+          if (!p.includes(f.exerciseId)) p.push(f.exerciseId)
+        } else if (typeof p === 'object') {
+          (p as any)[f.exerciseId] = true
+        }
       }
     })
     setStorage(STORAGE_KEY_PROGRESS, state.progress)
@@ -2218,11 +2236,19 @@ export const userStore = {
   },
 
   markCompleted(itemId: string, email?: string) {
-    const userEmail = email || state.currentUser?.email
+    const userEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
     if (!userEmail) return
-    if (!state.progress[userEmail]) state.progress[userEmail] = []
-    if (!state.progress[userEmail].includes(itemId)) {
-      state.progress[userEmail].push(itemId)
+    const p = state.progress[userEmail]
+    if (!p) {
+      state.progress[userEmail] = [itemId]
+      setStorage(STORAGE_KEY_PROGRESS, state.progress)
+    } else if (Array.isArray(p)) {
+      if (!p.includes(itemId)) {
+        p.push(itemId)
+        setStorage(STORAGE_KEY_PROGRESS, state.progress)
+      }
+    } else if (typeof p === 'object') {
+      (p as any)[itemId] = true
       setStorage(STORAGE_KEY_PROGRESS, state.progress)
     }
   },
@@ -2242,7 +2268,13 @@ export const userStore = {
     }
     const hasFile = state.submittedFiles.some(f => f && f.userEmail && allowed.has(f.userEmail.toLowerCase().trim()) && f.exerciseId === itemId)
     const hasSub = state.submissions.some(s => s && s.userEmail && allowed.has(s.userEmail.toLowerCase().trim()) && s.exerciseId === itemId && (s.answer || '').trim().length > 10)
-    const inProg = Array.from(allowed).some(em => (state.progress[em] || []).includes(itemId))
+    const inProg = Array.from(allowed).some(em => {
+      const p = state.progress[em]
+      if (!p) return false
+      if (Array.isArray(p)) return p.includes(itemId)
+      if (typeof p === 'object') return !!(p as any)[itemId]
+      return false
+    })
     return hasFile || hasSub || inProg
   },
 
@@ -3056,8 +3088,14 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
         filesChanged = true
 
         if (exId) {
-          if (!state.progress[cleanEmail]) state.progress[cleanEmail] = {}
-          state.progress[cleanEmail][exId] = true
+          const p = state.progress[cleanEmail]
+          if (!p) {
+            state.progress[cleanEmail] = [exId]
+          } else if (Array.isArray(p)) {
+            if (!p.includes(exId)) p.push(exId)
+          } else if (typeof p === 'object') {
+            (p as any)[exId] = true
+          }
         }
       })
       if (filesChanged) {

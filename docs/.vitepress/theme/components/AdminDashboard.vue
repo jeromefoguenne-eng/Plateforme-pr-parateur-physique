@@ -169,6 +169,65 @@ function toggleStudentSort(key) {
   }
 }
 
+function getStudentProgress(email) {
+  const completed = OFFICIAL_EVALUATION_ITEMS.filter(it => userStore.isCompleted(it.id, email)).length
+  const total = OFFICIAL_EVALUATION_ITEMS.length
+  return {
+    completed,
+    total,
+    pct: total > 0 ? Math.round((completed / total) * 100) : 0
+  }
+}
+
+const users = computed(() => {
+  const base = userStore.users.filter(u => u.role === 'student' && u.status !== 'archived')
+  return [...base].sort((a, b) => {
+    let cmp = 0
+    switch (studentSortKey.value) {
+      case 'name':
+        cmp = `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'fr', { sensitivity: 'base' })
+        break
+      case 'status':
+        cmp = (a.status || 'active').localeCompare(b.status || 'active')
+        break
+      case 'email':
+        cmp = a.email.localeCompare(b.email)
+        break
+      case 'registeredAt':
+        cmp = new Date(a.registeredAt || 0).getTime() - new Date(b.registeredAt || 0).getTime()
+        break
+      case 'progress': {
+        const pA = getStudentProgress(a.email).pct
+        const pB = getStudentProgress(b.email).pct
+        cmp = pA - pB
+        break
+      }
+      case 'grade': {
+        const gA = userStore.getStudentEvaluation(a.email).totalOutOf20 || 0
+        const gB = userStore.getStudentEvaluation(b.email).totalOutOf20 || 0
+        cmp = gA - gB
+        break
+      }
+      default:
+        cmp = 0
+    }
+    return studentSortOrder.value === 'asc' ? cmp : -cmp
+  })
+})
+
+const submittedFiles = computed(() => userStore.submittedFiles)
+const quizAttempts = computed(() => userStore.quizAttempts)
+
+const cloudSyncTimeText = computed(() => {
+  const last = userStore.cloudSyncState.lastSyncTime
+  if (!last) return 'Aucune synchronisation effectuée'
+  const diffSec = Math.round((Date.now() - last) / 1000)
+  if (diffSec < 60) return 'Synchronisé à l\'instant'
+  if (diffSec < 3600) return `Synchronisé il y a ${Math.round(diffSec / 60)} min`
+  return `Synchronisé le ${new Date(last).toLocaleDateString()} à ${new Date(last).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+})
+
+
 // DOSSIER COMPLET ÉTUDIANT (MODAL PLEIN ÉCRAN)
 const selectedDossierEmail = ref('')
 const activeDocPreview = ref(null) // { fileId, fileName, type: 'pdf'|'docx'|'other', dataUrl, htmlContent, loading, error }
@@ -465,53 +524,6 @@ function initDeadlineInputs() {
   })
 }
 
-const users = computed(() => {
-  const base = userStore.users.filter(u => u.role === 'student' && u.status !== 'archived')
-  return [...base].sort((a, b) => {
-    let cmp = 0
-    switch (studentSortKey.value) {
-      case 'name':
-        cmp = `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'fr', { sensitivity: 'base' })
-        break
-      case 'status':
-        cmp = (a.status || 'active').localeCompare(b.status || 'active')
-        break
-      case 'email':
-        cmp = a.email.localeCompare(b.email)
-        break
-      case 'registeredAt':
-        cmp = new Date(a.registeredAt || 0).getTime() - new Date(b.registeredAt || 0).getTime()
-        break
-      case 'progress': {
-        const pA = getStudentProgress(a.email).pct
-        const pB = getStudentProgress(b.email).pct
-        cmp = pA - pB
-        break
-      }
-      case 'grade': {
-        const gA = userStore.getStudentEvaluation(a.email).totalOutOf20 || 0
-        const gB = userStore.getStudentEvaluation(b.email).totalOutOf20 || 0
-        cmp = gA - gB
-        break
-      }
-      default:
-        cmp = 0
-    }
-    return studentSortOrder.value === 'asc' ? cmp : -cmp
-  })
-})
-
-const submittedFiles = computed(() => userStore.submittedFiles)
-const quizAttempts = computed(() => userStore.quizAttempts)
-
-const cloudSyncTimeText = computed(() => {
-  const last = userStore.cloudSyncState.lastSyncTime
-  if (!last) return 'Aucune synchronisation effectuée'
-  const diffSec = Math.round((Date.now() - last) / 1000)
-  if (diffSec < 60) return 'Synchronisé à l\'instant'
-  if (diffSec < 3600) return `Synchronisé il y a ${Math.round(diffSec / 60)} min`
-  return `Synchronisé le ${new Date(last).toLocaleDateString()} à ${new Date(last).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-})
 
 async function triggerCloudSync() {
   isCloudSyncing.value = true
@@ -550,15 +562,6 @@ function handleLogout() {
   closeStudentDossier()
 }
 
-function getStudentProgress(email) {
-  const completed = OFFICIAL_EVALUATION_ITEMS.filter(it => userStore.isCompleted(it.id, email)).length
-  const total = OFFICIAL_EVALUATION_ITEMS.length
-  return {
-    completed,
-    total,
-    pct: total > 0 ? Math.round((completed / total) * 100) : 0
-  }
-}
 
 function handleAdminResetStudentPassword(email) {
   if (confirm(`Voulez-vous réinitialiser le mot de passe de l'étudiant ${email} ?\nUn mot de passe temporaire 'hech2026' sera défini et l'étudiant pourra reconfigurer son mot de passe.`)) {
