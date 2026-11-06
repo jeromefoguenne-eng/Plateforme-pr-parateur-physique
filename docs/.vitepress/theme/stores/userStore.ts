@@ -2172,6 +2172,91 @@ export const userStore = {
     return { success: false }
   },
 
+  downloadSubmittedFile(file: SubmittedFile) {
+    if (!file) return
+    const fileName = file.formattedFileName || file.originalFileName || 'document'
+    const targetFileUrl = (file as any).fileUrl || ''
+
+    if (typeof window !== 'undefined' && targetFileUrl) {
+      const link = document.createElement('a')
+      link.href = targetFileUrl
+      link.download = fileName
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
+
+    let dataUrl = file.dataUrl || ''
+    if (!dataUrl) {
+      const realMatch = INITIAL_REAL_FILES.find((rf: any) =>
+        rf.id === file.id ||
+        ((rf.userEmail || '').toLowerCase() === (file.userEmail || '').toLowerCase() && rf.exerciseId === file.exerciseId)
+      )
+      if (realMatch) {
+        if (realMatch.dataUrl) {
+          dataUrl = realMatch.dataUrl
+          file.dataUrl = dataUrl
+        }
+        if (!file.fileSize && realMatch.fileSize) file.fileSize = realMatch.fileSize
+      }
+    }
+
+    if (dataUrl) {
+      try {
+        const base64Data = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl
+        const binaryStr = atob(base64Data)
+        const len = binaryStr.length
+        const bytes = new Uint8Array(len)
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i)
+        }
+        const mime = file.fileType || (fileName.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream')
+        const blob = new Blob([bytes], { type: mime })
+        const blobUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.setAttribute('download', fileName)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000)
+        return
+      } catch (e) {
+        const link = document.createElement('a')
+        link.href = dataUrl
+        link.setAttribute('download', fileName)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        return
+      }
+    }
+
+    if (file.driveUrl && typeof window !== 'undefined') {
+      window.open(file.driveUrl, '_blank')
+      return
+    }
+
+    if (file.extractedText && typeof window !== 'undefined') {
+      const blob = new Blob([file.extractedText], { type: 'text/plain;charset=utf-8' })
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.setAttribute('download', fileName.replace(/\.[^/.]+$/, "") + ".txt")
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000)
+      return
+    }
+
+    if (typeof window !== 'undefined') {
+      alert("Le document n'a pas de fichier binaire disponible au téléchargement direct.")
+    }
+  },
+
   getUserFiles(email?: string): SubmittedFile[] {
     const rawEmail = (email || state.currentUser?.email || '').trim().toLowerCase()
     if (!rawEmail) return []

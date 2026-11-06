@@ -1,5 +1,7 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { withBase } from 'vitepress'
+import { INITIAL_REAL_FILES } from '../stores/prepaStudentSubmissionsData'
 import { userStore, OFFICIAL_EVALUATION_ITEMS, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline } from '../stores/userStore'
 import { DEFAULT_CLOUD_URL, cloudSync } from '../stores/cloudSync'
 
@@ -350,13 +352,71 @@ const filteredDossierItems = computed(() => {
   return all
 })
 
-function openStudentDossier(u) {
+function formatSize(bytes) {
+  if (!bytes) return '0 Ko'
+  if (bytes < 1024) return bytes + ' o'
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' Ko'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' Mo'
+}
+
+function closeDocPreview() {
+  if (activeDocPreview.value?.blobUrl && activeDocPreview.value.blobUrl.startsWith('blob:')) {
+    try { URL.revokeObjectURL(activeDocPreview.value.blobUrl) } catch (e) {}
+  }
+  activeDocPreview.value = null
+}
+
+function getAdminDocumentPublicUrl(file) {
+  if (!file) return ''
+  if (file.fileUrl) {
+    return file.fileUrl.startsWith('http') ? file.fileUrl : withBase(file.fileUrl.startsWith('/') ? file.fileUrl : '/' + file.fileUrl)
+  }
+  const fileName = file.formattedFileName || file.originalFileName || ''
+  if (fileName) {
+    return withBase(`/documents/${encodeURIComponent(fileName)}`)
+  }
+  return ''
+}
+
+function downloadFile(file) {
+  if (!file) return
+  userStore.downloadSubmittedFile(file)
+}
+
+function selectStudentForGrid(email) {
+  if (!email) return
+  selectedGridStudentEmail.value = email
+  loadStudentGrid(email)
+  if (typeof document !== 'undefined') {
+    const el = document.querySelector('.grid-eval-card-container')
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+function openStudentDossier(u, autoOpenFileId = null) {
   if (!u || !u.email) return
   selectedDossierEmail.value = u.email
-  activeDocPreview.value = null
+  closeDocPreview()
   if (typeof document !== 'undefined') {
     document.body.style.overflow = 'hidden'
   }
+  // Auto-ouvrir automatiquement l'aperçu du travail pour visualiser directement dès le clic
+  setTimeout(() => {
+    const dossier = userStore.getStudentFullDossier(u.email)
+    if (dossier && dossier.items && dossier.items.length > 0) {
+      if (autoOpenFileId) {
+        const item = dossier.items.find(i => i.file && i.file.id === autoOpenFileId)
+        if (item && item.file) {
+          toggleDocumentPreview(item.file)
+          return
+        }
+      }
+      const firstWithFile = dossier.items.find(i => i.file)
+      if (firstWithFile && firstWithFile.file) {
+        toggleDocumentPreview(firstWithFile.file)
+      }
+    }
+  }, 100)
 }
 
 function closeStudentDossier() {
@@ -383,7 +443,12 @@ function nextDossierStudent() {
   } else {
     selectedDossierEmail.value = list[0].email
   }
-  activeDocPreview.value = null
+  closeDocPreview()
+  setTimeout(() => {
+    const dossier = userStore.getStudentFullDossier(selectedDossierEmail.value)
+    const firstWithFile = dossier?.items?.find(i => i.file)
+    if (firstWithFile?.file) toggleDocumentPreview(firstWithFile.file)
+  }, 100)
 }
 
 function prevDossierStudent() {
@@ -396,48 +461,127 @@ function prevDossierStudent() {
   } else {
     selectedDossierEmail.value = list[list.length - 1].email
   }
-  activeDocPreview.value = null
+  closeDocPreview()
+  setTimeout(() => {
+    const dossier = userStore.getStudentFullDossier(selectedDossierEmail.value)
+    const firstWithFile = dossier?.items?.find(i => i.file)
+    if (firstWithFile?.file) toggleDocumentPreview(firstWithFile.file)
+  }, 100)
 }
 
 async function toggleDocumentPreview(file) {
   if (!file) return
   if (activeDocPreview.value && activeDocPreview.value.fileId === file.id) {
-    activeDocPreview.value = null
+    closeDocPreview()
     return
+  }
+  closeDocPreview()
+
+  // 1. Récupération des données du fichier (cache ou référentiel certifié)
+  let fileDataUrl = file.dataUrl || ''
+  let fileExtractedText = file.extractedText || ''
+  let fileUrl = getAdminDocumentPublicUrl(file)
+
+  const realMatch = INITIAL_REAL_FILES.find((rf) => 
+    rf.id === file.id || 
+    ((rf.userEmail || '').toLowerCase() === (file.userEmail || '').toLowerCase() && rf.exerciseId === file.exerciseId)
+  )
+  if (realMatch) {
+    if (!fileDataUrl && realMatch.dataUrl) fileDataUrl = realMatch.dataUrl
+    if (!fileExtractedText && realMatch.extractedText) fileExtractedText = realMatch.extractedText
+    if (!fileUrl && realMatch.fileUrl) fileUrl = withBase(realMatch.fileUrl.startsWith('/') ? realMatch.fileUrl : '/' + realMatch.fileUrl)
+    if (!file.fileSize && realMatch.fileSize) file.fileSize = realMatch.fileSize
   }
 
   const fileName = file.formattedFileName || file.originalFileName || 'document'
   const ext = fileName.split('.').pop().toLowerCase()
   const isPdf = ext === 'pdf' || (file.fileType && file.fileType.includes('pdf'))
   const isDocx = ext === 'docx' || ext === 'doc' || (file.fileType && file.fileType.includes('word'))
+  const isXlsx = ext === 'xlsx' || ext === 'xls' || (file.fileType && file.fileType.includes('sheet'))
 
-  activeDocPreview.value = {
-    fileId: file.id,
-    fileName,
-    type: isPdf ? 'pdf' : (isDocx ? 'docx' : 'other'),
-    dataUrl: file.dataUrl || '',
-    htmlContent: '',
-    loading: isDocx,
-    error: ''
-  }
-
-  if (isDocx && file.dataUrl) {
+  let blobUrl = ''
+  if (isPdf && fileDataUrl) {
     try {
-      const base64Data = file.dataUrl.includes(',') ? file.dataUrl.split(',')[1] : file.dataUrl
+      const base64Data = fileDataUrl.includes(',') ? fileDataUrl.split(',')[1] : fileDataUrl
       const binaryStr = atob(base64Data)
       const len = binaryStr.length
       const bytes = new Uint8Array(len)
       for (let i = 0; i < len; i++) {
         bytes[i] = binaryStr.charCodeAt(i)
       }
-      const mammothModule = await import('mammoth/mammoth.browser.js')
-      const mammoth = mammothModule.default || mammothModule
-      const res = await mammoth.convertToHtml({ arrayBuffer: bytes.buffer })
-      activeDocPreview.value.htmlContent = res.value || '<p><em>Document Word sans contenu textuel identifiable.</em></p>'
-      activeDocPreview.value.loading = false
+      const blob = new Blob([bytes], { type: 'application/pdf' })
+      blobUrl = URL.createObjectURL(blob)
     } catch (e) {
-      activeDocPreview.value.error = "Aperçu HTML direct indisponible. Veuillez télécharger le document Word pour l'ouvrir."
+      console.warn('Erreur Blob PDF:', e)
+    }
+  }
+
+  activeDocPreview.value = {
+    fileId: file.id,
+    fileName,
+    type: isPdf ? 'pdf' : (isDocx ? 'docx' : (isXlsx ? 'xlsx' : 'other')),
+    fileUrl,
+    dataUrl: fileDataUrl,
+    blobUrl,
+    extractedText: fileExtractedText,
+    viewMode: isPdf ? 'pdf' : (isDocx && (fileDataUrl || fileUrl) ? 'docx' : 'text'),
+    htmlContent: '',
+    loading: isDocx && (fileDataUrl || fileUrl),
+    error: ''
+  }
+
+  if (isDocx) {
+    try {
+      let arrayBuffer = null
+      if (fileUrl) {
+        try {
+          const resp = await fetch(fileUrl)
+          if (resp.ok) {
+            arrayBuffer = await resp.arrayBuffer()
+          }
+        } catch (fetchErr) {
+          console.warn('Fetch Word direct échoué, essai fallback:', fetchErr)
+        }
+      }
+
+      if (!arrayBuffer && fileDataUrl) {
+        const base64Data = fileDataUrl.includes(',') ? fileDataUrl.split(',')[1] : fileDataUrl
+        const binaryStr = atob(base64Data)
+        const len = binaryStr.length
+        const bytes = new Uint8Array(len)
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i)
+        }
+        arrayBuffer = bytes.buffer
+      }
+
+      if (arrayBuffer) {
+        const mammothModule = await import('mammoth/mammoth.browser.js')
+        const mammoth = mammothModule.default || mammothModule
+        const res = await mammoth.convertToHtml({ arrayBuffer })
+        activeDocPreview.value.htmlContent = res.value || ''
+        activeDocPreview.value.loading = false
+      } else {
+        if (fileExtractedText) {
+          activeDocPreview.value.viewMode = 'text'
+          activeDocPreview.value.loading = false
+        } else {
+          activeDocPreview.value.error = "Document accessible au téléchargement direct."
+          activeDocPreview.value.loading = false
+        }
+      }
+    } catch (e) {
+      console.warn('Erreur conversion Word:', e)
+      if (fileExtractedText) {
+        activeDocPreview.value.viewMode = 'text'
+      } else {
+        activeDocPreview.value.error = "Impossible de convertir ce document Word en aperçu web. Veuillez le télécharger pour le lire dans Microsoft Word."
+      }
       activeDocPreview.value.loading = false
+    }
+  } else {
+    if (!blobUrl && !fileUrl && fileExtractedText) {
+      activeDocPreview.value.viewMode = 'text'
     }
   }
 }
@@ -1024,15 +1168,26 @@ function handleResetAllStudents() {
           <div class="gec-header-row">
             <div class="gec-selector-group">
               <label>👤 Sélectionner l'étudiant à évaluer :</label>
-              <select v-model="selectedGridStudentEmail" @change="onSelectGridStudent" class="student-eval-select">
-                <option 
-                  v-for="u in users.filter(x => x.status !== 'archived')" 
-                  :key="u.email" 
-                  :value="u.email"
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <select v-model="selectedGridStudentEmail" @change="onSelectGridStudent" class="student-eval-select">
+                  <option 
+                    v-for="u in users.filter(x => x.status !== 'archived')" 
+                    :key="u.email" 
+                    :value="u.email"
+                  >
+                    {{ userStore.getStudentLateStatus(u.email).isLate ? '🔔 [RETARD] ' : '' }}{{ u.lastName }} {{ u.firstName }} ({{ u.email }}) — Note : {{ userStore.getStudentEvaluation(u.email).totalOutOf20 }}/20
+                  </option>
+                </select>
+                <button 
+                  v-if="activeGridStudent" 
+                  type="button" 
+                  @click="openStudentDossier(activeGridStudent)" 
+                  class="btn-open-dossier-header"
+                  title="Ouvrir le dossier complet avec les aperçus Word/PDF/Excel de cet étudiant"
                 >
-                  {{ userStore.getStudentLateStatus(u.email).isLate ? '🔔 [RETARD] ' : '' }}{{ u.lastName }} {{ u.firstName }} ({{ u.email }}) — Note : {{ userStore.getStudentEvaluation(u.email).totalOutOf20 }}/20
-                </option>
-              </select>
+                  📁 Dossier & Aperçus des devoirs
+                </button>
+              </div>
             </div>
             <div class="gec-actions-group">
               <button @click="adoptAllAiScoresForActiveStudent" class="btn-bulk-adopt-ai" type="button" title="Reprendre en 1 clic toutes les suggestions de l'IA pour cet étudiant">
@@ -1097,91 +1252,209 @@ function handleResetAllStudents() {
                 </tr>
               </thead>
               <tbody>
-                <tr 
-                  v-for="item in activeGridItems" 
-                  :key="item.id" 
-                  :class="['grid-item-row', { 'row-overdue': item.isOverdue, 'row-final-step': item.category === 'final' }]"
-                >
-                  <td>
-                    <div class="item-title-group">
-                      <span class="item-status-icon">{{ item.completed ? '✅' : (item.isOverdue ? '🔔' : '⏳') }}</span>
-                      <div>
-                        <strong :class="{ 'is-late': item.isOverdue, 'highlight-final': item.category === 'final' }">
-                          {{ item.title }}
-                        </strong>
-                        <div v-if="item.file" class="item-file-link">
-                          📎 Document remis : <code>{{ item.file.formattedFileName }}</code>
-                        </div>
-                        <div v-else-if="item.id === 'quiz'" class="item-file-link quiz-sub" :class="{ overdue: item.isOverdue }">
-                          {{ item.completed ? '💡 Évaluation automatique via les quiz du cours' : (item.isOverdue ? '🚨 ALARME : Quiz non passé (Échéance dépassée)' : '⏳ En attente de réalisation des quiz') }}
-                        </div>
-                        <div v-else-if="item.isOverdue" class="item-file-link overdue">
-                          🚨 ALARME RETARD : Document non déposé (Échéance dépassée le {{ item.deadlineLabel }})
-                        </div>
-                        <div v-else class="item-file-link missing">
-                          ⚠️ En attente de dépôt étudiant (Échéance : {{ item.deadlineLabel || 'Non définie' }})
+                <template v-for="item in activeGridItems" :key="item.id">
+                  <tr 
+                    :class="['grid-item-row', { 'row-overdue': item.isOverdue, 'row-final-step': item.category === 'final' }]"
+                  >
+                    <td>
+                      <div class="item-title-group">
+                        <span class="item-status-icon">{{ item.completed ? '✅' : (item.isOverdue ? '🔔' : '⏳') }}</span>
+                        <div>
+                          <strong :class="{ 'is-late': item.isOverdue, 'highlight-final': item.category === 'final' }">
+                            {{ item.title }}
+                          </strong>
+                          <div v-if="item.file" class="item-file-link">
+                            📎 Document remis : <code>{{ item.file.formattedFileName }}</code>
+                            <div class="grid-file-actions">
+                              <button 
+                                type="button" 
+                                @click="toggleDocumentPreview(item.file)"
+                                class="btn-preview-mini"
+                                :class="{ active: activeDocPreview?.fileId === item.file.id }"
+                                title="Afficher l'aperçu interactif du devoir"
+                              >
+                                {{ activeDocPreview?.fileId === item.file.id ? '✕ Masquer la lecture' : '📖 Lire / Aperçu' }}
+                              </button>
+                              <button 
+                                type="button" 
+                                @click="downloadFile(item.file)"
+                                class="btn-download-mini"
+                                title="Télécharger le fichier original"
+                              >
+                                📥 Télécharger
+                              </button>
+                              <a 
+                                v-if="item.file.driveUrl" 
+                                :href="item.file.driveUrl" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                class="btn-drive-mini"
+                                title="Ouvrir sur Google Drive"
+                              >
+                                ☁️ Drive
+                              </a>
+                            </div>
+                          </div>
+                          <div v-else-if="item.id === 'quiz'" class="item-file-link quiz-sub" :class="{ overdue: item.isOverdue }">
+                            {{ item.completed ? '💡 Évaluation automatique via les quiz du cours' : (item.isOverdue ? '🚨 ALARME : Quiz non passé (Échéance dépassée)' : '⏳ En attente de réalisation des quiz') }}
+                          </div>
+                          <div v-else-if="item.isOverdue" class="item-file-link overdue">
+                            🚨 ALARME RETARD : Document non déposé (Échéance dépassée le {{ item.deadlineLabel }})
+                          </div>
+                          <div v-else class="item-file-link missing">
+                            ⚠️ En attente de dépôt étudiant (Échéance : {{ item.deadlineLabel || 'Non définie' }})
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style="text-align: center;">
-                    <span class="max-badge">/ {{ item.maxPoints }} pts ({{ item.weightPct }}%)</span>
-                  </td>
-                  <!-- COLONNE COTE IA -->
-                  <td style="text-align: center;">
-                    <div v-if="!item.completed" class="ai-score-cell-wrap">
-                      <span class="ai-pill zero-pill" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;" title="Non rendu : note automatique de 0">
-                        <strong>0</strong> / {{ item.maxPoints }}
-                      </span>
-                      <button 
-                        @click="adoptAiScoreForItem(item)" 
-                        type="button" 
-                        class="btn-adopt-mini"
-                        title="Appliquer 0 pt pour non-rendu"
-                        style="background: #fee2e2; color: #991b1b; border-color: #fca5a5;"
-                      >
-                        ⚡ Reprendre (0)
-                      </button>
-                    </div>
-                    <div v-else-if="item.aiScore !== null && item.aiScore !== undefined" class="ai-score-cell-wrap">
-                      <span class="ai-pill"><strong>{{ item.aiScore }}</strong> / {{ item.maxPoints }}</span>
-                      <button 
-                        @click="adoptAiScoreForItem(item)" 
-                        type="button" 
-                        class="btn-adopt-mini"
-                        title="Copier la suggestion de l'IA"
-                      >
-                        ⚡ Reprendre
-                      </button>
-                    </div>
-                    <div v-else class="ai-none-cell">
-                      <span class="ai-pending-text">{{ item.isOverdue ? '⚠️ Non rendu' : '⏳ En attente' }}</span>
-                    </div>
-                  </td>
-                  <!-- COLONNE COTE ENSEIGNANT (ÉDITABLE) -->
-                  <td style="text-align: center;">
-                    <div class="teacher-input-cell-wrap">
+                    </td>
+                    <td style="text-align: center;">
+                      <span class="max-badge">/ {{ item.maxPoints }} pts ({{ item.weightPct }}%)</span>
+                    </td>
+                    <!-- COLONNE COTE IA -->
+                    <td style="text-align: center;">
+                      <div v-if="!item.completed" class="ai-score-cell-wrap">
+                        <span class="ai-pill zero-pill" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;" title="Non rendu : note automatique de 0">
+                          <strong>0</strong> / {{ item.maxPoints }}
+                        </span>
+                        <button 
+                          @click="adoptAiScoreForItem(item)" 
+                          type="button" 
+                          class="btn-adopt-mini"
+                          title="Appliquer 0 pt pour non-rendu"
+                          style="background: #fee2e2; color: #991b1b; border-color: #fca5a5;"
+                        >
+                          ⚡ Reprendre (0)
+                        </button>
+                      </div>
+                      <div v-else-if="item.aiScore !== null && item.aiScore !== undefined" class="ai-score-cell-wrap">
+                        <span class="ai-pill"><strong>{{ item.aiScore }}</strong> / {{ item.maxPoints }}</span>
+                        <button 
+                          @click="adoptAiScoreForItem(item)" 
+                          type="button" 
+                          class="btn-adopt-mini"
+                          title="Copier la suggestion de l'IA"
+                        >
+                          ⚡ Reprendre
+                        </button>
+                      </div>
+                      <div v-else class="ai-none-cell">
+                        <span class="ai-pending-text">{{ item.isOverdue ? '⚠️ Non rendu' : '⏳ En attente' }}</span>
+                      </div>
+                    </td>
+                    <!-- COLONNE COTE ENSEIGNANT (ÉDITABLE) -->
+                    <td style="text-align: center;">
+                      <div class="teacher-input-cell-wrap">
+                        <input 
+                          v-model.number="item.teacherScore" 
+                          type="number" 
+                          :min="0" 
+                          :max="item.maxPoints" 
+                          step="0.5" 
+                          class="teacher-score-input"
+                        />
+                        <span class="pts-denom">/ {{ item.maxPoints }}</span>
+                      </div>
+                    </td>
+                    <!-- COMMENTAIRE FORMATIF -->
+                    <td>
                       <input 
-                        v-model.number="item.teacherScore" 
-                        type="number" 
-                        :min="0" 
-                        :max="item.maxPoints" 
-                        step="0.5" 
-                        class="teacher-score-input"
+                        v-model="item.feedback" 
+                        type="text" 
+                        placeholder="Commentaire personnalisé..." 
+                        class="teacher-comment-input"
                       />
-                      <span class="pts-denom">/ {{ item.maxPoints }}</span>
-                    </div>
-                  </td>
-                  <!-- COMMENTAIRE FORMATIF -->
-                  <td>
-                    <input 
-                      v-model="item.feedback" 
-                      type="text" 
-                      placeholder="Commentaire personnalisé..." 
-                      class="teacher-comment-input"
-                    />
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+
+                  <!-- APERÇU INTÉGRÉ DIRECT DANS LA GRILLE DE CORRECTION -->
+                  <tr v-if="item.file && activeDocPreview?.fileId === item.file.id" class="grid-preview-row">
+                    <td colspan="5" class="grid-preview-cell">
+                      <div class="inline-doc-viewer-container">
+                        <div class="idv-header">
+                          <span class="idv-title">
+                            Lecteur Intégré : <strong>{{ activeDocPreview.fileName }}</strong>
+                            <span class="idv-tag">{{ activeDocPreview.type.toUpperCase() }}</span>
+                          </span>
+
+                          <div class="idv-header-actions">
+                            <button 
+                              v-if="activeDocPreview.extractedText" 
+                              class="idv-mode-btn"
+                              :class="{ active: activeDocPreview.viewMode === 'text' }"
+                              @click="activeDocPreview.viewMode = activeDocPreview.viewMode === 'text' ? (activeDocPreview.type === 'pdf' ? 'pdf' : (activeDocPreview.type === 'docx' ? 'docx' : 'text')) : 'text'"
+                              :title="activeDocPreview.viewMode === 'text' ? 'Afficher la mise en page originale' : 'Afficher le texte brut intégral'"
+                            >
+                              {{ activeDocPreview.viewMode === 'text' ? '📄 Page Originale' : '📝 Texte Intégral' }}
+                            </button>
+                            <a 
+                              v-if="activeDocPreview.fileUrl" 
+                              :href="activeDocPreview.fileUrl" 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              class="idv-mode-btn"
+                              title="Ouvrir dans un nouvel onglet"
+                            >
+                              ↗️ Plein écran
+                            </a>
+                            <button @click="downloadFile(item.file)" class="idv-btn-dl" title="Télécharger le fichier original">
+                              📥 Télécharger
+                            </button>
+                            <button class="idv-close" @click="closeDocPreview()" title="Fermer l'aperçu">✕</button>
+                          </div>
+                        </div>
+
+                        <!-- Chargement Word Mammoth -->
+                        <div v-if="activeDocPreview.loading" class="idv-loading">
+                          <span class="idv-spinner">⏳</span> Traitement et mise en page du document en cours...
+                        </div>
+
+                        <!-- Message d'erreur -->
+                        <div v-else-if="activeDocPreview.error && !activeDocPreview.extractedText" class="idv-error">
+                          ⚠️ {{ activeDocPreview.error }}
+                        </div>
+
+                        <!-- Mode Texte Brut Intégral -->
+                        <div v-else-if="activeDocPreview.viewMode === 'text' && activeDocPreview.extractedText" class="idv-docx-box">
+                          <div class="docx-paper-sheet extracted-text-view">
+                            <div class="extracted-text-header">
+                              <h4 style="margin: 0; color: #1e293b;">📄 Transcription intégrale du travail déposé</h4>
+                              <span class="extracted-hint">Texte complet extrait du devoir remis par l'étudiant.</span>
+                            </div>
+                            <pre class="extracted-raw-text">{{ activeDocPreview.extractedText }}</pre>
+                          </div>
+                        </div>
+
+                        <!-- Aperçu PDF natif via iframe -->
+                        <div v-else-if="activeDocPreview.type === 'pdf'" class="idv-pdf-box">
+                          <iframe 
+                            :src="activeDocPreview.fileUrl || activeDocPreview.blobUrl || activeDocPreview.dataUrl" 
+                            class="dossier-pdf-frame" 
+                            title="Lecteur PDF intégré"
+                          ></iframe>
+                        </div>
+
+                        <!-- Aperçu Word converti en HTML via Mammoth -->
+                        <div v-else-if="activeDocPreview.type === 'docx'" class="idv-docx-box">
+                          <div v-if="activeDocPreview.htmlContent" class="docx-paper-sheet" v-html="activeDocPreview.htmlContent"></div>
+                          <div v-else-if="activeDocPreview.extractedText" class="docx-paper-sheet extracted-text-view">
+                            <pre class="extracted-raw-text">{{ activeDocPreview.extractedText }}</pre>
+                          </div>
+                        </div>
+
+                        <!-- Autre format (Excel / etc.) -->
+                        <div v-else class="idv-fallback">
+                          <div v-if="activeDocPreview.extractedText" class="docx-paper-sheet extracted-text-view">
+                            <div class="extracted-text-header">
+                              <h4 style="margin: 0; color: #1e293b;">📊 Données & Synthèse extraites (Tableur Excel)</h4>
+                              <span class="extracted-hint">Structure du classeur remis par l'étudiant.</span>
+                            </div>
+                            <pre class="extracted-raw-text">{{ activeDocPreview.extractedText }}</pre>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -1214,6 +1487,77 @@ function handleResetAllStudents() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- VUE D'ENSEMBLE DE LA CLASSE (MOYENNES & TOTAUX) IDENTIQUE À DIDACTIQUE M1 -->
+        <div v-if="users.filter(x => x.status !== 'archived').length > 0" class="class-summary-card">
+          <div class="css-header">
+            <h4>📊 Tableau Récapitulatif de la Classe (Notes Officielles sur 20)</h4>
+            <span class="css-count">{{ users.filter(u => u.status !== 'archived').length }} étudiants inscrits</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table class-overview-table">
+              <thead>
+                <tr>
+                  <th>Étudiant (Cliquer pour voir les travaux)</th>
+                  <th style="text-align: center;">Quiz (/10)</th>
+                  <th style="text-align: center;">Devoirs (/90)</th>
+                  <th style="text-align: center;">Total (/100)</th>
+                  <th style="text-align: center; background: #e0f2fe;">Note Finale (/20)</th>
+                  <th style="text-align: center;">Statut</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="u in users.filter(u => u.status !== 'archived')" 
+                  :key="u.id" 
+                  :class="{ 'row-late-alert': userStore.getStudentLateStatus(u.email).isLate }"
+                >
+                  <td>
+                    <div class="student-name-container">
+                      <span 
+                        v-if="userStore.getStudentLateStatus(u.email).isLate" 
+                        class="alarm-bell" 
+                        :title="userStore.getStudentLateStatus(u.email).tooltip"
+                      >🔔</span>
+                      <a 
+                        href="javascript:void(0)" 
+                        class="student-name-link" 
+                        @click="openStudentDossier(u)"
+                        title="Cliquer pour ouvrir le dossier complet et l'aperçu immédiat des travaux de cet étudiant"
+                      >
+                        <strong>{{ u.lastName }}</strong> {{ u.firstName }}
+                      </a>
+                    </div>
+                    <div class="student-sub-mail">{{ u.email }}</div>
+                  </td>
+                  <td style="text-align: center;">{{ userStore.getStudentEvaluation(u.email).quizzesAverageOutOf10 }} / 10</td>
+                  <td style="text-align: center;">{{ Math.round((userStore.getStudentEvaluation(u.email).totalScore - (userStore.getStudentEvaluation(u.email).quizzesAverageOutOf10 || 0)) * 10) / 10 }} / 90</td>
+                  <td style="text-align: center;" class="total-100-cell"><strong>{{ userStore.getStudentEvaluation(u.email).totalScore }}</strong> / 100</td>
+                  <td style="text-align: center;" class="grade-20-cell-highlight">
+                    <strong>{{ userStore.getStudentEvaluation(u.email).totalOutOf20 }}</strong> / 20
+                  </td>
+                  <td style="text-align: center;">
+                    <span :class="['status-badge', userStore.getStudentEvaluation(u.email).isPassing ? 'active' : 'archived']">
+                      {{ userStore.getStudentEvaluation(u.email).isPassing ? 'Admis' : 'Ajourné' }}
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: inline-flex; gap: 0.35rem; justify-content: flex-end;">
+                      <button @click="openStudentDossier(u)" class="btn-row-action dossier-btn" title="Consulter le dossier complet et l'aperçu des travaux Word/PDF/Excel">
+                        📁 Dossier & Aperçus
+                      </button>
+                      <button @click="selectStudentForGrid(u.email)" class="btn-row-action edit-grade" title="Évaluer et corriger cet étudiant dans la grille">
+                        ✏️ Évaluer
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1634,51 +1978,139 @@ function handleResetAllStudents() {
                   <span>📥</span> Déposer / Importer le devoir
                 </button>
               </div>
-              <div v-if="item.file" style="margin-bottom: 1rem; padding: 10px 14px; background: var(--vp-c-bg-soft); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <div>
-                  <div style="font-weight: 700; font-size: 0.95rem;">📎 {{ item.file.formattedFileName }}</div>
-                  <small style="color: var(--vp-c-text-2);">
-                    {{ Math.round(item.file.fileSize / 1024) }} Ko • Remis le {{ item.file.submittedAt }}
-                  </small>
+              <div v-if="item.file" class="dsw-file-block">
+                <div class="dfb-file-card">
+                  <div class="dfb-left">
+                    <span class="dfb-icon">
+                      {{ (item.file.fileType && item.file.fileType.includes('pdf')) || (item.file.formattedFileName || '').endsWith('.pdf') ? '📄' : ((item.file.formattedFileName || '').endsWith('.xlsx') ? '📊' : '📝') }}
+                    </span>
+                    <div class="dfb-info">
+                      <span class="dfb-name">{{ item.file.formattedFileName || item.file.originalFileName }}</span>
+                      <span class="dfb-size">{{ formatSize(item.file.fileSize) }} • Remis le {{ item.file.submittedAt }}</span>
+                    </div>
+                  </div>
+                  <div class="dfb-actions">
+                    <button 
+                      type="button"
+                      @click="toggleDocumentPreview(item.file)" 
+                      :class="['btn-preview-doc', activeDocPreview?.fileId === item.file.id ? 'active' : '']"
+                      title="Afficher le document directement dans la page pour lecture"
+                    >
+                      {{ activeDocPreview?.fileId === item.file.id ? '✕ Fermer la lecture' : '📖 Lire le document (Word / PDF / Excel)' }}
+                    </button>
+                    <button 
+                      type="button"
+                      @click="downloadFile(item.file)" 
+                      class="btn-download-doc" 
+                      title="Télécharger le fichier original"
+                    >
+                      📥 Télécharger
+                    </button>
+                    <a 
+                      v-if="item.file.driveUrl" 
+                      :href="item.file.driveUrl" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      class="btn-download-doc btn-drive-link" 
+                      title="Ouvrir directement dans Google Drive"
+                    >
+                      ☁️ Drive
+                    </a>
+                  </div>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                  <button 
-                    @click="toggleDocumentPreview(item.file)" 
-                    style="padding: 6px 12px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;"
-                  >
-                    {{ activeDocPreview && activeDocPreview.fileId === item.file.id ? '✕ Masquer' : '👁️ Aperçu' }}
-                  </button>
-                  <a 
-                    v-if="item.file.dataUrl" 
-                    :href="item.file.dataUrl" 
-                    :download="item.file.formattedFileName" 
-                    style="padding: 6px 12px; background: var(--vp-c-bg); border: 1px solid var(--vp-c-divider); border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; color: inherit;"
-                  >
-                    📥 Télécharger
-                  </a>
-                </div>
-              </div>
 
-              <!-- 3. Aperçu direct du document Word / PDF -->
-              <div v-if="activeDocPreview && activeDocPreview.fileId === item.file?.id" style="margin-bottom: 1rem; padding: 1rem; background: var(--vp-c-bg); border: 2px solid var(--vp-c-brand-1); border-radius: 8px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                  <strong>Aperçu : {{ activeDocPreview.fileName }}</strong>
-                  <button @click="activeDocPreview = null" style="background: none; border: none; cursor: pointer; font-weight: 700;">✕</button>
-                </div>
-                <!-- PDF -->
-                <iframe 
-                  v-if="activeDocPreview.type === 'pdf'" 
-                  :src="activeDocPreview.dataUrl" 
-                  style="width: 100%; height: 420px; border: 1px solid var(--vp-c-divider); border-radius: 4px;"
-                ></iframe>
-                <!-- Word HTML -->
-                <div 
-                  v-else-if="activeDocPreview.type === 'docx'" 
-                  style="max-height: 420px; overflow-y: auto; padding: 1rem; background: #fff; color: #111; border-radius: 4px; border: 1px solid #e2e8f0;"
-                  v-html="activeDocPreview.htmlContent"
-                ></div>
-                <div v-else style="padding: 1rem; text-align: center; color: var(--vp-c-text-2);">
-                  Aperçu non supporté pour ce type de fichier. Utilisez le bouton Télécharger.
+                <!-- VISUALISEUR INTÉGRÉ WORD / PDF / TEXTE (LECTURE CONFORTABLE DIRECTE) -->
+                <div v-if="activeDocPreview?.fileId === item.file.id" class="inline-doc-viewer-container">
+                  <div class="idv-header">
+                    <span class="idv-title">
+                      Lecteur Intégré : <strong>{{ activeDocPreview.fileName }}</strong>
+                      <span class="idv-tag">{{ activeDocPreview.type.toUpperCase() }}</span>
+                    </span>
+
+                    <!-- Switcher vue originale vs texte brut extrait -->
+                    <div class="idv-header-actions">
+                      <button 
+                        v-if="activeDocPreview.extractedText" 
+                        class="idv-mode-btn"
+                        :class="{ active: activeDocPreview.viewMode === 'text' }"
+                        @click="activeDocPreview.viewMode = activeDocPreview.viewMode === 'text' ? (activeDocPreview.type === 'pdf' ? 'pdf' : (activeDocPreview.type === 'docx' ? 'docx' : 'text')) : 'text'"
+                        :title="activeDocPreview.viewMode === 'text' ? 'Afficher la mise en page originale' : 'Afficher le texte brut intégral'"
+                      >
+                        {{ activeDocPreview.viewMode === 'text' ? '📄 Page Originale' : '📝 Texte Intégral' }}
+                      </button>
+                      <a 
+                        v-if="activeDocPreview.fileUrl" 
+                        :href="activeDocPreview.fileUrl" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="idv-mode-btn"
+                        title="Ouvrir dans un nouvel onglet"
+                      >
+                        ↗️ Plein écran
+                      </a>
+                      <button @click="downloadFile(item.file)" class="idv-btn-dl" title="Télécharger le fichier original">
+                        📥 Télécharger
+                      </button>
+                      <button class="idv-close" @click="closeDocPreview()" title="Fermer l'aperçu">✕</button>
+                    </div>
+                  </div>
+
+                  <!-- Chargement Word Mammoth -->
+                  <div v-if="activeDocPreview.loading" class="idv-loading">
+                    <span class="idv-spinner">⏳</span> Traitement et mise en page du document en cours...
+                  </div>
+
+                  <!-- Message d'erreur -->
+                  <div v-else-if="activeDocPreview.error && !activeDocPreview.extractedText" class="idv-error">
+                    ⚠️ {{ activeDocPreview.error }}
+                    <div style="margin-top: 0.5rem;">
+                      <button @click="downloadFile(item.file)" class="btn-download-doc">
+                        📥 Télécharger le fichier
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Mode Texte Brut Intégral (100% lisibilité immédiate) -->
+                  <div v-else-if="activeDocPreview.viewMode === 'text' && activeDocPreview.extractedText" class="idv-docx-box">
+                    <div class="docx-paper-sheet extracted-text-view">
+                      <div class="extracted-text-header">
+                        <h4 style="margin: 0; color: #1e293b;">📄 Transcription intégrale du devoir remis</h4>
+                        <span class="extracted-hint">Texte complet extrait du fichier remis par l'étudiant.</span>
+                      </div>
+                      <pre class="extracted-raw-text">{{ activeDocPreview.extractedText }}</pre>
+                    </div>
+                  </div>
+
+                  <!-- Aperçu PDF natif via iframe avec fileUrl ou Blob URL -->
+                  <div v-else-if="activeDocPreview.type === 'pdf'" class="idv-pdf-box">
+                    <iframe 
+                      :src="activeDocPreview.fileUrl || activeDocPreview.blobUrl || activeDocPreview.dataUrl" 
+                      class="dossier-pdf-frame" 
+                      title="Lecteur PDF intégré"
+                    ></iframe>
+                  </div>
+
+                  <!-- Aperçu Word converti en HTML via Mammoth -->
+                  <div v-else-if="activeDocPreview.type === 'docx'" class="idv-docx-box">
+                    <div v-if="activeDocPreview.htmlContent" class="docx-paper-sheet" v-html="activeDocPreview.htmlContent"></div>
+                    <div v-else-if="activeDocPreview.extractedText" class="docx-paper-sheet extracted-text-view">
+                      <pre class="extracted-raw-text">{{ activeDocPreview.extractedText }}</pre>
+                    </div>
+                  </div>
+
+                  <!-- Autre format (Excel / etc.) -->
+                  <div v-else class="idv-fallback">
+                    <div v-if="activeDocPreview.extractedText" class="docx-paper-sheet extracted-text-view">
+                      <div class="extracted-text-header">
+                        <h4 style="margin: 0; color: #1e293b;">📊 Données & Synthèse extraites (Tableur Excel)</h4>
+                        <span class="extracted-hint">Structure du classeur remis par l'étudiant.</span>
+                      </div>
+                      <pre class="extracted-raw-text">{{ activeDocPreview.extractedText }}</pre>
+                    </div>
+                    <div v-else style="padding: 1.5rem; text-align: center; color: var(--vp-c-text-2);">
+                      Ce format ne peut être affiché directement en aperçu web. Veuillez le télécharger pour le consulter dans votre logiciel.
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2254,6 +2686,434 @@ function handleResetAllStudents() {
 .grf-btn-row {
   display: flex;
   justify-content: flex-end;
+}
+
+/* ========================================================================= */
+/* LECTEUR INTÉGRÉ WORD / PDF / EXCEL & TABLES DE CORRECTION (STYLE DIDACTIQUE M1) */
+/* ========================================================================= */
+.inline-doc-viewer-container {
+  margin-top: 0.8rem;
+  background: #ffffff;
+  border: 2px solid #0284c7;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.idv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.88rem;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.idv-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.idv-tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.idv-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.idv-mode-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.idv-mode-btn:hover {
+  background: #0369a1;
+}
+.idv-mode-btn.active {
+  background: #f59e0b;
+  color: #000;
+  border-color: #d97706;
+}
+
+.idv-btn-dl {
+  background: #10b981;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.idv-btn-dl:hover {
+  background: #059669;
+}
+
+.idv-close {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.idv-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.idv-loading {
+  padding: 3rem 2rem;
+  text-align: center;
+  font-weight: 700;
+  color: #0369a1;
+  font-size: 1rem;
+  background: #f8fafc;
+}
+
+.idv-error {
+  padding: 1.5rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.dossier-pdf-frame {
+  width: 100%;
+  height: 75vh;
+  min-height: 550px;
+  border: none;
+  display: block;
+}
+
+.docx-paper-sheet {
+  background: #ffffff;
+  padding: 2.2rem 3rem;
+  max-height: 70vh;
+  min-height: 400px;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.7;
+  color: #1e293b;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.03);
+}
+
+.docx-paper-sheet.extracted-text-view {
+  background: #f8fafc;
+  padding: 1.5rem 2rem;
+}
+
+.extracted-text-header {
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.extracted-hint {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.extracted-raw-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #0f172a;
+  background: #ffffff;
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.dsw-file-block {
+  margin-bottom: 1rem;
+}
+
+.dfb-file-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--vp-c-bg-soft);
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dfb-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dfb-icon {
+  font-size: 1.5rem;
+}
+
+.dfb-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.dfb-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--vp-c-text-1);
+}
+
+.dfb-size {
+  font-size: 0.8rem;
+  color: var(--vp-c-text-2);
+}
+
+.dfb-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-preview-doc {
+  padding: 6px 12px;
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-preview-doc:hover {
+  background: #0369a1;
+}
+.btn-preview-doc.active {
+  background: #f59e0b;
+  color: #000;
+}
+
+.btn-download-doc {
+  padding: 6px 12px;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.btn-download-doc:hover {
+  background: var(--vp-c-bg-soft);
+}
+
+.btn-drive-link {
+  background: #0284c7;
+  color: #fff;
+  border-color: #0284c7;
+}
+.btn-drive-link:hover {
+  background: #0369a1;
+}
+
+.btn-open-dossier-header {
+  padding: 6px 12px;
+  background: #0284c7;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-open-dossier-header:hover {
+  background: #0369a1;
+}
+
+.grid-file-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-preview-mini {
+  padding: 4px 8px;
+  background: #0284c7;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-preview-mini.active {
+  background: #f59e0b;
+  color: #000;
+}
+
+.btn-download-mini {
+  padding: 4px 8px;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: inherit;
+}
+
+.btn-drive-mini {
+  padding: 4px 8px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.grid-preview-cell {
+  padding: 0 10px 14px 10px !important;
+  background: var(--vp-c-bg-soft) !important;
+}
+
+.class-summary-card {
+  margin-top: 2rem;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.css-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.css-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.css-count {
+  font-size: 0.85rem;
+  color: var(--vp-c-text-2);
+  font-weight: 600;
+}
+
+.class-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.class-overview-table th {
+  padding: 10px 12px;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 2px solid var(--vp-c-divider);
+  font-size: 0.88rem;
+}
+
+.class-overview-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  font-size: 0.9rem;
+}
+
+.student-name-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.student-name-link {
+  color: var(--vp-c-brand-1);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+.student-name-link:hover {
+  text-decoration: underline;
+}
+
+.student-sub-mail {
+  font-size: 0.75rem;
+  color: var(--vp-c-text-2);
+  margin-top: 2px;
+}
+
+.total-100-cell {
+  font-weight: 700;
+}
+
+.grade-20-cell-highlight {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 1.05rem;
+}
+
+.btn-row-action.dossier-btn {
+  padding: 4px 10px;
+  background: #0284c7;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-row-action.dossier-btn:hover {
+  background: #0369a1;
+}
+
+.btn-row-action.edit-grade {
+  padding: 4px 10px;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: inherit;
+}
+.btn-row-action.edit-grade:hover {
+  background: var(--vp-c-bg-soft);
 }
 </style>
 
