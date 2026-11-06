@@ -142,6 +142,12 @@ async function onStudentSpecificFileSelected(event) {
   target.value = ''
 }
 
+function handleRestoreCertifiedWorks() {
+  const res = userStore.restoreCertifiedStudentWorks()
+  importFeedback.value = res.message
+  setTimeout(() => { importFeedback.value = '' }, 6000)
+}
+
 // Synchronisation directe vers le dossier local Google Drive
 const isSyncingLocalDir = ref(false)
 const localDirSyncStatus = ref('')
@@ -1288,6 +1294,13 @@ function handleResetAllStudents() {
               title="Scanner automatiquement un dossier entier de devoirs (ex: dossier Google Drive local)"
             >
               <span>📁</span> Scanner un dossier local
+            </button>
+            <button 
+              @click="handleRestoreCertifiedWorks" 
+              style="padding: 7px 14px; background: #8b5cf6; color: #fff; border: none; border-radius: 7px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;"
+              title="Restaurer immédiatement l'ensemble des devoirs, fichiers et quiz certifiés des 5 étudiants"
+            >
+              <span>⚡</span> Restaurer travaux certifiés
             </button>
             <a 
               href="https://drive.google.com/drive/folders/1p_8jFrooNUxUl5tlcMyhBGDbfskJfpZH" 

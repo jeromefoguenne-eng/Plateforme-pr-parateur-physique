@@ -1,5 +1,6 @@
 import { reactive, computed, ref } from 'vue'
 import { cloudSync, cloudSyncState, DEFAULT_CLOUD_URL } from './cloudSync'
+import { INITIAL_REAL_USERS, INITIAL_REAL_FILES, INITIAL_REAL_SUBMISSIONS, INITIAL_REAL_QUIZZES } from './prepaStudentSubmissionsData'
 
 export interface User {
   id: string
@@ -592,70 +593,8 @@ function setStorage<T>(key: string, value: T): void {
   }
 }
 
-// Données réelles des préparateurs physiques inscrits pour la classe 2026
-export const INITIAL_REAL_USERS: User[] = [
-  {
-    id: 'user-prepa-01',
-    firstName: 'Maxim',
-    lastName: 'Legentil',
-    email: 'maxim.legentil@student.hech.be',
-    role: 'student',
-    registeredAt: '2026-09-15 09:00',
-    status: 'active',
-    passwordSet: false,
-    aliases: ['maxim.legentil@hech.be']
-  },
-  {
-    id: 'user-prepa-02',
-    firstName: 'Emma',
-    lastName: 'Lemaire',
-    email: 'emma.lemaire@student.hech.be',
-    role: 'student',
-    registeredAt: '2026-09-15 09:00',
-    status: 'active',
-    passwordSet: false,
-    aliases: ['emma.lemaire@hech.be']
-  },
-  {
-    id: 'user-prepa-03',
-    firstName: 'Antoine',
-    lastName: 'Daltin',
-    email: 'antoine.daltin@student.hech.be',
-    role: 'student',
-    registeredAt: '2026-09-15 09:00',
-    status: 'active',
-    passwordSet: false,
-    aliases: ['antoine.daltin@hech.be']
-  },
-  {
-    id: 'user-prepa-04',
-    firstName: 'Matteo',
-    lastName: 'Manno',
-    email: 'matteo.manno@student.hech.be',
-    role: 'student',
-    registeredAt: '2026-09-15 09:00',
-    status: 'active',
-    passwordSet: false,
-    aliases: ['matteo.manno@hech.be']
-  },
-  {
-    id: 'user-prepa-05',
-    firstName: 'Achile',
-    lastName: 'Capitaine',
-    email: 'achile.capitaine@student.hech.be',
-    role: 'student',
-    registeredAt: '2026-09-15 09:00',
-    status: 'active',
-    passwordSet: false,
-    aliases: [
-      'achile.capitaine@hech.be',
-      'achille.capitaine@student.hech.be',
-      'achille.capitaine@hech.be',
-      'achille.capitaine@gmail.com',
-      'achile.capitaine@gmail.com'
-    ]
-  }
-]
+// Données réelles des préparateurs physiques inscrits pour la classe 2026 (importées de prepaStudentSubmissionsData)
+export { INITIAL_REAL_USERS }
 
 const DEFAULT_USERS: User[] = INITIAL_REAL_USERS
 
@@ -1372,18 +1311,84 @@ export const userStore = {
     state.progress = getStorage(STORAGE_KEY_PROGRESS, {})
     state.submissions = getStorage(STORAGE_KEY_SUBMISSIONS, [])
     state.submittedFiles = getStorage(STORAGE_KEY_FILES, [])
-    // Recalcul objectif automatique des devoirs évalués avec l'ancienne note arbitraire de 17.6
-    let hasObsoleteCorrections = false
-    state.submittedFiles.forEach(f => {
-      if (f.aiCorrection && (f.aiCorrection.suggestedScore === 17.6 || !f.aiCorrection.modelUsed?.includes('Grille 6 Critères'))) {
-        f.aiCorrection = generateCriteriaBasedAiCorrection(f, f.extractedText || '', '')
-        hasObsoleteCorrections = true
+
+    // Fusion et initialisation automatique des devoirs et fichiers réels certifiés
+    let filesChanged = false
+    INITIAL_REAL_FILES.forEach(rf => {
+      if (!rf || !rf.userEmail || !rf.exerciseId) return
+      const em = rf.userEmail.trim().toLowerCase()
+      if (state.deletedUsers.includes(em)) return
+      const existingIdx = state.submittedFiles.findIndex(f => 
+        f && f.userEmail && f.userEmail.trim().toLowerCase() === em && f.exerciseId === rf.exerciseId
+      )
+      if (existingIdx === -1) {
+        const clone = { ...rf }
+        if (!clone.aiCorrection && clone.extractedText) {
+          clone.aiCorrection = generateCriteriaBasedAiCorrection(clone, clone.extractedText, '')
+        }
+        state.submittedFiles.push(clone)
+        filesChanged = true
       }
     })
-    if (hasObsoleteCorrections) {
+
+    // Recalcul objectif automatique des devoirs évalués avec l'ancienne note arbitraire de 17.6
+    state.submittedFiles.forEach(f => {
+      if (!f.aiCorrection || f.aiCorrection.suggestedScore === 17.6 || !f.aiCorrection.modelUsed?.includes('Grille 6 Critères')) {
+        f.aiCorrection = generateCriteriaBasedAiCorrection(f, f.extractedText || '', '')
+        filesChanged = true
+      }
+    })
+    if (filesChanged) {
       setStorage(STORAGE_KEY_FILES, state.submittedFiles)
     }
+
+    // Fusion automatique des soumissions textuelles certifiées
+    let subsChanged = false
+    INITIAL_REAL_SUBMISSIONS.forEach(rs => {
+      if (!rs || !rs.userEmail || !rs.exerciseId) return
+      const em = rs.userEmail.trim().toLowerCase()
+      if (state.deletedUsers.includes(em)) return
+      const existing = state.submissions.find(s => 
+        s && s.userEmail && s.userEmail.trim().toLowerCase() === em && s.exerciseId === rs.exerciseId
+      )
+      if (!existing) {
+        state.submissions.push({ ...rs })
+        subsChanged = true
+      }
+    })
+    if (subsChanged) {
+      setStorage(STORAGE_KEY_SUBMISSIONS, state.submissions)
+    }
+
+    // Fusion automatique des tentatives de quiz certifiées
     state.quizAttempts = getStorage(STORAGE_KEY_QUIZZES, [])
+    let quizChanged = false
+    INITIAL_REAL_QUIZZES.forEach(rq => {
+      if (!rq || !rq.userEmail || !rq.moduleId) return
+      const em = rq.userEmail.trim().toLowerCase()
+      if (state.deletedUsers.includes(em)) return
+      const existing = state.quizAttempts.find(q => 
+        q && q.userEmail && q.userEmail.trim().toLowerCase() === em && q.moduleId === rq.moduleId && q.id === rq.id
+      )
+      if (!existing) {
+        state.quizAttempts.push({ ...rq })
+        quizChanged = true
+      }
+    })
+    if (quizChanged) {
+      setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
+    }
+
+    // Mise à jour de la progression des étudiants
+    state.submittedFiles.forEach(f => {
+      if (f && f.userEmail && f.exerciseId) {
+        const em = f.userEmail.trim().toLowerCase()
+        if (!state.progress[em]) state.progress[em] = {}
+        state.progress[em][f.exerciseId] = true
+      }
+    })
+    setStorage(STORAGE_KEY_PROGRESS, state.progress)
+
     state.exerciseFeedbacks = getStorage(STORAGE_KEY_EXERCISE_FEEDBACKS, [])
     state.deadlines = getStorage(STORAGE_KEY_DEADLINES, {})
     state.evaluations = getStorage(STORAGE_KEY_EVALUATIONS, {})
@@ -2079,6 +2084,64 @@ export const userStore = {
     }
 
     return await this.importStudentFiles(collectedFiles)
+  },
+
+  /**
+   * Restaure et force l'affichage de l'ensemble des travaux, fichiers déposés,
+   * évaluations critériées IA et quiz certifiés des 5 préparateurs physiques.
+   */
+  restoreCertifiedStudentWorks(): { count: number; message: string } {
+    let filesCount = 0
+    INITIAL_REAL_FILES.forEach(rf => {
+      if (!rf || !rf.userEmail || !rf.exerciseId) return
+      const em = rf.userEmail.trim().toLowerCase()
+      const existingIdx = state.submittedFiles.findIndex(f => 
+        f && f.userEmail && f.userEmail.trim().toLowerCase() === em && f.exerciseId === rf.exerciseId
+      )
+      const clone = { ...rf }
+      clone.aiCorrection = generateCriteriaBasedAiCorrection(clone, clone.extractedText || '', '')
+      if (existingIdx === -1) {
+        state.submittedFiles.push(clone)
+      } else {
+        state.submittedFiles[existingIdx] = clone
+      }
+      filesCount++
+    })
+    setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+
+    INITIAL_REAL_SUBMISSIONS.forEach(rs => {
+      if (!rs || !rs.userEmail || !rs.exerciseId) return
+      const em = rs.userEmail.trim().toLowerCase()
+      const existing = state.submissions.find(s => 
+        s && s.userEmail && s.userEmail.trim().toLowerCase() === em && s.exerciseId === rs.exerciseId
+      )
+      if (!existing) state.submissions.push({ ...rs })
+    })
+    setStorage(STORAGE_KEY_SUBMISSIONS, state.submissions)
+
+    INITIAL_REAL_QUIZZES.forEach(rq => {
+      if (!rq || !rq.userEmail || !rq.moduleId) return
+      const em = rq.userEmail.trim().toLowerCase()
+      const existing = state.quizAttempts.find(q => 
+        q && q.userEmail && q.userEmail.trim().toLowerCase() === em && q.moduleId === rq.moduleId && q.id === rq.id
+      )
+      if (!existing) state.quizAttempts.push({ ...rq })
+    })
+    setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
+
+    state.submittedFiles.forEach(f => {
+      if (f && f.userEmail && f.exerciseId) {
+        const em = f.userEmail.trim().toLowerCase()
+        if (!state.progress[em]) state.progress[em] = {}
+        state.progress[em][f.exerciseId] = true
+      }
+    })
+    setStorage(STORAGE_KEY_PROGRESS, state.progress)
+
+    return {
+      count: filesCount,
+      message: `✓ ${filesCount} travaux et l'ensemble des tentatives de quiz ont été restaurés et évalués par l'IA !`
+    }
   },
 
   deleteStudentFile(fileId: string) {
