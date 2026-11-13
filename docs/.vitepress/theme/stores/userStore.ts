@@ -156,10 +156,9 @@ export const ALL_QUIZ_MODULES: QuizModuleDefinition[] = [
   { id: 'quiz-00', title: "Quiz 00 : Introduction & Révolution des données", shortTitle: "Quiz 00 (Intro)", maxPoints: 10 },
   { id: 'quiz-01', title: "Quiz 01 : Capteurs & Données de terrain", shortTitle: "Quiz 01 (Capteurs)", maxPoints: 10 },
   { id: 'quiz-02', title: "Quiz 02 : Formats & Logiciels dédiés", shortTitle: "Quiz 02 (Logiciels)", maxPoints: 10 },
-  { id: 'quiz-03', title: "Quiz 03 : Structuration & Tableur Excel", shortTitle: "Quiz 03 (Excel)", maxPoints: 10 },
-  { id: 'quiz-04', title: "Quiz 04 : Outils de collecte personnalisés", shortTitle: "Quiz 04 (Outils)", maxPoints: 10 },
-  { id: 'quiz-05', title: "Quiz 05 : Recherche scientifique & Décision", shortTitle: "Quiz 05 (Science)", maxPoints: 10 },
-  { id: 'quiz-06', title: "Quiz 06 : Intelligence Artificielle & Agents", shortTitle: "Quiz 06 (IA)", maxPoints: 10 }
+  { id: 'quiz-04', title: "Quiz 03 : Outils de collecte personnalisés", shortTitle: "Quiz 03 (Outils)", maxPoints: 10 },
+  { id: 'quiz-05', title: "Quiz 04 : Recherche scientifique & Décision", shortTitle: "Quiz 04 (Science)", maxPoints: 10 },
+  { id: 'quiz-06', title: "Quiz 05 : Intelligence Artificielle & Agents", shortTitle: "Quiz 05 (IA)", maxPoints: 10 }
 ]
 
 export const GOOGLE_DRIVE_EXERCISES_FOLDER_ID = '1fRbYhPZKrhIB6uzQJonDgNdrqUdiuLOt'
@@ -302,7 +301,7 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
 }
 
 export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
-  { id: 'quiz', title: "Quiz de la plateforme (Moyenne des 7 quiz)", shortTitle: "Quiz (10%)", maxPoints: 10, weightPct: 10, category: 'quiz' },
+  { id: 'quiz', title: "Quiz de la plateforme (Moyenne des 6 quiz)", shortTitle: "Quiz (10%)", maxPoints: 10, weightPct: 10, category: 'quiz' },
   { id: 'exercice-01', title: "Exercice 01 : Quel capteur choisir ? (10 situations)", shortTitle: "Ex 01 (Capteurs)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1VoW7J4Yh-NfICyTeCALni0_bgQG0ITes/preview" },
   { id: 'exercice-02a', title: "Exercice 02.a : Extraction Power Query & Nutrition (Natation)", shortTitle: "Ex 02.a (Power Query)", maxPoints: 5, weightPct: 5, category: 'exercice' },
   { id: 'exercice-02', title: "Exercice 02.b : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02.b (Logiciels)", maxPoints: 5, weightPct: 5, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1BjJKttNRbCntatiEF2yeM7G01dt0_aAq/preview" },
@@ -2684,7 +2683,7 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       }
     }
 
-    // 1. Quizzes (Moyenne des 7 quiz du cours, convertie sur 10 points)
+    // 1. Quizzes (Moyenne des 6 quiz du cours, convertie sur 10 points)
     const userQuizzes = state.quizAttempts.filter(q => q && q.userEmail && allowed.includes(q.userEmail.toLowerCase().trim()))
     const bestQuizzes: Record<string, number> = {}
     userQuizzes.forEach(q => {
@@ -2694,12 +2693,12 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       }
     })
     const totalPointsAcquired = Object.values(bestQuizzes).reduce((acc, pts) => acc + pts, 0)
-    // 7 quiz de 10 points = 70 points max au total.
-    // La note sur 10 est donc (totalPointsAcquired / 70) * 10
+    // 6 quiz de 10 points = 60 points max au total.
+    // La note sur 10 est donc (totalPointsAcquired / 60) * 10
     const quizCount = Object.keys(bestQuizzes).length
     let quizAiScore = 0
     if (quizCount > 0) {
-      quizAiScore = Math.round(((totalPointsAcquired / 70) * 10) * 10) / 10
+      quizAiScore = Math.round(((totalPointsAcquired / 60) * 10) * 10) / 10
     }
     const isQuizDone = quizCount > 0
 
@@ -2723,7 +2722,7 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
           weightPct: def.weightPct,
           category: 'quiz' as const,
           aiScore: isQuizDone ? quizAiScore : 0,
-          aiSummary: isQuizDone ? `${quizCount}/7 quiz complété(s) • Total brut : ${totalPointsAcquired}/70 pts` : 'Aucun quiz passé sur la plateforme (0 pt)',
+          aiSummary: isQuizDone ? `${quizCount}/6 quiz complété(s) • Total brut : ${totalPointsAcquired}/60 pts` : 'Aucun quiz passé sur la plateforme (0 pt)',
           teacherScore,
           feedback: evalRec.itemsFeedbacks?.['quiz'] || (!isQuizDone ? 'Quiz non passés (0 pt)' : ''),
           completed: isQuizDone,

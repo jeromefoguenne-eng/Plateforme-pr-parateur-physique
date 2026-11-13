@@ -53,10 +53,10 @@ export default defineConfig({
             { text: "00. Introduction : Révolution des données", link: "/modules/00-introduction" },
             { text: "01. Récolte de données & Capteurs", link: "/modules/01-capteurs" },
             { text: "02. Importation & Logiciels dédiés", link: "/modules/02-importation-logiciels" },
-            { text: "04. Créer ses propres outils de suivi", link: "/modules/04-propres-outils-collecte" },
-            { text: "05. Données & Recherche scientifique", link: "/modules/05-veille-recherche-scientifique" },
-            { text: "06. Agents & Applications IA dans le sport", link: "/modules/06-agents-ia-sport" },
-            { text: "07. Mission professionnelle finale", link: "/modules/07-mission-finale" }
+            { text: "03. Créer ses propres outils de suivi", link: "/modules/04-propres-outils-collecte" },
+            { text: "04. Données & Recherche scientifique", link: "/modules/05-veille-recherche-scientifique" },
+            { text: "05. Agents & Applications IA dans le sport", link: "/modules/06-agents-ia-sport" },
+            { text: "06. Mission professionnelle finale", link: "/modules/07-mission-finale" }
           ]
         },
         {

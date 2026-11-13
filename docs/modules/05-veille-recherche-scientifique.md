@@ -1,9 +1,9 @@
 ---
-title: "05. Relier les Données aux Recherches Scientifiques"
+title: "04. Relier les Données aux Recherches Scientifiques"
 description: "Veille documentaire automatisée avec l'IA, exploitation de NotebookLM ancré sur des articles scientifiques et prise de décision critique sans extrapolation."
 ---
 
-# 05. Relier les Données aux Recherches Scientifiques
+# 04. Relier les Données aux Recherches Scientifiques
 
 <div class="course-content justified-text">
 

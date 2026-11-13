@@ -1,9 +1,9 @@
 ---
-title: "06. Créer des Agents et Applications IA pour les Sportifs"
+title: "05. Créer des Agents et Applications IA pour les Sportifs"
 description: "Comprendre la différence entre modèle génératif et agent autonome. Création d'assistants et d'outils sur mesure avec Google Antigravity."
 ---
 
-# 06. Créer des Agents et Applications IA pour les Sportifs
+# 05. Créer des Agents et Applications IA pour les Sportifs
 
 <div class="course-content justified-text">
 

@@ -8,7 +8,7 @@ description: "Formats bruts (.fit, .csv, .gpx, .tcx) et panorama comparatif des 
 <div class="course-content justified-text">
 
 
-## Importer et exploiter les données issues des capteurs
+## 1. Importer et exploiter les données issues des capteurs
 
 
 Les outils numériques permettent aujourd’hui de recueillir une quantité importante de données sur le sportif : fréquence cardiaque, puissance, vitesse, accélération, cadence, distance, temps de contact, hauteur de saut, charge d’entraînement, données nutritionnelles, etc.
@@ -917,21 +917,6 @@ Pour choisir l'outil adapté aux besoins du préparateur physique et de ses athl
     À la fin de la modélisation technique, la compétence du préparateur physique et son interprétation sportive sont au cœur de l'exercice : vous devez répondre à 4 questions d'arbitrage physiologique et prescrire des ajustements concrets d'entraînement et de nutrition.
   </p>
 </div>
-
-### 📋 Copie du résultat attendu (Tableau de référence)
-
-Pour valider votre requête Power Query, voici la copie de la structure et des données attendues en sortie dans votre feuille Excel :
-
-| Cycliste | Poids | FTP (20m) | W/kg FTP | Pmax 5s | W/kg 5s | Glucides/kg | Profil Calculé | Diagnostic & Alerte Staff |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :--- |
-| **Julien Pinot** | 58,5 kg | 360 W | **6,15** | 920 W | 15,7 | 8,20 g/kg | **Grimpeur** | Conforme (Rapport W/kg optimal 6.15 W/kg) |
-| **Lucas Van Aert** | 78,0 kg | 390 W | **5,00** | 1580 W | **20,3** | 7,18 g/kg | **Sprinteur** | Conforme (Profil Sprinteur lourd 20.3 W/kg) |
-| **Romain Bardet** | 61,0 kg | 350 W | **5,74** | 940 W | 15,4 | 5,08 g/kg | **Grimpeur** | ⚠️ Alerte Déficit Glucides & Risque RED-S (MG 4.9%) |
-| **Thomas De Gendt** | 71,5 kg | 385 W | **5,38** | 1180 W | 16,5 | 7,55 g/kg | **Rouleur / Poly.** | Conforme (Profil Baroudeur équilibré) |
-| **Sam Bennett** | 76,5 kg | 360 W | **4,71** | 1620 W | **21,2** | 6,80 g/kg | **Sprinteur** | Conforme (Pmax 21.2 W/kg préservée) |
-| **Thibaut Gaudu** | 63,0 kg | 370 W | **5,87** | 1080 W | 17,1 | 8,10 g/kg | **Grimpeur** | Conforme (Punch en côte 17.1 W/kg et FTP 5.87 W/kg) |
-| **M. Van der Poel** | 74,5 kg | 425 W | **5,70** | 1510 W | **20,3** | 8,46 g/kg | **Puncheur Hybride** | Conforme (Moteur aéro/anaérobie hors-norme, 3880 kcal) |
-| **Hugo Hofstetter** | 72,0 kg | 320 W | **4,44** | 1380 W | 19,2 | 5,83 g/kg | **Sprinteur** | ⚠️ Alerte Déficit Glucides (5.83 g/kg) & Hydratation (2.8L) |
 
 <ClientOnly>
   <ExerciseBox 

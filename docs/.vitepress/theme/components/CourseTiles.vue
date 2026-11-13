@@ -27,32 +27,32 @@ const tiles = [
     tag: "Logiciels"
   },
   {
-    id: "04",
-    title: "04. Créer ses Propres Outils de Suivi",
+    id: "03",
+    title: "03. Créer ses Propres Outils de Suivi",
     desc: "Concevoir des fiches de terrain opérationnelles : Indice de Hooper, Session-RPE de Foster, ratio charge aiguë/chronique, journal de bord.",
     link: "/modules/04-propres-outils-collecte",
     image: "/images/tile-04-outils.jpg",
     tag: "Outils Pro"
   },
   {
-    id: "05",
-    title: "05. Données & Recherche Scientifique",
+    id: "04",
+    title: "04. Données & Recherche Scientifique",
     desc: "Veille scientifique assistée par IA (PubMed, Consensus, Perplexity) et synthèse rigoureuse avec NotebookLM sans hallucination.",
     link: "/modules/05-veille-recherche-scientifique",
     image: "/images/tile-05-science.jpg",
     tag: "Science"
   },
   {
-    id: "06",
-    title: "06. Agents & Applications IA dans le Sport",
+    id: "05",
+    title: "05. Agents & Applications IA dans le Sport",
     desc: "Différence entre modèle génératif et agent autonome. Création de copilotes sur mesure avec Google Antigravity pour le staff.",
     link: "/modules/06-agents-ia-sport",
     image: "/images/tile-06-agents.jpg",
     tag: "IA & Agents"
   },
   {
-    id: "07",
-    title: "07. Mission Professionnelle Finale",
+    id: "06",
+    title: "06. Mission Professionnelle Finale",
     desc: "Mission intégrative du terrain à la décision : collecte, nettoyage, analyse TCD, visualisation et préconisations d'entraînement.",
     link: "/modules/07-mission-finale",
     image: "/images/tile-07-mission.jpg",

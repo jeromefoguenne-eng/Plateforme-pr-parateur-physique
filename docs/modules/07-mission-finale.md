@@ -1,9 +1,9 @@
 ---
-title: "07. Mission Finale : Modèle de Lutte contre le Surentraînement en Football"
+title: "06. Mission Finale : Modèle de Lutte contre le Surentraînement en Football"
 description: "Épreuve intégrative majeure (30% / 30 pts) : concevoir son propre modèle algorithmique pour anticiper le surentraînement et optimiser la disponibilité des joueurs à partir de données réelles GPS, cardio, RPE et Hooper."
 ---
 
-# 07. Mission Finale : Modèle de Lutte contre le Surentraînement en Football
+# 06. Mission Finale : Modèle de Lutte contre le Surentraînement en Football
 
 <div class="course-content justified-text">
 
