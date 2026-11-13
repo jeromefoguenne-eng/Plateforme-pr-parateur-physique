@@ -479,30 +479,30 @@ def generate_word_instructions(filepath):
 
     # Questions d'interprétation
     add_p("4. Questions professionnelles d'interprétation et d'aide à la décision", bold=True, font_size=11, color=RGBColor(31, 78, 121), space_after=Pt(4))
-    add_p("La simple manipulation technique de Power Query ne suffit pas. En tant que préparateur physique, votre valeur ajoutée réside dans votre capacité à interpréter ces métriques et à formuler des prescriptions individualisées pour l'entraîneur et les coureurs :", space_after=Pt(4), font_size=10.0)
+    add_p("La simple manipulation technique de Power Query ne constitue pas une fin en soi. En tant que préparateur physique, votre valeur ajoutée réside dans votre capacité à faire parler les données, à exercer votre esprit critique et à formuler des choix d'entraînement et de nutrition justifiés pour le staff :", space_after=Pt(4), font_size=10.0)
 
     p_q1 = doc.add_paragraph()
     p_q1.paragraph_format.space_before = Pt(2); p_q1.paragraph_format.space_after = Pt(4); p_q1.paragraph_format.line_spacing = 1.15
-    r = p_q1.add_run("Question 1 — L'illusion des Watts bruts vs le déterminant W/kg en dénivelé : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
-    r = p_q1.add_run("Comparez Lucas Van Aert (390 W au seuil, 78 kg) et Julien Pinot (360 W au seuil, 58.5 kg). Lucas développe 30 W bruts de plus que Julien. Expliquez biomécaniquement et physiquement pourquoi Julien le distancerait de plusieurs minutes dans l'ascension d'un col à 9% (4200m D+), tandis que Lucas le dominerait largement sur un parcours plat ou dans un sprint d'arrivée. Quelle formule physique régit cette différence ?")
+    r = p_q1.add_run("Question 1 — Analyse croisée Puissance absolue vs Puissance relative : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
+    r = p_q1.add_run("À partir des données extraites, confrontez les profils de Lucas Van Aert et de Julien Pinot. Quels constats biomécaniques et énergétiques établissez-vous ? Comment la prise en compte conjointe de la puissance absolue (Watts) et de la puissance relative (W/kg) oriente-t-elle l'analyse du préparateur physique selon le profil topographique des épreuves (plaine vs haute montagne) ?")
     r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
 
     p_q2 = doc.add_paragraph()
     p_q2.paragraph_format.space_before = Pt(2); p_q2.paragraph_format.space_after = Pt(4); p_q2.paragraph_format.line_spacing = 1.15
-    r = p_q2.add_run("Question 2 — Le piège de la perte de poids excessive et le spectre du RED-S : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
-    r = p_q2.add_run("Analysez les données de Romain Bardet (Masse grasse à 4.9 %, apports glucidiques à 5.08 g/kg/j, hydratation à 2.4 L/j). Romain souhaite perdre 2.5 kg supplémentaires pour « voler en montagne ». En tant que préparateur physique, pourquoi devez-vous formellement refuser cette stratégie ? Quels sont les risques physiologiques avérés (RED-S, perte de masse maigre contractile, baisse du débit cardiaque maximal, déshydratation chronique) ? Quel arbitrage proposez-vous ?")
+    r = p_q2.add_run("Question 2 — Arbitrage masse corporelle, performance et intégrité physique : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
+    r = p_q2.add_run("Analysez la situation de Romain Bardet à la lumière de l'ensemble de ses indicateurs (puissance, composition corporelle et statut nutritionnel). Dans l'optique des étapes de haute montagne, le coureur envisage une perte de poids supplémentaire de 2 à 3 kg pour optimiser son ascension. En tant que préparateur physique, quelle position adoptez-vous face à cette démarche ? Justifiez votre raisonnement en identifiant les compromis physiologiques et les facteurs de risque.")
     r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
 
     p_q3 = doc.add_paragraph()
     p_q3.paragraph_format.space_before = Pt(2); p_q3.paragraph_format.space_after = Pt(4); p_q3.paragraph_format.line_spacing = 1.15
-    r = p_q3.add_run("Question 3 — Stratégie nutritionnelle et ravitaillement différencié : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
-    r = p_q3.add_run("En analysant les apports glucidiques journaliers recommandés (7.0 à 10.0 g/kg/j en montagne vs 6.0 à 8.0 g/kg/j en plaine) et les filières énergétiques sollicitées, justifiez pourquoi le profil Sprinteur (Sam Bennett, Lucas Van Aert) et le profil Grimpeur (Julien Pinot) ne doivent pas adopter la même stratégie de ravitaillement glucidique (en g/heure) sur le vélo pendant l'épreuve et en récupération post-effort immédiate.")
+    r = p_q3.add_run("Question 3 — Diagnostic nutritionnel et individualisation des apports : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
+    r = p_q3.add_run("Au regard des données nutritionnelles journalières et des objectifs compétitifs du groupe, identifiez les coureurs dont le profil nutritionnel vous paraît questionnable ou inadapté. Quelles préconisations d'ajustement proposez-vous au staff, tant sur le plan des macronutriments quotidiens que de la gestion du ravitaillement en course selon la spécificité des efforts à fournir ?")
     r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
 
     p_q4 = doc.add_paragraph()
     p_q4.paragraph_format.space_before = Pt(2); p_q4.paragraph_format.space_after = Pt(6); p_q4.paragraph_format.line_spacing = 1.15
-    r = p_q4.add_run("Question 4 — Prescription de terrain et individualisation de l'entraînement : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
-    r = p_q4.add_run("Formulez 2 protocoles de séances clés d'entraînement sur le terrain : l'une spécifiquement ciblée pour Julien Pinot en vue de son étape de montagne (ex: travail au Sweet-Spot / Seuil avec simulation de pente à basse cadence 55-65 rpm et adaptations mitochondriales), et l'autre spécifiquement ciblée pour Lucas Van Aert pour optimiser son sprint final (travail neuromusculaire Pmax, départs arrêtés et filière alactique sans acidose prématurée).")
+    r = p_q4.add_run("Question 4 — Conception de séances ciblées sur le terrain : "); r.bold = True; r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
+    r = p_q4.add_run("Sélectionnez deux coureurs aux profils physiologiques contrastés au sein de l'effectif. Pour chacun d'entre eux, concevez une séance d'entraînement clé sur le terrain en cohérence avec ses qualités dominantes et son objectif de compétition. Vous justifierez la structure de la séance (durées, intensités, cadences ou récupérations) et expliciterez les adaptations physiologiques et neuromusculaires visées.")
     r.font.name = "Segoe UI"; r.font.size = Pt(10.0)
 
     # Modalités et barème
