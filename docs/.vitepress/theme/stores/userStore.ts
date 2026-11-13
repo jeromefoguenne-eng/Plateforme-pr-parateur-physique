@@ -228,18 +228,18 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
   },
   'exercice-03': {
     id: 'exercice-03',
-    docId: '1XPGvFM1bagfFYJdGzwa062F5yGtYIHW0',
+    docId: '',
     fileBase: 'Exercice-03.docx',
-    title: 'Exercice 03 — De la donnée brute au tableau de bord Excel',
-    shortTitle: 'Ex 03 (Structuration)',
-    description: "Nettoyer un jeu de données réelles U18 (détection d'anomalies, formats), automatiser les calculs de charge (Durée × RPE), construire 3 tableaux croisés dynamiques, 3 graphiques et concevoir un tableau de bord décisionnel synthétique pour le staff.",
+    title: 'Exercice 03 — Power Query : Optimisation Poids-Puissance & Profilage Cycliste',
+    shortTitle: 'Ex 03 (Power Query Cyclisme)',
+    description: "À partir d'un export brut de 8 cyclistes professionnels, construisez une requête Power Query pour calculer les ratios W/kg (5s, 5min, FTP), les apports nutritionnels relatifs (g/kg/j) et catégoriser automatiquement les profils Grimpeur vs Sprinteur. Répondez ensuite aux 4 questions professionnelles d'arbitrage et de prescription d'entraînement pour le staff.",
     weightPct: 10,
     points: 10,
     category: 'exercice',
     companionFiles: [
-      { name: 'Données brutes U18 (.xlsx)', fileBase: 'Exercice 03 - Donnees brutes U18.xlsx', icon: '📈', downloadName: 'Exercice-03-Donnees-Brutes-U18.xlsx' },
-      { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-03-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-03-Tutoriel.docx' },
-      { name: 'Modèle attendu U18 (.xlsx)', fileBase: 'Exercice 03 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-03-Production-Attendue.xlsx' }
+      { name: 'Données brutes cyclisme (.xlsx)', fileBase: 'Exercice 03 - Donnees brutes cyclisme Wkg.xlsx', icon: '🚴', downloadName: 'Exercice-03-Donnees-Brutes-Cyclisme-Wkg.xlsx' },
+      { name: 'Consignes de l\'exercice (.docx)', fileBase: 'Exercice-03.docx', icon: '📄', downloadName: 'Exercice-03-Consignes.docx' },
+      { name: 'Copie du résultat attendu (.xlsx)', fileBase: 'Exercice 03 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-03-Production-Attendue.xlsx' }
     ]
   },
   'exercice-04': {
@@ -306,7 +306,7 @@ export const OFFICIAL_EVALUATION_ITEMS: EvaluationItemDefinition[] = [
   { id: 'exercice-01', title: "Exercice 01 : Quel capteur choisir ? (10 situations)", shortTitle: "Ex 01 (Capteurs)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1VoW7J4Yh-NfICyTeCALni0_bgQG0ITes/preview" },
   { id: 'exercice-02a', title: "Exercice 02.a : Extraction Power Query & Nutrition (Natation)", shortTitle: "Ex 02.a (Power Query)", maxPoints: 5, weightPct: 5, category: 'exercice' },
   { id: 'exercice-02', title: "Exercice 02.b : Quel outil pour quelle situation ? (10 cas)", shortTitle: "Ex 02.b (Logiciels)", maxPoints: 5, weightPct: 5, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1BjJKttNRbCntatiEF2yeM7G01dt0_aAq/preview" },
-  { id: 'exercice-03', title: "Exercice 03 : Excel - Collecte et structuration de données", shortTitle: "Ex 03 (Structuration)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1XPGvFM1bagfFYJdGzwa062F5yGtYIHW0/preview" },
+  { id: 'exercice-03', title: "Exercice 03 : Power Query - Poids-Puissance & Cyclisme", shortTitle: "Ex 03 (Power Query Cyclisme)", maxPoints: 10, weightPct: 10, category: 'exercice' },
   { id: 'exercice-04', title: "Exercice 04 : Excel - Créer ses propres outils de suivi", shortTitle: "Ex 04 (Outils Excel)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/142nATrt_U63k22rUvviCtAM-6lDGzwP7/preview" },
   { id: 'exercice-05', title: "Exercice 05 : De la donnée à la décision (analyse & ajustement)", shortTitle: "Ex 05 (Décision)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1gZaNazzuep1Y965zZ9PJRTD13DGU1W5S/preview" },
   { id: 'exercice-06', title: "Exercice 06 : Créer une application IA et un agent", shortTitle: "Ex 06 (Application IA)", maxPoints: 10, weightPct: 10, category: 'exercice', googleDriveLink: "https://docs.google.com/document/d/1ln-MM2329wbYlZ9PnG9I173Yz7IGXqvn/preview" },
@@ -715,10 +715,10 @@ export const EXERCISE_RUBRICS: Record<string, ExerciseRubricConfig> = {
     minExpectedWords: 250
   },
   'exercice-03': {
-    title: "Exercice 03 — Données brutes au tableau de bord Excel U18",
-    expectedDeliverable: "Nettoyage de données U18, calculs de charge (Foster : Durée × RPE), 3 TCD, 3 graphiques et dashboard synthétique.",
-    coreTopics: ['u18', 'rpe', 'foster', 'duree', 'charge', 'tcd', 'croise dynamique', 'graphique', 'dashboard', 'tableau de bord', 'monotonie', 'contrainte', 'seance', 'semaine', 'joueur', 'nettoyage'],
-    keySituations: ['u18', 'charge', 'semaine', 'rpe', 'tcd', 'graphique'],
+    title: "Exercice 03 — Power Query : Optimisation Poids-Puissance & Profilage Cycliste",
+    expectedDeliverable: "Transformation Power Query du dataset cyclisme, calculs de puissance relative (W/kg sur 5s, 5min, FTP), ratios nutritionnels (g/kg/j), identification des profils Grimpeur vs Sprinteur et réponses argumentées aux 4 questions d'interprétation pour le staff.",
+    coreTopics: ['cyclisme', 'cycliste', 'w/kg', 'watts', 'poids', 'puissance', 'power query', 'grimpeur', 'sprinteur', 'ftp', 'pmax', 'glucides', 'proteines', 'nutrition', 'red-s', 'interpretation', 'denivele', 'entrainement'],
+    keySituations: ['grimpeur', 'sprinteur', 'red-s', 'w/kg', 'glucides', 'entrainement'],
     requiresLimits: false,
     minExpectedWords: 150
   },
@@ -2002,7 +2002,7 @@ export const userStore = {
     if (combined.includes('01') || combined.includes('capteur') || combined.includes('ex1') || combined.includes('ex01') || combined.includes('exercice 1')) {
       return 'exercice-01'
     }
-    if (combined.includes('03') || combined.includes('structuration') || combined.includes('collecte') || combined.includes('u18') || combined.includes('ex3') || combined.includes('ex03')) {
+    if (combined.includes('03') || combined.includes('cyclisme') || combined.includes('poids-puissance') || combined.includes('wkg') || combined.includes('w/kg') || combined.includes('grimpeur') || combined.includes('sprinteur') || combined.includes('ex3') || combined.includes('ex03')) {
       return 'exercice-03'
     }
     if (combined.includes('04') || combined.includes('hooper') || combined.includes('rpe') || combined.includes('outils de suivi') || combined.includes('ex4') || combined.includes('ex04')) {

@@ -27,14 +27,6 @@ const tiles = [
     tag: "Logiciels"
   },
   {
-    id: "03",
-    title: "03. Structurer & Analyser avec Excel",
-    desc: "De la donnée brute à l'information. Règles de structuration tabulaire, formules, références absolues et Tableaux Croisés Dynamiques.",
-    link: "/modules/03-excel-structuration",
-    image: "/images/tile-03-excel.jpg",
-    tag: "Excel"
-  },
-  {
     id: "04",
     title: "04. Créer ses Propres Outils de Suivi",
     desc: "Concevoir des fiches de terrain opérationnelles : Indice de Hooper, Session-RPE de Foster, ratio charge aiguë/chronique, journal de bord.",

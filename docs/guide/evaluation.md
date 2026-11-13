@@ -39,11 +39,11 @@ Le barème officiel s'articule autour de **9 composantes complémentaires** int�
 
 | Composante d'Évaluation | Pondération (%) | Barème (/100) | Contribution sur 20 | Modalité & Consignes |
 | :--- | :---: | :---: | :---: | :--- |
-| **🧠 Quiz de la plateforme** *(Moyenne des 7 quiz)* | **10 %** | **10 pts** | 2,0 pts | QCM interactifs et questions de synthèse à la fin de chaque module (00 à 06) |
+| **🧠 Quiz de la plateforme** *(Moyenne des quiz)* | **10 %** | **10 pts** | 2,0 pts | QCM interactifs et questions de synthèse à la fin des modules d'apprentissage |
 | **🏋️ Exercice 1** : Quel capteur choisir ? *(10 situations)* | **10 %** | **10 pts** | 2,0 pts | Étude de cas instrumentale (GNSS, LPS, IMU, cellules photoélectriques, encodeurs VBT) |
 | **🏊 Exercice 2.a** : Extraction Power Query & Nutrition *(Natation)* | **5 %** | **5 pts** | 1,0 pt | Automatisation de flux Power Query, calculs de ratios relatifs et détection d'alertes |
 | **💾 Exercice 2.b** : Quel outil pour quelle situation ? *(10 cas)* | **5 %** | **5 pts** | 1,0 pt | Analyse logicielle et manipulation des formats de fichiers sportifs (.csv, .fit, .gpx, .json) |
-| **📊 Exercice 3** : Excel - Structuration de données de terrain | **10 %** | **10 pts** | 2,0 pts | Principes de Tidy Data, nettoyage de données brutes et formules de calculs physiologiques |
+| **🚴 Exercice 3** : Power Query - Poids-Puissance & Cyclisme | **10 %** | **10 pts** | 2,0 pts | Modélisation sous Power Query : ratios W/kg (5s, 5min, FTP), nutrition relative et profilage Grimpeur vs Sprinteur |
 | **📱 Exercice 4** : Excel - Créer ses propres outils de suivi | **10 %** | **10 pts** | 2,0 pts | Automatisation de questionnaires (Hooper, Session-RPE de Foster) et Dashboards TCD |
 | **🔬 Exercice 5** : De la donnée à la décision *(Veille & Science)* | **10 %** | **10 pts** | 2,0 pts | Veille scientifique avec NotebookLM, esprit critique et refus des dérives déterministes |
 | **🤖 Exercice 6** : Créer une application IA et un agent | **10 %** | **10 pts** | 2,0 pts | Conception et prototypage d'un assistant IA dédié à l'optimisation de l'entraînement |
@@ -62,7 +62,7 @@ Chaque atelier professionnel contribue au total de **60 points** des travaux pra
 * **Exercice 1 (10 pts)** : Sélection des capteurs et instruments adaptés aux contraintes du sport, des surfaces et de la métrologie.
 * **Exercice 2.a (5 pts)** : Extraction, transformation et modélisation de données nutritionnelles sous Excel Power Query (cas d'une équipe de natation).
 * **Exercice 2.b (5 pts)** : Choix de logiciels spécialisés et conversion de flux de données brutes selon 10 contextes professionnels.
-* **Exercice 3 (10 pts)** : Modélisation sous Microsoft Excel / Power Query selon les standards de la donnée propre (*Tidy Data*).
+* **Exercice 3 (10 pts)** : Modélisation sous Power Query : calcul des ratios de puissance relative (W/kg), apports nutritionnels et questions d'arbitrage individualisé en cyclisme.
 * **Exercice 4 (10 pts)** : Élaboration d'outils opérationnels de recueil de fatigue et de charge subjective perçue avec graphiques dynamiques.
 * **Exercice 5 (10 pts)** : Confrontation des données aux publications scientifiques récentes (PubMed, Sports Medicine) via NotebookLM.
 * **Exercice 6 (10 pts)** : Implémentation d'un agent conversationnel orienté préparation physique avec règles d'arbitrage.

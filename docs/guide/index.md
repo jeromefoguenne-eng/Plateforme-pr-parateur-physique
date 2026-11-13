@@ -43,11 +43,11 @@ L'évaluation repose sur un dispositif continu et authentique calculé sur **100
 
 | Composante d'Évaluation | Pondération (%) | Points (/100) | Contribution sur 20 |
 | :--- | :---: | :---: | :---: |
-| **Quiz de la plateforme** *(Moyenne des 7 quiz)* | **10 %** | 10 pts | 2,0 pts |
+| **Quiz de la plateforme** *(Moyenne des quiz)* | **10 %** | 10 pts | 2,0 pts |
 | **Exercice 1** : Quel capteur choisir ? *(10 situations)* | **10 %** | 10 pts | 2,0 pts |
 | **Exercice 2.a** : Extraction Power Query & Nutrition *(Natation)* | **5 %** | 5 pts | 1,0 pt |
 | **Exercice 2.b** : Quel outil pour quelle situation ? *(10 cas)* | **5 %** | 5 pts | 1,0 pt |
-| **Exercice 3** : Excel - Structuration de données de terrain | **10 %** | 10 pts | 2,0 pts |
+| **Exercice 3** : Power Query - Poids-Puissance & Cyclisme | **10 %** | 10 pts | 2,0 pts |
 | **Exercice 4** : Excel - Créer ses propres outils de suivi | **10 %** | 10 pts | 2,0 pts |
 | **Exercice 5** : De la donnée à la décision *(Veille & Science)* | **10 %** | 10 pts | 2,0 pts |
 | **Exercice 6** : Créer une application IA et un agent | **10 %** | 10 pts | 2,0 pts |

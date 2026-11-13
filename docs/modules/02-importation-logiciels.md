@@ -888,7 +888,9 @@ Pour choisir l'outil adapté aux besoins du préparateur physique et de ses athl
   <QuizBox moduleId="02-importation-logiciels" moduleTitle="Formats & Logiciels Dédiés" />
 </ClientOnly>
 
-## 🏋️‍♂️ Travail pratique associé
+## 🏋️‍♂️ Travaux pratiques associés
+
+### Exercice 02.b — Sélection d'outils numériques
 
 <ClientOnly>
   <ExerciseBox 
@@ -896,5 +898,45 @@ Pour choisir l'outil adapté aux besoins du préparateur physique et de ses athl
     exerciseTitle="Exercice 02.b — Quel outil pour quelle situation ?" 
     googleDriveLink="https://drive.google.com/drive/folders/1w7P6L2P2kK5M6e3p-example-ex2" 
     description="Pour chacun des 10 cas décisionnels proposés, identifiez les données requises, sélectionnez l'application la plus adaptée (Nolio, WKO5, Kinovea, TrainingPeaks...), proposez une alternative et justifiez les limites de votre choix." 
+  />
+</ClientOnly>
+
+---
+
+## 🚴 Travail pratique d'expertise — Exercice 03 : Power Query & Profilage Cycliste
+
+<div class="exercise-intro-card" style="background: var(--vp-c-bg-soft); border-left: 4px solid #0284c7; padding: 1.25rem 1.5rem; border-radius: 8px; margin: 1.5rem 0;">
+  <h3 style="margin-top: 0; color: var(--vp-c-brand-1);">⚡ Défi en autonomie : Optimisation du Rapport Poids-Puissance (W/kg) & Profilage Grimpeur-Sprinteur</h3>
+  <p>
+    En tant que préparateur physique et data analyst d'un collectif cycliste professionnel, votre mission est d'exploiter les exports de capteurs de puissance et les carnets nutritionnels de 8 coureurs élites pour préparer les objectifs de la saison.
+  </p>
+  <p>
+    <strong>Aucun tutoriel pas-à-pas n'est fourni pour cet exercice :</strong> l'objectif est de vous placer en pleine autonomie pour explorer et mobiliser les fonctionnalités d'extraction, de transformation et de calcul personnalisé sous <strong>Microsoft Excel Power Query</strong>.
+  </p>
+  <p>
+    À la fin de la modélisation technique, la compétence du préparateur physique et son interprétation sportive sont au cœur de l'exercice : vous devez répondre à 4 questions d'arbitrage physiologique et prescrire des ajustements concrets d'entraînement et de nutrition.
+  </p>
+</div>
+
+### 📋 Copie du résultat attendu (Tableau de référence)
+
+Pour valider votre requête Power Query, voici la copie de la structure et des données attendues en sortie dans votre feuille Excel :
+
+| Cycliste | Poids | FTP (20m) | W/kg FTP | Pmax 5s | W/kg 5s | Glucides/kg | Profil Calculé | Diagnostic & Alerte Staff |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :--- |
+| **Julien Pinot** | 58,5 kg | 360 W | **6,15** | 920 W | 15,7 | 8,20 g/kg | **Grimpeur** | Conforme (Rapport W/kg optimal 6.15 W/kg) |
+| **Lucas Van Aert** | 78,0 kg | 390 W | **5,00** | 1580 W | **20,3** | 7,18 g/kg | **Sprinteur** | Conforme (Profil Sprinteur lourd 20.3 W/kg) |
+| **Romain Bardet** | 61,0 kg | 350 W | **5,74** | 940 W | 15,4 | 5,08 g/kg | **Grimpeur** | ⚠️ Alerte Déficit Glucides & Risque RED-S (MG 4.9%) |
+| **Thomas De Gendt** | 71,5 kg | 385 W | **5,38** | 1180 W | 16,5 | 7,55 g/kg | **Rouleur / Poly.** | Conforme (Profil Baroudeur équilibré) |
+| **Sam Bennett** | 76,5 kg | 360 W | **4,71** | 1620 W | **21,2** | 6,80 g/kg | **Sprinteur** | Conforme (Pmax 21.2 W/kg préservée) |
+| **Thibaut Gaudu** | 63,0 kg | 370 W | **5,87** | 1080 W | 17,1 | 8,10 g/kg | **Grimpeur** | Conforme (Punch en côte 17.1 W/kg et FTP 5.87 W/kg) |
+| **M. Van der Poel** | 74,5 kg | 425 W | **5,70** | 1510 W | **20,3** | 8,46 g/kg | **Puncheur Hybride** | Conforme (Moteur aéro/anaérobie hors-norme, 3880 kcal) |
+| **Hugo Hofstetter** | 72,0 kg | 320 W | **4,44** | 1380 W | 19,2 | 5,83 g/kg | **Sprinteur** | ⚠️ Alerte Déficit Glucides (5.83 g/kg) & Hydratation (2.8L) |
+
+<ClientOnly>
+  <ExerciseBox 
+    exerciseId="exercice-03" 
+    exerciseTitle="Exercice 03 — Power Query : Optimisation Poids-Puissance & Profilage Cycliste" 
+    description="À partir d'un export brut de 8 cyclistes professionnels, construisez une requête Power Query pour calculer les ratios W/kg, les apports nutritionnels relatifs (g/kg/j) et catégoriser automatiquement les profils Grimpeur vs Sprinteur. Répondez ensuite aux 4 questions professionnelles d'arbitrage et de prescription d'entraînement pour le staff." 
   />
 </ClientOnly>
