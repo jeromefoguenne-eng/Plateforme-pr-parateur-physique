@@ -517,7 +517,7 @@ function getWordDownloadUrl(fileBase) {
         </div>
         <div style="margin-bottom: 1rem;">
           <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">Saisissez le code</label>
-          <input v-model="recoveryCode" type="text" placeholder="6 chiffres (ou hech2026)" style="width: 100%; padding: 10px 12px; border: 1px solid var(--vp-c-divider); border-radius: 8px; font-size: 0.95rem;" />
+          <input v-model="recoveryCode" type="text" placeholder="Code à 6 chiffres" style="width: 100%; padding: 10px 12px; border: 1px solid var(--vp-c-divider); border-radius: 8px; font-size: 0.95rem;" />
         </div>
         <div style="margin-bottom: 1rem;">
           <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">Nouveau mot de passe</label>

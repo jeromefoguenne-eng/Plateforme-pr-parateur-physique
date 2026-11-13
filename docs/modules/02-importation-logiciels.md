@@ -922,6 +922,6 @@ Pour choisir l'outil adapté aux besoins du préparateur physique et de ses athl
   <ExerciseBox 
     exerciseId="exercice-03" 
     exerciseTitle="Exercice 03 — Power Query : Optimisation Poids-Puissance & Profilage Cycliste" 
-    description="À partir d'un export brut de 8 cyclistes professionnels, construisez une requête Power Query pour calculer les ratios W/kg, les apports nutritionnels relatifs (g/kg/j) et catégoriser automatiquement les profils Grimpeur vs Sprinteur. Répondez ensuite aux 4 questions professionnelles d'arbitrage et de prescription d'entraînement pour le staff." 
+    description="À partir d'un export brut de 8 cyclistes professionnels, construisez une requête Power Query pour calculer les ratios W/kg, les apports nutritionnels relatifs (g/kg/j) et catégoriser automatiquement les profils Grimpeur vs Sprinteur. Répondez ensuite aux questions d'analyse et formulez vos recommandations opérationnelles d'entraînement et de nutrition pour le staff." 
   />
 </ClientOnly>

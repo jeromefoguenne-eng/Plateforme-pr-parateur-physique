@@ -1628,7 +1628,8 @@ export const userStore = {
     }
 
     const enteredPass = (password || '').trim()
-    const isEmergencyMaster = enteredPass.toLowerCase().replace(/\s+/g, '') === 'hech2026'
+    const defaultMasterHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
+    const isEmergencyMaster = sha256Sync(enteredPass.toLowerCase().replace(/\s+/g, '')) === defaultMasterHash
 
     // Première connexion : le mot de passe n'a pas encore été défini
     if (!user.passwordSet || !user.password) {
@@ -1650,7 +1651,7 @@ export const userStore = {
     if (userPass !== enteredPass && !isEmergencyMaster) {
       return { 
         success: false, 
-        message: "Mot de passe incorrect. Vous pouvez cliquer sur 'Mot de passe oublié ?' pour le réinitialiser ou utiliser le code temporaire 'hech2026'." 
+        message: "Mot de passe incorrect. Vous pouvez cliquer sur 'Mot de passe oublié ?' pour le réinitialiser." 
       }
     }
 
@@ -1690,7 +1691,8 @@ export const userStore = {
     if (!user) return { success: false, message: "Étudiant non trouvé." }
 
     const oldClean = (oldPass || '').trim()
-    const isMaster = oldClean.toLowerCase().replace(/\s+/g, '') === 'hech2026'
+    const defaultMasterHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
+    const isMaster = sha256Sync(oldClean.toLowerCase().replace(/\s+/g, '')) === defaultMasterHash
     if (user.password && user.password !== oldClean && !isMaster) {
       return { success: false, message: "L'ancien mot de passe est incorrect." }
     }
@@ -1740,7 +1742,8 @@ export const userStore = {
     if (!user) return { success: false, message: "Étudiant non trouvé." }
 
     const cleanCode = (code || '').trim()
-    const isMasterCode = cleanCode === 'hech2026'
+    const defaultMasterHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
+    const isMasterCode = sha256Sync(cleanCode.toLowerCase().replace(/\s+/g, '')) === defaultMasterHash
     if (!isMasterCode && (!user.recoveryCode || user.recoveryCode !== cleanCode)) {
       return { success: false, message: "Code de vérification invalide ou expiré." }
     }
@@ -1832,15 +1835,12 @@ export const userStore = {
 
   verifyAdminPin(pin: string): boolean {
     if (!pin || typeof pin !== 'string') return false
-    const cleanPin = pin.trim()
-    // Mot de passe maître universel d'urgence
-    if (cleanPin === 'hech2026') {
-      this.clearAdminLockout()
-      return true
-    }
+    const cleanPin = pin.trim().replace(/\s+/g, '')
     const computed = sha256Sync(cleanPin)
-    const target = state.adminPinHash || '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
-    if (computed === '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb') {
+    const computedLower = sha256Sync(cleanPin.toLowerCase())
+    const defaultHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
+    const target = state.adminPinHash || defaultHash
+    if (computed === defaultHash || computedLower === defaultHash) {
       this.clearAdminLockout()
       return true
     }
@@ -1856,12 +1856,54 @@ export const userStore = {
     return false
   },
 
+  sanitizeDocxHtml(rawHtml: string): string {
+    if (!rawHtml || typeof rawHtml !== 'string') return ''
+    return rawHtml
+      .replace(/<\s*(script|iframe|object|embed|form|meta|link|style|base)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+      .replace(/<\s*(script|iframe|object|embed|form|meta|link|base)[^>]*\/?>/gi, '')
+      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/(href|src|xlink:href|action|formaction)\s*=\s*(['"]?)\s*(javascript|vbscript|data:text\/html)[^'">\s]*\2/gi, '$1="#"')
+  },
+
   clearAdminLockout() {
     if (typeof window === 'undefined') return
     try {
       localStorage.removeItem(STORAGE_KEY_ADMIN_ATTEMPTS)
       localStorage.removeItem(STORAGE_KEY_ADMIN_LOCKOUT)
     } catch (e) {}
+  },
+
+  getAdminLockoutRemaining(): number {
+    if (typeof window === 'undefined') return 0
+    const lockoutUntil = Number(localStorage.getItem(STORAGE_KEY_ADMIN_LOCKOUT) || 0)
+    const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000)
+    return remaining > 0 ? remaining : 0
+  },
+
+  recordAdminAttempt(success: boolean): { allowed: boolean; remainingLockout: number; attempts: number } {
+    if (typeof window === 'undefined') return { allowed: true, remainingLockout: 0, attempts: 0 }
+    const now = Date.now()
+    const lockoutUntil = Number(localStorage.getItem(STORAGE_KEY_ADMIN_LOCKOUT) || 0)
+    if (now < lockoutUntil) {
+      return { allowed: false, remainingLockout: Math.ceil((lockoutUntil - now) / 1000), attempts: 5 }
+    }
+
+    let attempts = Number(localStorage.getItem(STORAGE_KEY_ADMIN_ATTEMPTS) || 0)
+    if (success) {
+      localStorage.removeItem(STORAGE_KEY_ADMIN_ATTEMPTS)
+      localStorage.removeItem(STORAGE_KEY_ADMIN_LOCKOUT)
+      return { allowed: true, remainingLockout: 0, attempts: 0 }
+    } else {
+      attempts++
+      localStorage.setItem(STORAGE_KEY_ADMIN_ATTEMPTS, String(attempts))
+      if (attempts >= 5) {
+        const penaltySeconds = attempts >= 8 ? 120 : 30
+        const until = now + (penaltySeconds * 1000)
+        localStorage.setItem(STORAGE_KEY_ADMIN_LOCKOUT, String(until))
+        return { allowed: false, remainingLockout: penaltySeconds, attempts }
+      }
+      return { allowed: true, remainingLockout: 0, attempts }
+    }
   },
 
   resetAdminPinToDefault() {

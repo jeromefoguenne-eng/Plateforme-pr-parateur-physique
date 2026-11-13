@@ -559,7 +559,7 @@ async function toggleDocumentPreview(file) {
         const mammothModule = await import('mammoth/mammoth.browser.js')
         const mammoth = mammothModule.default || mammothModule
         const res = await mammoth.convertToHtml({ arrayBuffer })
-        activeDocPreview.value.htmlContent = res.value || ''
+        activeDocPreview.value.htmlContent = userStore.sanitizeDocxHtml(res.value || '')
         activeDocPreview.value.loading = false
       } else {
         if (fileExtractedText) {
@@ -697,10 +697,23 @@ function handleSaveWebhook() {
 function checkPin() {
   loginErrorMessage.value = ''
   if (userStore.verifyAdminPin(enteredPin.value)) {
+    userStore.clearAdminLockout()
     isAuthenticated.value = true
+    enteredPin.value = ''
     triggerCloudSync()
+    return
+  }
+  const rem = userStore.getAdminLockoutRemaining()
+  if (rem > 0) {
+    loginErrorMessage.value = `🔒 Accès temporairement suspendu (${rem}s). Veuillez patienter avant de réessayer.`
+    return
+  }
+  const att = userStore.recordAdminAttempt(false)
+  if (!att.allowed) {
+    loginErrorMessage.value = `🔒 Sécurité : trop d'échecs consécutifs. Accès temporairement suspendu (${att.remainingLockout}s).`
   } else {
-    loginErrorMessage.value = 'Code enseignant incorrect. Mot de passe maître disponible : hech2026'
+    const remainingTries = Math.max(0, 5 - att.attempts)
+    loginErrorMessage.value = `Code enseignant incorrect (${remainingTries} tentative${remainingTries > 1 ? 's' : ''} restante${remainingTries > 1 ? 's' : ''} avant verrouillage temporaire).`
   }
 }
 
@@ -851,7 +864,7 @@ function handleResetAllStudents() {
         <input 
           v-model="enteredPin" 
           :type="showAdminPin ? 'text' : 'password'" 
-          placeholder="Mot de passe d'accès (ex: hech2026)" 
+          placeholder="Mot de passe enseignant" 
           style="flex: 1; padding: 10px 14px; border: 1px solid var(--vp-c-divider); border-radius: 8px; font-size: 1rem;"
           @keyup.enter="checkPin"
         />
