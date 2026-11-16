@@ -252,8 +252,8 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     points: 10,
     category: 'exercice',
     companionFiles: [
+      { name: 'Consignes et questions de l\'exercice (.docx)', fileBase: 'Exercice-04.docx', icon: '📄', downloadName: 'Exercice-04-Consignes.docx' },
       { name: 'Données brutes de l\'exercice (.xlsx)', fileBase: 'Exercice 04 - Donnees brutes.xlsx', icon: '📈', downloadName: 'Exercice-04-Donnees-Brutes.xlsx' },
-      { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-04-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-04-Tutoriel.docx' },
       { name: 'Modèle attendu - Outils de suivi (.xlsx)', fileBase: 'Exercice 04 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-04-Production-Attendue.xlsx' }
     ]
   },
