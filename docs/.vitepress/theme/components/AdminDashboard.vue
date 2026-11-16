@@ -884,6 +884,10 @@ function handleResetAllStudents() {
         Déverrouiller l'Espace Admin →
       </button>
 
+      <div style="font-size: 0.85rem; color: var(--vp-c-text-2); margin-top: 10px; text-align: center; background: rgba(59, 130, 246, 0.08); padding: 8px 12px; border-radius: 6px;">
+        💡 Mot de passe enseignant : <code>hech2026</code>
+      </div>
+
       <p v-if="loginErrorMessage" style="color: #dc2626; font-size: 0.9rem; margin-top: 1rem; font-weight: 600;">
         {{ loginErrorMessage }}
       </p>

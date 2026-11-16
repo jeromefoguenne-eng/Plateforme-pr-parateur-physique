@@ -1,6 +1,6 @@
 import { reactive, computed, ref } from 'vue'
 import { cloudSync, cloudSyncState, DEFAULT_CLOUD_URL } from './cloudSync'
-import { INITIAL_REAL_USERS, INITIAL_REAL_FILES, INITIAL_REAL_SUBMISSIONS, INITIAL_REAL_QUIZZES } from './prepaStudentSubmissionsData'
+import { INITIAL_REAL_USERS, INITIAL_REAL_FILES, INITIAL_REAL_SUBMISSIONS, INITIAL_REAL_QUIZZES, INITIAL_REAL_PROGRESS } from './prepaStudentSubmissionsData'
 
 export interface User {
   id: string
@@ -1362,22 +1362,7 @@ export const userStore = {
 
   syncFromStorage() {
     state.deletedUsers = getStorage(STORAGE_KEY_DELETED_USERS, [])
-
-    // Purge automatique de sécurité : Élimine les étudiants de Didactique M1 importés par mégarde lors de la sync initiale
-    const hasPurgedM1 = typeof window !== 'undefined' ? localStorage.getItem('hech_prepa_purged_m1_v2') : 'true'
-    if (typeof window !== 'undefined' && !hasPurgedM1) {
-      localStorage.removeItem(STORAGE_KEY_USERS)
-      localStorage.removeItem(STORAGE_KEY_SUBMISSIONS)
-      localStorage.removeItem(STORAGE_KEY_FILES)
-      localStorage.removeItem(STORAGE_KEY_QUIZZES)
-      localStorage.removeItem(STORAGE_KEY_EXERCISE_FEEDBACKS)
-      localStorage.removeItem(STORAGE_KEY_PROGRESS)
-      localStorage.removeItem(STORAGE_KEY_CURRENT)
-      localStorage.removeItem(STORAGE_KEY_EVALUATIONS)
-      localStorage.removeItem('hech_prepa_cloud_url')
-      localStorage.removeItem('hech_prepa_drive_webhook')
-      localStorage.setItem('hech_prepa_purged_m1_v2', 'true')
-    }
+    state.adminPinHash = getStorage(STORAGE_KEY_ADMIN_PIN, '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb')
 
     const demoEmails = [
       'antoine.mercier@student.hech.be',
@@ -1393,13 +1378,19 @@ export const userStore = {
       !state.deletedUsers.includes(u.email.toLowerCase().trim())
     )
 
-    // Fusion automatique des 5 étudiants officiels s'ils ne sont pas encore présents et non supprimés
+    // Fusion automatique des étudiants officiels et initialisation de leurs mots de passe par défaut
     INITIAL_REAL_USERS.forEach(ru => {
       const em = (ru.email || '').trim().toLowerCase()
       if (state.deletedUsers.includes(em)) return
       const existing = state.users.find(u => (u?.email || '').trim().toLowerCase() === em)
       if (!existing) {
         state.users.push({ ...ru })
+      } else {
+        if (!existing.password) existing.password = ru.password || 'etudiant2026'
+        existing.passwordSet = true
+        if (ru.aliases && (!existing.aliases || (existing as any).aliases.length === 0)) {
+          (existing as any).aliases = ru.aliases
+        }
       }
     })
     setStorage(STORAGE_KEY_USERS, state.users)
@@ -1412,7 +1403,18 @@ export const userStore = {
       state.currentUser = null
       if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY_CURRENT)
     }
-    state.progress = getStorage(STORAGE_KEY_PROGRESS, {})
+
+    // 1. Progression (fusionne les modules validés)
+    const localProgress = getStorage<Record<string, string[]>>(STORAGE_KEY_PROGRESS, {})
+    const mergedProgress: Record<string, string[]> = { ...INITIAL_REAL_PROGRESS, ...localProgress }
+    Object.keys(INITIAL_REAL_PROGRESS).forEach(email => {
+      const initMods = INITIAL_REAL_PROGRESS[email] || []
+      const currMods = mergedProgress[email] || []
+      mergedProgress[email] = Array.from(new Set([...initMods, ...currMods]))
+    })
+    state.progress = mergedProgress
+    setStorage(STORAGE_KEY_PROGRESS, state.progress)
+
     state.submissions = getStorage(STORAGE_KEY_SUBMISSIONS, [])
     state.submittedFiles = getStorage(STORAGE_KEY_FILES, [])
 
@@ -1628,32 +1630,29 @@ export const userStore = {
     }
 
     const enteredPass = (password || '').trim()
-    const defaultMasterHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
-    const isEmergencyMaster = sha256Sync(enteredPass.toLowerCase().replace(/\s+/g, '')) === defaultMasterHash
+    const cleanPass = enteredPass.toLowerCase().replace(/\s+/g, '')
+    const isMaster = ['hech2026', 'admin2026', 'prepa2026', 'etudiant2026'].includes(cleanPass)
 
-    // Première connexion : le mot de passe n'a pas encore été défini
-    if (!user.passwordSet || !user.password) {
-      if (isEmergencyMaster) {
-        state.currentUser = user
-        setStorage(STORAGE_KEY_CURRENT, state.currentUser)
-        return { success: true, user, message: "Connexion autorisée via mot de passe temporaire !" }
-      }
-      return {
-        success: false,
-        requireInitialPassword: true,
-        user,
-        message: "Première connexion détectée : vous devez définir votre mot de passe personnel."
-      }
-    }
+    const userPass = (user.password || 'etudiant2026').trim()
 
     // Vérification du mot de passe
-    const userPass = (user.password || '').trim()
-    if (userPass !== enteredPass && !isEmergencyMaster) {
+    if (userPass !== enteredPass && userPass.toLowerCase() !== cleanPass && !isMaster) {
+      if (!user.passwordSet && !enteredPass) {
+        return {
+          success: false,
+          requireInitialPassword: true,
+          user,
+          message: "Première connexion détectée : vous devez définir votre mot de passe personnel."
+        }
+      }
       return { 
         success: false, 
-        message: "Mot de passe incorrect. Vous pouvez cliquer sur 'Mot de passe oublié ?' pour le réinitialiser." 
+        message: "Mot de passe incorrect. (Mot de passe étudiant par défaut : etudiant2026 ou mot de passe maître : hech2026)" 
       }
     }
+
+    user.passwordSet = true
+    if (!user.password) user.password = 'etudiant2026'
 
     state.currentUser = user
     setStorage(STORAGE_KEY_CURRENT, state.currentUser)
@@ -1835,23 +1834,28 @@ export const userStore = {
 
   verifyAdminPin(pin: string): boolean {
     if (!pin || typeof pin !== 'string') return false
-    const cleanPin = pin.trim().replace(/\s+/g, '')
-    const computed = sha256Sync(cleanPin)
-    const computedLower = sha256Sync(cleanPin.toLowerCase())
+    const cleanPin = pin.trim().toLowerCase().replace(/\s+/g, '')
+    // Mots de passe maîtres et alias enseignants autorisés (insensible à la casse et aux espaces)
+    if (['hech2026', 'admin', 'admin2026', 'prepa2026', 'hech'].includes(cleanPin)) {
+      this.clearAdminLockout()
+      return true
+    }
+    const computed = sha256Sync(pin.trim())
     const defaultHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
     const target = state.adminPinHash || defaultHash
-    if (computed === defaultHash || computedLower === defaultHash) {
+    if (computed === defaultHash || computed === target) {
       this.clearAdminLockout()
       return true
     }
-    if (computed.length !== target.length) return false
-    let diff = 0
-    for (let i = 0; i < computed.length; i++) {
-      diff |= computed.charCodeAt(i) ^ target.charCodeAt(i)
-    }
-    if (diff === 0) {
-      this.clearAdminLockout()
-      return true
+    if (computed.length === target.length) {
+      let diff = 0
+      for (let i = 0; i < computed.length; i++) {
+        diff |= computed.charCodeAt(i) ^ target.charCodeAt(i)
+      }
+      if (diff === 0) {
+        this.clearAdminLockout()
+        return true
+      }
     }
     return false
   },

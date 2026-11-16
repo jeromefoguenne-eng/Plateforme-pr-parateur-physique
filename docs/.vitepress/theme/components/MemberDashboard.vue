@@ -103,6 +103,17 @@ async function handleLogin() {
     return
   }
 
+  // Si un mot de passe est déjà saisi, tenter directement l'authentification
+  if (loginPassword.value) {
+    let directRes = userStore.loginStudentWithPassword(clean, loginPassword.value)
+    if (directRes.success) {
+      loginMsg.value = ''
+      loginPassword.value = ''
+      userStore.syncWithCloud().catch(() => {})
+      return
+    }
+  }
+
   isAuthenticating.value = true
   authFeedbackMessage.value = 'Vérification du compte...'
 
@@ -127,14 +138,14 @@ async function handleLogin() {
   }
 
   // Première connexion sans mot de passe encore défini -> Accès immédiat à la configuration du mot de passe
-  if (!status.passwordSet) {
+  if (!status.passwordSet && !loginPassword.value) {
     authPendingUser.value = status.user
     authViewMode.value = 'first-login'
     return
   }
 
   if (!loginPassword.value) {
-    loginMsg.value = 'Veuillez saisir votre mot de passe personnel.'
+    loginMsg.value = 'Veuillez saisir votre mot de passe (par défaut : etudiant2026).'
     return
   }
 
@@ -156,7 +167,7 @@ async function handleLogin() {
       authPendingUser.value = res.user
       authViewMode.value = 'first-login'
     } else {
-      loginMsg.value = res.message || 'Mot de passe incorrect.'
+      loginMsg.value = res.message || 'Mot de passe incorrect. (Par défaut : etudiant2026)'
     }
   } else {
     loginMsg.value = ''
@@ -281,7 +292,8 @@ function handleLogout() {
 // ==========================================
 
 function getFileForExercise(exId) {
-  return studentFiles.value.find(f => f.exerciseId === exId)
+  const matched = studentFiles.value.filter(f => f && f.exerciseId === exId)
+  return matched.length > 0 ? matched[matched.length - 1] : null
 }
 
 function getFeedbackForExercise(exId) {
@@ -425,6 +437,9 @@ function getWordDownloadUrl(fileBase) {
           >
             {{ isAuthenticating ? 'Vérification...' : 'Se connecter →' }}
           </button>
+          <div style="font-size: 0.8rem; color: var(--vp-c-text-2); margin-top: 10px; text-align: center; background: rgba(59, 130, 246, 0.08); padding: 8px 12px; border-radius: 6px;">
+            💡 Mot de passe étudiant par défaut : <code>etudiant2026</code> (ou mot de passe maître : <code>hech2026</code>)
+          </div>
           <div v-if="authFeedbackMessage" style="font-size: 0.85rem; color: #0284c7; margin-top: 8px; text-align: center;">
             ⏳ {{ authFeedbackMessage }}
           </div>
