@@ -16,12 +16,30 @@ export interface CloudSyncState {
   isOnline: boolean
 }
 
+export function isValidCloudUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') return false
+  const clean = url.trim()
+  try {
+    const parsed = new URL(clean)
+    if (parsed.protocol !== 'https:') return false
+    const host = parsed.hostname.toLowerCase()
+    return host === 'script.google.com' || host.endsWith('.script.google.com') || host.endsWith('.google.com')
+  } catch (e) {
+    return false
+  }
+}
+
 function getInitialCloudUrl(): string {
   if (typeof window === 'undefined') return DEFAULT_CLOUD_URL
   const stored = localStorage.getItem(STORAGE_KEY_CLOUD_URL)
   if (stored && stored.includes(M1_SCRIPT_ID)) {
     localStorage.removeItem(STORAGE_KEY_CLOUD_URL)
     localStorage.removeItem('hech_prepa_drive_webhook')
+    return ''
+  }
+  if (stored && !isValidCloudUrl(stored)) {
+    console.warn("[Sécurité] URL de synchronisation cloud invalide ignorée.")
+    localStorage.removeItem(STORAGE_KEY_CLOUD_URL)
     return ''
   }
   return stored || DEFAULT_CLOUD_URL
@@ -49,32 +67,48 @@ export class CloudSync {
         localStorage.removeItem('hech_prepa_drive_webhook')
         return ''
       }
-      if (stored && stored.trim().length > 15) return stored.trim()
+      if (stored && stored.trim().length > 15) {
+        const tr = stored.trim()
+        if (isValidCloudUrl(tr)) return tr
+        localStorage.removeItem(STORAGE_KEY_CLOUD_URL)
+      }
       const webhook = localStorage.getItem('hech_prepa_drive_webhook')
       if (webhook && webhook.includes(M1_SCRIPT_ID)) {
         localStorage.removeItem('hech_prepa_drive_webhook')
         return ''
       }
-      if (webhook && webhook.trim().length > 15) return webhook.trim()
+      if (webhook && webhook.trim().length > 15) {
+        const tr = webhook.trim()
+        if (isValidCloudUrl(tr)) return tr
+        localStorage.removeItem('hech_prepa_drive_webhook')
+      }
     }
-    return cloudSyncState.url || DEFAULT_CLOUD_URL
+    const current = cloudSyncState.url || DEFAULT_CLOUD_URL
+    return isValidCloudUrl(current) ? current : ''
   }
 
   setUrl(newUrl: string) {
     const clean = (newUrl || '').trim()
+    if (!clean) {
+      cloudSyncState.url = ''
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY_CLOUD_URL)
+        localStorage.removeItem('hech_prepa_drive_webhook')
+      }
+      return
+    }
     if (clean.includes(M1_SCRIPT_ID)) {
       console.warn("L'URL saisie appartient au cours Didactique M1 et ne peut pas être utilisée pour Prépa Physique.")
       return
     }
+    if (!isValidCloudUrl(clean)) {
+      console.warn("[Sécurité] L'URL Cloud doit être une URL HTTPS officielle valide de script.google.com.")
+      return
+    }
     cloudSyncState.url = clean
     if (typeof window !== 'undefined') {
-      if (clean) {
-        localStorage.setItem(STORAGE_KEY_CLOUD_URL, clean)
-        localStorage.setItem('hech_prepa_drive_webhook', clean)
-      } else {
-        localStorage.removeItem(STORAGE_KEY_CLOUD_URL)
-        localStorage.removeItem('hech_prepa_drive_webhook')
-      }
+      localStorage.setItem(STORAGE_KEY_CLOUD_URL, clean)
+      localStorage.setItem('hech_prepa_drive_webhook', clean)
     }
   }
 

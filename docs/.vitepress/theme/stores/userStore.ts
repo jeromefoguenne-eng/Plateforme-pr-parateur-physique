@@ -811,12 +811,21 @@ export async function extractTextFromFile(file: File): Promise<string> {
       try {
         const XLSX = await import('xlsx')
         const buffer = await file.arrayBuffer()
-        const wb = XLSX.read(buffer, { type: 'array' })
+        // Options sécurisées : désactiver l'évaluation de formules, styles et HTML pour contrer Prototype Pollution et DoS
+        const wb = XLSX.read(buffer, {
+          type: 'array',
+          cellFormula: false,
+          cellHTML: false,
+          cellStyles: false,
+          sheetRows: 500
+        })
         let fullCsv = ''
         wb.SheetNames.forEach(sheetName => {
           const sheet = wb.Sheets[sheetName]
-          fullCsv += `\n--- Feuille: ${sheetName} ---\n`
-          fullCsv += XLSX.utils.sheet_to_csv(sheet)
+          if (sheet) {
+            fullCsv += `\n--- Feuille: ${sheetName} ---\n`
+            fullCsv += XLSX.utils.sheet_to_csv(sheet)
+          }
         })
         return fullCsv
       } catch (e) {
@@ -856,12 +865,21 @@ export async function extractTextFromDataUrl(dataUrl: string, fileName: string):
     if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
       try {
         const XLSX = await import('xlsx')
-        const wb = XLSX.read(bytes.buffer, { type: 'array' })
+        // Options sécurisées : désactiver l'évaluation de formules, styles et HTML pour contrer Prototype Pollution et DoS
+        const wb = XLSX.read(bytes.buffer, {
+          type: 'array',
+          cellFormula: false,
+          cellHTML: false,
+          cellStyles: false,
+          sheetRows: 500
+        })
         let fullCsv = ''
         wb.SheetNames.forEach(sheetName => {
           const sheet = wb.Sheets[sheetName]
-          fullCsv += `\n--- Feuille: ${sheetName} ---\n`
-          fullCsv += XLSX.utils.sheet_to_csv(sheet)
+          if (sheet) {
+            fullCsv += `\n--- Feuille: ${sheetName} ---\n`
+            fullCsv += XLSX.utils.sheet_to_csv(sheet)
+          }
         })
         return fullCsv
       } catch (e) {
@@ -1742,7 +1760,7 @@ export const userStore = {
 
     const enteredPass = (password || '').trim()
     const cleanPass = enteredPass.toLowerCase().replace(/\s+/g, '')
-    const isMaster = ['hech2026', 'admin2026', 'prepa2026', 'etudiant2026'].includes(cleanPass)
+    const isMaster = ['hech2026', 'etudiant2026'].includes(cleanPass)
 
     const userPass = (user.password || 'etudiant2026').trim()
 
@@ -1946,38 +1964,104 @@ export const userStore = {
   verifyAdminPin(pin: string): boolean {
     if (!pin || typeof pin !== 'string') return false
     const cleanPin = pin.trim().toLowerCase().replace(/\s+/g, '')
-    // Mots de passe maîtres et alias enseignants autorisés (insensible à la casse et aux espaces)
-    if (['hech2026', 'admin', 'admin2026', 'prepa2026', 'hech'].includes(cleanPin)) {
-      this.clearAdminLockout()
-      return true
-    }
-    const computed = sha256Sync(pin.trim())
+    const computed = sha256Sync(cleanPin)
+    // Hash cryptographique SHA-256 du mot de passe enseignant officiel 'hech2026'
     const defaultHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
     const target = state.adminPinHash || defaultHash
-    if (computed === defaultHash || computed === target) {
-      this.clearAdminLockout()
-      return true
-    }
+
+    // Comparaison à temps constant contre les attaques temporelles (timing attacks)
+    let match = false
     if (computed.length === target.length) {
       let diff = 0
       for (let i = 0; i < computed.length; i++) {
         diff |= computed.charCodeAt(i) ^ target.charCodeAt(i)
       }
-      if (diff === 0) {
-        this.clearAdminLockout()
-        return true
+      if (diff === 0) match = true
+    }
+    if (computed.length === defaultHash.length) {
+      let diff = 0
+      for (let i = 0; i < computed.length; i++) {
+        diff |= computed.charCodeAt(i) ^ defaultHash.charCodeAt(i)
       }
+      if (diff === 0) match = true
+    }
+    if (match) {
+      this.clearAdminLockout()
+      return true
     }
     return false
   },
 
   sanitizeDocxHtml(rawHtml: string): string {
     if (!rawHtml || typeof rawHtml !== 'string') return ''
-    return rawHtml
-      .replace(/<\s*(script|iframe|object|embed|form|meta|link|style|base)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-      .replace(/<\s*(script|iframe|object|embed|form|meta|link|base)[^>]*\/?>/gi, '')
-      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-      .replace(/(href|src|xlink:href|action|formaction)\s*=\s*(['"]?)\s*(javascript|vbscript|data:text\/html)[^'">\s]*\2/gi, '$1="#"')
+    if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
+      // Nettoyage strict en environnement SSR / Node.js
+      return rawHtml
+        .replace(/<\s*(script|style|iframe|object|embed|applet|form|input|button|meta|link|base|svg|math)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+        .replace(/<\s*(script|style|iframe|object|embed|applet|form|input|button|meta|link|base|svg|math)[^>]*\/?>/gi, '')
+        .replace(/\son[a-z0-9_-]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/(href|src|action|xlink:href)\s*=\s*(['"]?)\s*(javascript|vbscript|data:(?!image\/))[^'">\s]*\2/gi, '$1="#"')
+    }
+
+    try {
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(rawHtml, 'text/html')
+      const allowedTags = new Set([
+        'p', 'b', 'strong', 'i', 'em', 'u', 's', 'strike', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'ul', 'ol', 'li',
+        'blockquote', 'pre', 'code', 'br', 'hr', 'span', 'sub', 'sup', 'img', 'div'
+      ])
+      const allowedAttrs = new Set(['style', 'class', 'colspan', 'rowspan', 'align', 'title', 'src', 'alt', 'width', 'height'])
+
+      const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null)
+      const nodesToRemove: Element[] = []
+      let currentNode = walker.nextNode() as Element | null
+
+      while (currentNode) {
+        const tag = currentNode.tagName.toLowerCase()
+        if (!allowedTags.has(tag)) {
+          nodesToRemove.push(currentNode)
+        } else {
+          const attrs = Array.from(currentNode.attributes)
+          for (const attr of attrs) {
+            const attrName = attr.name.toLowerCase()
+            if (!allowedAttrs.has(attrName) || attrName.startsWith('on')) {
+              currentNode.removeAttribute(attr.name)
+            } else if (attrName === 'src') {
+              const val = attr.value.trim().toLowerCase()
+              if (!val.startsWith('data:image/') && !val.startsWith('https://')) {
+                currentNode.removeAttribute(attr.name)
+              }
+            } else if (attrName === 'style') {
+              const styleVal = attr.value.toLowerCase()
+              if (styleVal.includes('javascript:') || styleVal.includes('expression(') || styleVal.includes('url(') || styleVal.includes('@import')) {
+                currentNode.removeAttribute(attr.name)
+              }
+            }
+          }
+        }
+        currentNode = walker.nextNode() as Element | null
+      }
+
+      for (const node of nodesToRemove) {
+        const tag = node.tagName.toLowerCase()
+        if (['script', 'style', 'iframe', 'object', 'embed', 'form', 'svg', 'math'].includes(tag)) {
+          node.remove()
+        } else {
+          while (node.firstChild) {
+            node.parentNode?.insertBefore(node.firstChild, node)
+          }
+          node.remove()
+        }
+      }
+
+      return doc.body.innerHTML
+    } catch (e) {
+      return rawHtml
+        .replace(/<\s*(script|style|iframe|object|embed|applet|form|input|button|meta|link|base|svg|math)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+        .replace(/<\s*(script|style|iframe|object|embed|applet|form|input|button|meta|link|base|svg|math)[^>]*\/?>/gi, '')
+        .replace(/\son[a-z0-9_-]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    }
   },
 
   clearAdminLockout() {
@@ -2073,11 +2157,36 @@ export const userStore = {
   async uploadStudentFile(exerciseId: string, exerciseTitle: string, file: File): Promise<{ success: boolean; file?: SubmittedFile; message: string }> {
     if (!state.currentUser) return { success: false, message: 'Veuillez vous connecter.' }
 
+    // 1. Contrôle de sécurité : validation de la taille maximale (15 Mo)
+    const MAX_FILE_SIZE = 15 * 1024 * 1024
+    if (file.size > MAX_FILE_SIZE) {
+      return { 
+        success: false, 
+        message: `Fichier trop volumineux (${(file.size / (1024 * 1024)).toFixed(1)} Mo). La taille maximale autorisée est de 15 Mo.` 
+      }
+    }
+
+    // 2. Contrôle de sécurité : extension de fichier autorisée (whitelist stricte)
+    const rawName = (file.name || '').trim().replace(/[/\\]+/g, '')
+    const dotIdx = rawName.lastIndexOf('.')
+    const ext = dotIdx > 0 ? rawName.slice(dotIdx).toLowerCase() : ''
+    const ALLOWED_EXTENSIONS = ['.xlsx', '.xls', '.docx', '.doc', '.pdf', '.pptx', '.csv', '.txt']
+    
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return { 
+        success: false, 
+        message: `Format de fichier non autorisé (${ext || 'inconnu'}). Formats acceptés : Excel (.xlsx, .xls), Word (.docx, .doc), PDF (.pdf), PowerPoint (.pptx), CSV ou TXT.` 
+      }
+    }
+
+    // 3. Sanitisation du nom de fichier original (neutralisation des caractères de contrôle et path traversal)
+    const sanitizedOriginalName = rawName.replace(/[\x00-\x1f\x7f<>:"|?*]/g, '_').trim()
+
     const formattedName = formatFileName(
       state.currentUser.lastName,
       state.currentUser.firstName,
       exerciseTitle,
-      file.name
+      sanitizedOriginalName
     )
 
     return new Promise((resolve) => {
@@ -2091,7 +2200,7 @@ export const userStore = {
           userEmail: state.currentUser!.email,
           exerciseId,
           exerciseTitle,
-          originalFileName: file.name,
+          originalFileName: sanitizedOriginalName,
           formattedFileName: formattedName,
           fileType: file.type || 'application/octet-stream',
           fileSize: file.size,

@@ -501,6 +501,33 @@ function saveEvaluationToSheet(email, evalData) {
 
 function saveFileToDrive(filePayload) {
   try {
+    if (!filePayload || !filePayload.base64Data) {
+      return { status: "error", message: "Aucune donnée de fichier transmise." };
+    }
+
+    var base64 = filePayload.base64Data;
+    if (base64.indexOf(',') > -1) {
+      base64 = base64.split(',')[1];
+    }
+
+    // 1. Contrôle de taille maximale (25 Mo max en binaire, soit ~35 Mo en Base64)
+    if (base64.length > 35 * 1024 * 1024) {
+      return { status: "error", message: "Fichier trop volumineux. La taille maximale autorisée est de 25 Mo." };
+    }
+
+    // 2. Contrôle strict de l'extension (anti-exécutable et anti-scripts)
+    var ALLOWED_EXTS = ['.xlsx', '.xls', '.docx', '.doc', '.pdf', '.pptx', '.csv', '.txt'];
+    var rawFileName = (filePayload.fileName || 'document.pdf').replace(/[/\\]+/g, '');
+    var lastDot = rawFileName.lastIndexOf('.');
+    var ext = lastDot > 0 ? rawFileName.substring(lastDot).toLowerCase() : '';
+
+    if (ALLOWED_EXTS.indexOf(ext) === -1) {
+      return { status: "error", message: "Extension de fichier non autorisée par mesure de sécurité : " + (ext || 'sans extension') };
+    }
+
+    // 3. Sanitisation du nom de fichier et du dossier
+    var safeFileName = rawFileName.replace(/[\x00-\x1f\x7f<>:"|?*]/g, '_').trim();
+
     var rootFolder = null;
     if (typeof DRIVE_FOLDER_ID !== 'undefined' && DRIVE_FOLDER_ID) {
       try {
@@ -529,12 +556,8 @@ function saveFileToDrive(filePayload) {
       targetFolder = rootFolder.createFolder(safeStudentFolder);
     }
 
-    var base64 = filePayload.base64Data;
-    if (base64.indexOf(',') > -1) {
-      base64 = base64.split(',')[1];
-    }
     var decoded = Utilities.base64Decode(base64);
-    var blob = Utilities.newBlob(decoded, filePayload.mimeType || 'application/octet-stream', filePayload.fileName || 'document.pdf');
+    var blob = Utilities.newBlob(decoded, filePayload.mimeType || 'application/octet-stream', safeFileName);
     var file = targetFolder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 

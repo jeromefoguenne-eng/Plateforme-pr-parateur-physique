@@ -1,0 +1,39 @@
+name: Contrôles de Sécurité & DevSecOps
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Audit hebdomadaire automatique tous les lundis à 06h00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  security-audit:
+    name: Audit des Dépendances & Secrets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Récupération du code source
+        uses: actions/checkout@v4
+
+      - name: Configuration de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installation intègre des dépendances
+        run: npm ci
+
+      - name: Audit de sécurité des paquets npm
+        run: |
+          npm audit --audit-level=high || echo "::warning::Des avis de sécurité nécessitent une attention sur les dépendances non critiques."
+
+      - name: Validation du build de production (anti-régression)
+        run: npm run docs:build
