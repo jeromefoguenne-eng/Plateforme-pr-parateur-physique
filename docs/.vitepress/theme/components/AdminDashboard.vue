@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { withBase } from 'vitepress'
 import { INITIAL_REAL_FILES } from '../stores/prepaStudentSubmissionsData'
-import { userStore, OFFICIAL_EVALUATION_ITEMS, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline } from '../stores/userStore'
+import { userStore, OFFICIAL_EVALUATION_ITEMS, formatDeadlineDisplay, getAlarmLevelInfo, parseDeadline, isQuizMatch } from '../stores/userStore'
 import { DEFAULT_CLOUD_URL, cloudSync } from '../stores/cloudSync'
 
 const enteredPin = ref('')
@@ -848,6 +848,13 @@ function handleResetAllStudents() {
     alert("La liste des étudiants a été réinitialisée à 0 avec succès.")
   }
 }
+
+function handleForceRestoreCertifiedData() {
+  const res = userStore.forceRestoreCertifiedData()
+  closeStudentDossier()
+  initDeadlineInputs()
+  alert(`✅ Restauration réussie !\n\n• ${res.studentsCount} étudiants officiels rétablis\n• ${res.filesCount} travaux et devoirs réels complets (textes & cotes IA)\n• ${res.quizzesCount} tentatives de quiz en ligne`)
+}
 </script>
 
 <template>
@@ -1029,7 +1036,10 @@ function handleResetAllStudents() {
       <div v-if="adminTab === 'students'">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="margin: 0;">Liste des préparateurs physiques ({{ users.length }})</h3>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button @click="handleForceRestoreCertifiedData" style="padding: 6px 12px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 700;" title="Restaurer immédiatement l'intégralité des 37 devoirs réels et 30 tentatives de quiz">
+              🔄 Restaurer 37 devoirs & 30 quiz
+            </button>
             <button @click="handleResetAllStudents" style="padding: 6px 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fecdd3; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;" title="Efface les données résiduelles pour repartir à 0 étudiant">
               🧹 Vider la liste (0 étudiant)
             </button>
@@ -1729,9 +1739,14 @@ function handleResetAllStudents() {
               <span v-else-if="f.aiCorrection" style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">
                 IA : {{ f.aiCorrection.suggestedScore }}/20
               </span>
-              <a v-if="f.dataUrl" :href="f.dataUrl" :download="f.formattedFileName" style="padding: 4px 8px; background: var(--vp-c-bg); border: 1px solid var(--vp-c-divider); border-radius: 4px; font-size: 0.8rem; text-decoration: none; color: inherit;">
+              <button 
+                type="button" 
+                @click="downloadFile(f)" 
+                style="padding: 4px 8px; background: var(--vp-c-bg); border: 1px solid var(--vp-c-divider); border-radius: 4px; font-size: 0.8rem; cursor: pointer; color: inherit;"
+                title="Télécharger ce document"
+              >
                 📥 Télécharger
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -1955,7 +1970,7 @@ function handleResetAllStudents() {
 
               <div style="text-align: right;">
                 <span style="font-weight: 700; font-size: 1.1rem; color: var(--vp-c-brand-1);">
-                  {{ item.score }} / {{ item.maxPoints }} pts
+                  {{ (item.teacherScore !== undefined && item.teacherScore !== null) ? item.teacherScore : ((item.score !== undefined && item.score !== null) ? item.score : item.aiScore) }} / {{ item.maxPoints }} pts
                 </span>
                 <div>
                   <span v-if="item.completed" style="color: #10b981; font-size: 0.8rem; font-weight: 700;">✓ Rendu</span>
@@ -1972,7 +1987,9 @@ function handleResetAllStudents() {
               <div v-else>
                 <div v-for="att in item.quizAttempts" :key="att.id" style="padding: 8px 12px; background: var(--vp-c-bg-soft); border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
                   <div>
-                    <strong>Tentative du {{ att.submittedAt }}</strong>
+                    <strong>{{ att.moduleTitle || ('Quiz ' + att.moduleId) }}</strong>
+                    <br/>
+                    <small style="color: var(--vp-c-text-2);">Tentative du {{ att.submittedAt }}</small>
                   </div>
                   <div style="font-weight: 700; color: #10b981;">
                     {{ att.score }} / {{ att.totalPoints }} pts ({{ att.percentage }}%)

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { userStore } from '../stores/userStore'
+import { userStore, isQuizMatch } from '../stores/userStore'
 
 const props = defineProps({
   moduleId: {
@@ -496,7 +496,7 @@ onMounted(() => {
   // Recharger d'éventuelles réponses précédentes de l'étudiant
   const user = userStore.currentUser
   if (user && userStore.quizAttempts) {
-    const existing = [...userStore.quizAttempts].reverse().find(a => a.moduleId === props.moduleId && a.userEmail === user.email)
+    const existing = [...userStore.quizAttempts].reverse().find(a => isQuizMatch(a.moduleId, props.moduleId) && (a.userEmail || '').toLowerCase().trim() === user.email.toLowerCase().trim())
     if (existing && existing.answers) {
       existing.answers.forEach(ans => {
         if (ans.type === 'open') {

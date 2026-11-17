@@ -152,13 +152,41 @@ export interface QuizModuleDefinition {
   maxPoints: number
 }
 
+export function normalizeQuizId(rawId: string): string {
+  if (!rawId) return ''
+  const s = rawId.toLowerCase().trim()
+  if (s === 'quiz-00' || s === 'module-00' || s === '00-introduction') return 'quiz-00'
+  if (s === 'quiz-01' || s === 'module-01' || s === '01-capteurs') return 'quiz-01'
+  if (s === 'quiz-02' || s === 'module-02' || s === '02-importation-logiciels') return 'quiz-02'
+  if (s === 'quiz-03' || s === 'module-03' || s === '03-excel-structuration') return 'quiz-03'
+  if (s === 'quiz-04' || s === 'module-04' || s === '04-propres-outils-collecte') return 'quiz-04'
+  if (s === 'quiz-05' || s === 'module-05' || s === '05-veille-recherche-scientifique') return 'quiz-05'
+  if (s === 'quiz-06' || s === 'module-06' || s === '06-agents-ia-sport') return 'quiz-06'
+  if (s === 'quiz-07' || s === 'module-07' || s === '07-mission-finale') return 'quiz-07'
+  
+  const digits = s.match(/\d+/)
+  if (digits) {
+    const num = parseInt(digits[0], 10)
+    return `quiz-${num.toString().padStart(2, '0')}`
+  }
+  return s
+}
+
+export function isQuizMatch(idA: string, idB: string): boolean {
+  if (!idA || !idB) return false
+  if (idA.toLowerCase().trim() === idB.toLowerCase().trim()) return true
+  return normalizeQuizId(idA) === normalizeQuizId(idB)
+}
+
 export const ALL_QUIZ_MODULES: QuizModuleDefinition[] = [
   { id: 'quiz-00', title: "Quiz 00 : Introduction & Révolution des données", shortTitle: "Quiz 00 (Intro)", maxPoints: 10 },
   { id: 'quiz-01', title: "Quiz 01 : Capteurs & Données de terrain", shortTitle: "Quiz 01 (Capteurs)", maxPoints: 10 },
   { id: 'quiz-02', title: "Quiz 02 : Formats & Logiciels dédiés", shortTitle: "Quiz 02 (Logiciels)", maxPoints: 10 },
-  { id: 'quiz-04', title: "Quiz 03 : Outils de collecte personnalisés", shortTitle: "Quiz 03 (Outils)", maxPoints: 10 },
-  { id: 'quiz-05', title: "Quiz 04 : Recherche scientifique & Décision", shortTitle: "Quiz 04 (Science)", maxPoints: 10 },
-  { id: 'quiz-06', title: "Quiz 05 : Intelligence Artificielle & Agents", shortTitle: "Quiz 05 (IA)", maxPoints: 10 }
+  { id: 'quiz-03', title: "Quiz 03 : Collecte et Structuration de Données (Tidy Data)", shortTitle: "Quiz 03 (Tidy Data)", maxPoints: 10 },
+  { id: 'quiz-04', title: "Quiz 04 : Tableaux de Bord & Outils de Suivi", shortTitle: "Quiz 04 (Outils)", maxPoints: 10 },
+  { id: 'quiz-05', title: "Quiz 05 : De la Donnée à la Décision", shortTitle: "Quiz 05 (Décision)", maxPoints: 10 },
+  { id: 'quiz-06', title: "Quiz 06 : Intelligence Artificielle & Agents", shortTitle: "Quiz 06 (IA)", maxPoints: 10 },
+  { id: 'quiz-07', title: "Quiz 07 : Prévention du Surentraînement & Mission Finale", shortTitle: "Quiz 07 (Mission)", maxPoints: 10 }
 ]
 
 export const GOOGLE_DRIVE_EXERCISES_FOLDER_ID = '1fRbYhPZKrhIB6uzQJonDgNdrqUdiuLOt'
@@ -1364,6 +1392,11 @@ export const userStore = {
     state.deletedUsers = getStorage(STORAGE_KEY_DELETED_USERS, [])
     state.adminPinHash = getStorage(STORAGE_KEY_ADMIN_PIN, '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb')
 
+    // Protection essentielle : les 6 étudiants officiels ne doivent JAMAIS figurer dans deletedUsers
+    const officialEmails = INITIAL_REAL_USERS.map(u => (u.email || '').toLowerCase().trim())
+    state.deletedUsers = (state.deletedUsers || []).filter(em => !officialEmails.includes((em || '').toLowerCase().trim()))
+    setStorage(STORAGE_KEY_DELETED_USERS, state.deletedUsers)
+
     const demoEmails = [
       'antoine.mercier@student.hech.be',
       'camille.lemoine@student.hech.be',
@@ -1434,6 +1467,24 @@ export const userStore = {
         }
         state.submittedFiles.push(clone)
         filesChanged = true
+      } else {
+        const existing = state.submittedFiles[existingIdx]
+        if (!existing.extractedText && rf.extractedText) {
+          existing.extractedText = rf.extractedText
+          filesChanged = true
+        }
+        if (!existing.aiCorrection && rf.aiCorrection) {
+          existing.aiCorrection = rf.aiCorrection
+          filesChanged = true
+        }
+        if (!existing.formattedFileName && rf.formattedFileName) {
+          existing.formattedFileName = rf.formattedFileName
+          filesChanged = true
+        }
+        if (!existing.fileSize && rf.fileSize) {
+          existing.fileSize = rf.fileSize
+          filesChanged = true
+        }
       }
     })
 
@@ -1474,7 +1525,8 @@ export const userStore = {
       const em = rq.userEmail.trim().toLowerCase()
       if (state.deletedUsers.includes(em)) return
       const existing = state.quizAttempts.find(q => 
-        q && q.userEmail && q.userEmail.trim().toLowerCase() === em && q.moduleId === rq.moduleId && q.id === rq.id
+        q && q.userEmail && q.userEmail.trim().toLowerCase() === em && 
+        (isQuizMatch(q.moduleId, rq.moduleId) || q.id === rq.id)
       )
       if (!existing) {
         state.quizAttempts.push({ ...rq })
@@ -1504,6 +1556,65 @@ export const userStore = {
     state.exerciseFeedbacks = getStorage(STORAGE_KEY_EXERCISE_FEEDBACKS, [])
     state.deadlines = getStorage(STORAGE_KEY_DEADLINES, {})
     state.evaluations = getStorage(STORAGE_KEY_EVALUATIONS, {})
+  },
+
+  forceRestoreCertifiedData() {
+    state.deletedUsers = []
+    setStorage(STORAGE_KEY_DELETED_USERS, [])
+
+    // 1. Utilisateurs officiels complets avec mot de passe
+    state.users = INITIAL_REAL_USERS.map(u => ({
+      ...u,
+      password: u.password || 'etudiant2026',
+      passwordSet: true
+    }))
+    setStorage(STORAGE_KEY_USERS, state.users)
+
+    // 2. Fichiers réels certifiés (37 devoirs avec texte extrait et correction IA)
+    state.submittedFiles = INITIAL_REAL_FILES.map(rf => {
+      const clone = { ...rf }
+      if (!clone.aiCorrection && clone.extractedText) {
+        clone.aiCorrection = generateCriteriaBasedAiCorrection(clone, clone.extractedText, '')
+      }
+      return clone
+    })
+    setStorage(STORAGE_KEY_FILES, state.submittedFiles)
+
+    // 3. Soumissions textuelles
+    state.submissions = INITIAL_REAL_SUBMISSIONS.map(s => ({ ...s }))
+    setStorage(STORAGE_KEY_SUBMISSIONS, state.submissions)
+
+    // 4. Tentatives de quiz en ligne (30 tentatives)
+    state.quizAttempts = INITIAL_REAL_QUIZZES.map(q => ({ ...q }))
+    setStorage(STORAGE_KEY_QUIZZES, state.quizAttempts)
+
+    // 5. Progression officielle
+    state.progress = { ...INITIAL_REAL_PROGRESS }
+    state.submittedFiles.forEach(f => {
+      if (f && f.userEmail && f.exerciseId) {
+        const em = f.userEmail.trim().toLowerCase()
+        const p = state.progress[em]
+        if (!p) {
+          state.progress[em] = [f.exerciseId]
+        } else if (Array.isArray(p)) {
+          if (!p.includes(f.exerciseId)) p.push(f.exerciseId)
+        } else if (typeof p === 'object') {
+          (p as any)[f.exerciseId] = true
+        }
+      }
+    })
+    setStorage(STORAGE_KEY_PROGRESS, state.progress)
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hech_prepa_data_seed_v4', 'true')
+    }
+
+    return {
+      success: true,
+      studentsCount: state.users.length,
+      filesCount: state.submittedFiles.length,
+      quizzesCount: state.quizAttempts.length
+    }
   },
 
   resetAllStudents() {
@@ -2729,22 +2840,22 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       }
     }
 
-    // 1. Quizzes (Moyenne des 6 quiz du cours, convertie sur 10 points)
+    // 1. Quizzes (Moyenne des quiz du cours, convertie sur 10 points)
     const userQuizzes = state.quizAttempts.filter(q => q && q.userEmail && allowed.includes(q.userEmail.toLowerCase().trim()))
     const bestQuizzes: Record<string, number> = {}
     userQuizzes.forEach(q => {
-      const current = bestQuizzes[q.moduleId] || 0
+      const normMod = normalizeQuizId(q.moduleId)
+      const current = bestQuizzes[normMod] || 0
       if ((q.score || 0) > current) {
-        bestQuizzes[q.moduleId] = q.score || 0
+        bestQuizzes[normMod] = q.score || 0
       }
     })
     const totalPointsAcquired = Object.values(bestQuizzes).reduce((acc, pts) => acc + pts, 0)
-    // 6 quiz de 10 points = 60 points max au total.
-    // La note sur 10 est donc (totalPointsAcquired / 60) * 10
     const quizCount = Object.keys(bestQuizzes).length
     let quizAiScore = 0
     if (quizCount > 0) {
-      quizAiScore = Math.round(((totalPointsAcquired / 60) * 10) * 10) / 10
+      // 6 quiz de 10 points = 60 points max au total (plafonné à 10)
+      quizAiScore = Math.min(10, Math.round(((totalPointsAcquired / 60) * 10) * 10) / 10)
     }
     const isQuizDone = quizCount > 0
 
@@ -2767,6 +2878,7 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
           maxPoints: def.maxPoints,
           weightPct: def.weightPct,
           category: 'quiz' as const,
+          score: teacherScore,
           aiScore: isQuizDone ? quizAiScore : 0,
           aiSummary: isQuizDone ? `${quizCount}/6 quiz complété(s) • Total brut : ${totalPointsAcquired}/60 pts` : 'Aucun quiz passé sur la plateforme (0 pt)',
           teacherScore,
@@ -2856,6 +2968,7 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
         maxPoints: def.maxPoints,
         weightPct: def.weightPct,
         category: def.category,
+        score: teacherScore,
         aiScore,
         aiSummary,
         teacherScore,
@@ -2894,6 +3007,7 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
       user,
       email: targetEmail,
       items: evaluationItems,
+      quizzesAverageOutOf10: quizAiScore,
       totalScore,
       totalMax,
       totalOutOf20,
@@ -3357,6 +3471,18 @@ Réponds UNIQUEMENT avec un JSON strict contenant la structure suivante :
 }
 
 if (typeof window !== 'undefined') {
+  // Initialisation et auto-récupération immédiate des données réelles certifiées
+  try {
+    const SEED_VERSION_KEY = 'hech_prepa_data_seed_v4'
+    if (localStorage.getItem(SEED_VERSION_KEY) !== 'true') {
+      userStore.forceRestoreCertifiedData()
+    } else {
+      userStore.syncFromStorage()
+    }
+  } catch (e) {
+    console.warn('[userStore] Erreur auto-seed initial:', e)
+  }
+
   window.addEventListener('storage', (event) => {
     if (event.key === STORAGE_KEY_DEADLINES && event.newValue) {
       try {

@@ -8,7 +8,8 @@ import {
   formatDeadlineDisplay, 
   getAlarmLevelInfo, 
   parseDeadline,
-  EXERCISE_DOCS_DATA 
+  EXERCISE_DOCS_DATA,
+  isQuizMatch
 } from '../stores/userStore'
 
 const currentUser = computed(() => userStore.currentUser)
@@ -294,6 +295,11 @@ function handleLogout() {
 function getFileForExercise(exId) {
   const matched = studentFiles.value.filter(f => f && f.exerciseId === exId)
   return matched.length > 0 ? matched[matched.length - 1] : null
+}
+
+function downloadFile(file) {
+  if (!file) return
+  userStore.downloadSubmittedFile(file)
 }
 
 function getFeedbackForExercise(exId) {
@@ -772,14 +778,14 @@ function getWordDownloadUrl(fileBase) {
                 >
                   🤖 Diagnostic IA ({{ getFileForExercise(ex.id).aiCorrection.suggestedScore }}/20)
                 </button>
-                <a 
-                  v-if="getFileForExercise(ex.id).dataUrl" 
-                  :href="getFileForExercise(ex.id).dataUrl" 
-                  :download="getFileForExercise(ex.id).formattedFileName" 
-                  style="padding: 4px 10px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; color: inherit;"
+                <button 
+                  type="button"
+                  @click="downloadFile(getFileForExercise(ex.id))" 
+                  style="padding: 4px 10px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-divider); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: inherit;"
+                  title="Télécharger le fichier déposé"
                 >
                   📥 Télécharger
-                </a>
+                </button>
               </div>
             </div>
 
@@ -822,9 +828,9 @@ function getWordDownloadUrl(fileBase) {
             </div>
 
             <div style="display: flex; align-items: center; gap: 12px;">
-              <div v-if="studentQuizAttempts.some(att => att.moduleId === q.id)">
+              <div v-if="studentQuizAttempts.some(att => isQuizMatch(att.moduleId, q.id))">
                 <span style="font-weight: 800; color: #10b981; font-size: 1.1rem;">
-                  {{ Math.max(...studentQuizAttempts.filter(att => att.moduleId === q.id).map(a => a.score)) }} / {{ q.maxPoints }} pts
+                  {{ Math.max(...studentQuizAttempts.filter(att => isQuizMatch(att.moduleId, q.id)).map(a => a.score)) }} / {{ q.maxPoints }} pts
                 </span>
                 <small style="display: block; color: #059669; font-weight: 600;">✓ Validé</small>
               </div>
@@ -942,14 +948,14 @@ function getWordDownloadUrl(fileBase) {
               <br/>
               <small style="color: var(--vp-c-text-2);">{{ f.exerciseTitle }} • Remis le {{ f.submittedAt }}</small>
             </div>
-            <a 
-              v-if="f.dataUrl" 
-              :href="f.dataUrl" 
-              :download="f.formattedFileName" 
-              style="padding: 6px 12px; background: var(--vp-c-bg); border: 1px solid var(--vp-c-divider); border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; color: inherit;"
+            <button 
+              type="button"
+              @click="downloadFile(f)" 
+              style="padding: 6px 12px; background: var(--vp-c-bg); border: 1px solid var(--vp-c-divider); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: inherit;"
+              title="Télécharger ce document"
             >
               📥 Télécharger
-            </a>
+            </button>
           </div>
         </div>
       </div>
