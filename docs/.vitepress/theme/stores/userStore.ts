@@ -322,7 +322,6 @@ export const EXERCISE_DOCS_DATA: Record<string, ExerciseDocInfo> = {
     category: 'final',
     companionFiles: [
       { name: 'Données fictives de football (.xlsx)', fileBase: 'donnees_exercice_final_outils_informatiques.xlsx', icon: '⚽', downloadName: 'donnees_exercice_final_outils_informatiques.xlsx' },
-      { name: 'Tutoriel pas-à-pas (.docx)', fileBase: 'Exercice-07-Tutoriel.docx', icon: '📘', downloadName: 'Exercice-07-Tutoriel.docx' },
       { name: 'Modèle attendu - Cockpit staff (.xlsx)', fileBase: 'Exercice 07 - Production attendue.xlsx', icon: '📊', downloadName: 'Exercice-07-Production-Attendue.xlsx' }
     ]
   }

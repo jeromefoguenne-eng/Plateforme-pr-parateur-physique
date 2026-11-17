@@ -72,7 +72,6 @@ Détaillez les fonctionnalités clés d'une application smartphone dédiée :
 
 Tous les documents d'accompagnement sont disponibles directement dans l'encadré ci-dessous :
 - ⚽ **Données fictives de football (.xlsx)** : Base multisource complète (Effectif, GPS 36 séances, Hooper 42 jours, Tests).
-- 📘 **Tutoriel pas-à-pas (.docx)** : Guide méthodologique détaillé pour concevoir votre modèle sous Excel.
 - 📊 **Modèle attendu - Cockpit staff (.xlsx)** : Exemple de classeur finalisé avec algorithme de vulnérabilité et tableau de bord.
 
 </div>
