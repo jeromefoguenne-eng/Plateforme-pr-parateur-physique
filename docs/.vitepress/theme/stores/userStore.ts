@@ -1964,30 +1964,20 @@ export const userStore = {
   verifyAdminPin(pin: string): boolean {
     if (!pin || typeof pin !== 'string') return false
     const cleanPin = pin.trim().toLowerCase().replace(/\s+/g, '')
-    const computed = sha256Sync(cleanPin)
-    // Hash cryptographique SHA-256 du mot de passe enseignant officiel 'hech2026'
-    const defaultHash = '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb'
-    const target = state.adminPinHash || defaultHash
-
-    // Comparaison à temps constant contre les attaques temporelles (timing attacks)
-    let match = false
-    if (computed.length === target.length) {
-      let diff = 0
-      for (let i = 0; i < computed.length; i++) {
-        diff |= computed.charCodeAt(i) ^ target.charCodeAt(i)
-      }
-      if (diff === 0) match = true
-    }
-    if (computed.length === defaultHash.length) {
-      let diff = 0
-      for (let i = 0; i < computed.length; i++) {
-        diff |= computed.charCodeAt(i) ^ defaultHash.charCodeAt(i)
-      }
-      if (diff === 0) match = true
-    }
-    if (match) {
+    
+    // Mot de passe enseignant officiel 'hech2026'
+    if (cleanPin === 'hech2026') {
       this.clearAdminLockout()
       return true
+    }
+
+    // PIN personnalisé éventuel configuré dans les paramètres admin
+    const customPin = (state.adminPinHash || '').trim().toLowerCase()
+    if (customPin && customPin !== '546e8e7d7e5fa8e5a531213806ba7fa4067c4890ee40442649f4f64147b39deb') {
+      if (cleanPin === customPin || sha256Sync(cleanPin) === customPin) {
+        this.clearAdminLockout()
+        return true
+      }
     }
     return false
   },

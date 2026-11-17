@@ -444,7 +444,7 @@ function getWordDownloadUrl(fileBase) {
             {{ isAuthenticating ? 'Vérification...' : 'Se connecter →' }}
           </button>
           <div style="font-size: 0.8rem; color: var(--vp-c-text-2); margin-top: 10px; text-align: center; background: rgba(59, 130, 246, 0.08); padding: 8px 12px; border-radius: 6px;">
-            💡 Mot de passe étudiant par défaut : <code>etudiant2026</code> (ou mot de passe maître : <code>hech2026</code>)
+            💡 Mot de passe étudiant initial par défaut : <code>etudiant2026</code>
           </div>
           <div v-if="authFeedbackMessage" style="font-size: 0.85rem; color: #0284c7; margin-top: 8px; text-align: center;">
             ⏳ {{ authFeedbackMessage }}
